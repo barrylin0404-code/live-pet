@@ -1,4 +1,5 @@
 import ActivityKit
+import AppIntents
 import SwiftUI
 import WidgetKit
 
@@ -34,21 +35,7 @@ struct PetLiveActivityWidget: Widget {
                         .font(.headline)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    let snap = PetSnapshot.load()
-                    HStack(spacing: 10) {
-                        MetricChip(
-                            title: "Feeling",
-                            value: snap?.moodScore ?? bandFallback(context.state.mood),
-                            tint: .pink
-                        )
-                        MetricChip(
-                            title: "Satiety",
-                            value: snap?.satiety ?? (context.state.mood == .hungry ? 18 : 60),
-                            tint: .orange
-                        )
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.bottom, 4)
+                    islandBottom(context: context)
                 }
             } compactLeading: {
                 AnimatedPixelPetView(
@@ -68,6 +55,69 @@ struct PetLiveActivityWidget: Widget {
         }
     }
 
+    @ViewBuilder
+    private func islandBottom(context: ActivityViewContext<PetActivityAttributes>) -> some View {
+        if #available(iOSApplicationExtension 17.0, *) {
+            HStack(spacing: 12) {
+                Button(intent: FeedPetIntent()) {
+                    Label("Feed", systemImage: "fork.knife")
+                        .labelStyle(.iconOnly)
+                        .font(.body.weight(.semibold))
+                }
+                .tint(.orange)
+                .accessibilityLabel("Feed")
+
+                Button(intent: PetPetIntent()) {
+                    Label("Pet", systemImage: "pawprint.fill")
+                        .labelStyle(.iconOnly)
+                        .font(.body.weight(.semibold))
+                }
+                .tint(.pink)
+                .accessibilityLabel("Pet")
+
+                Button(intent: LullPetIntent()) {
+                    Label("Lull", systemImage: "moon.fill")
+                        .labelStyle(.iconOnly)
+                        .font(.body.weight(.semibold))
+                }
+                .tint(.purple)
+                .accessibilityLabel("Lull")
+
+                Spacer(minLength: 0)
+
+                let snap = PetSnapshot.load()
+                HStack(spacing: 6) {
+                    Image(systemName: "heart.fill")
+                        .foregroundStyle(.pink)
+                    Text("\(snap?.moodScore ?? bandFallback(context.state.mood))")
+                        .font(.caption2.monospacedDigit())
+                    Image(systemName: "fork.knife")
+                        .foregroundStyle(.orange)
+                    Text("\(snap?.satiety ?? (context.state.mood == .hungry ? 18 : 60))")
+                        .font(.caption2.monospacedDigit())
+                }
+                .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 8)
+            .padding(.bottom, 4)
+        } else {
+            let snap = PetSnapshot.load()
+            HStack(spacing: 10) {
+                MetricChip(
+                    title: "Feeling",
+                    value: snap?.moodScore ?? bandFallback(context.state.mood),
+                    tint: .pink
+                )
+                MetricChip(
+                    title: "Satiety",
+                    value: snap?.satiety ?? (context.state.mood == .hungry ? 18 : 60),
+                    tint: .orange
+                )
+            }
+            .padding(.horizontal, 8)
+            .padding(.bottom, 4)
+        }
+    }
 }
 
 private func bandFallback(_ mood: PetMood) -> Int {

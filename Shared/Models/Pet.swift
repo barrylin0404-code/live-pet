@@ -17,6 +17,8 @@ struct Pet: Identifiable, Equatable, Codable {
     var isSleeping: Bool
     /// First create / onboarding time — drives age days chrome.
     var createdAt: Date
+    /// Internal-only cleanliness (0...100). Not shown in UI.
+    var cleanliness: Int
 
     init(
         id: UUID = UUID(),
@@ -29,7 +31,8 @@ struct Pet: Identifiable, Equatable, Codable {
         lastUpdated: Date = .now,
         pose: PetPose = .idle,
         isSleeping: Bool = false,
-        createdAt: Date = .now
+        createdAt: Date = .now,
+        cleanliness: Int = 70
     ) {
         self.id = id
         self.name = name
@@ -42,6 +45,7 @@ struct Pet: Identifiable, Equatable, Codable {
         self.pose = pose
         self.isSleeping = isSleeping
         self.createdAt = createdAt
+        self.cleanliness = Self.clamp(cleanliness)
     }
 
     var mood: PetMood {
@@ -88,7 +92,27 @@ struct Pet: Identifiable, Equatable, Codable {
         touch()
     }
 
-    /// Sleep / rest — restores energy, small mood bump.
+    /// Island "Pet" / play-lite — Feeling bump, pose play.
+    mutating func pet() {
+        isSleeping = false
+        pose = .play
+        moodScore = Self.clamp(moodScore + Int.random(in: 4...8))
+        lastAction = "Got pets"
+        touch()
+    }
+
+    /// Bath / Clean — Feeling +5…10; cleanliness internal only.
+    mutating func clean(usingSoap: Bool = false) {
+        isSleeping = false
+        pose = .clean
+        let bump = usingSoap ? Int.random(in: 8...10) : Int.random(in: 5...10)
+        moodScore = Self.clamp(moodScore + bump)
+        cleanliness = Self.clamp(cleanliness + (usingSoap ? 40 : 25))
+        lastAction = usingSoap ? "Got a soapy bath" : "Got a bath"
+        touch()
+    }
+
+    /// Sleep / rest — restores energy, small mood bump. ("Tuck in")
     mutating func sleep() {
         isSleeping = true
         pose = .sleep
@@ -113,8 +137,9 @@ struct Pet: Identifiable, Equatable, Codable {
             satiety = Self.clamp(satiety - 2)
             moodScore = Self.clamp(moodScore - 1)
             energy = Self.clamp(energy - 1)
+            cleanliness = Self.clamp(cleanliness - 1)
             // Return to idle after action poses; occasional walk when playful.
-            if pose == .eat || pose == .play {
+            if pose == .eat || pose == .play || pose == .clean {
                 pose = .idle
             } else if mood == .playful, Int.random(in: 0...4) == 0 {
                 pose = .walk
@@ -146,6 +171,7 @@ struct Pet: Identifiable, Equatable, Codable {
             satiety = Self.clamp(satiety - units * 2)
             moodScore = Self.clamp(moodScore - units)
             energy = Self.clamp(energy - units)
+            cleanliness = Self.clamp(cleanliness - units)
         }
         lastAction = "\(name) waited for you"
         lastUpdated = date
@@ -161,7 +187,7 @@ struct Pet: Identifiable, Equatable, Codable {
 
     enum CodingKeys: String, CodingKey {
         case id, name, petGlyph, moodScore, satiety, energy
-        case lastAction, lastUpdated, pose, isSleeping, createdAt
+        case lastAction, lastUpdated, pose, isSleeping, createdAt, cleanliness
     }
 
     init(from decoder: Decoder) throws {
@@ -177,5 +203,6 @@ struct Pet: Identifiable, Equatable, Codable {
         pose = try c.decodeIfPresent(PetPose.self, forKey: .pose) ?? .idle
         isSleeping = try c.decodeIfPresent(Bool.self, forKey: .isSleeping) ?? false
         createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt) ?? lastUpdated
+        cleanliness = Self.clamp(try c.decodeIfPresent(Int.self, forKey: .cleanliness) ?? 70)
     }
 }

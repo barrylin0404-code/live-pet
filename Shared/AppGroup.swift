@@ -8,6 +8,7 @@ enum AppGroup {
     static let inventoryKey = "livepet.v1.inventory"
     static let snapshotKey = "livepet.v1.snapshot"
     static let onboardingKey = "livepet.v1.onboardingDone"
+    static let sceneKey = "livepet.v1.roomScene"
 
     static var defaults: UserDefaults {
         UserDefaults(suiteName: identifier) ?? .standard

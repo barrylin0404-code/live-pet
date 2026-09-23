@@ -4,6 +4,8 @@ import Foundation
 /// Starts, updates, and ends the pet Live Activity from the main app.
 /// Renew recipe (Researcher / Reviewer gate): one Activity; staleDate ~8h;
 /// at ≥7h end then immediately request with the same App Group snapshot.
+/// On scenePhase .active: enumerate first — update-only when fresh; end→request
+/// only when missing/stale and Island was left on (startedKey present).
 @MainActor
 final class PetLiveActivityManager: ObservableObject {
     @Published private(set) var isActivityActive = false
@@ -22,6 +24,11 @@ final class PetLiveActivityManager: ObservableObject {
         ActivityAuthorizationInfo().areActivitiesEnabled
     }
 
+    /// True when the user left Island on (successful start recorded; `end()` clears it).
+    private var islandDesired: Bool {
+        AppGroup.defaults.object(forKey: Self.startedKey) != nil
+    }
+
     func start(pet: Pet) {
         lastError = nil
         guard areActivitiesEnabled else {
@@ -36,6 +43,8 @@ final class PetLiveActivityManager: ObservableObject {
     func update(pet: Pet) {
         lastError = nil
         if needsRenew {
+            // Stale: only renew if Island is still desired / an Activity is live.
+            guard islandDesired || currentActivity != nil || isActivityActive else { return }
             start(pet: pet)
             return
         }
@@ -49,7 +58,7 @@ final class PetLiveActivityManager: ObservableObject {
     }
 
     func renewIfNeeded(pet: Pet) {
-        guard isActivityActive || currentActivity != nil else { return }
+        guard isActivityActive || currentActivity != nil || islandDesired else { return }
         if needsRenew {
             start(pet: pet)
         }
@@ -60,6 +69,52 @@ final class PetLiveActivityManager: ObservableObject {
         renewIfNeeded(pet: pet)
     }
 
+    /// scenePhase `.active` entry: enumerate Activities first; update-only when fresh;
+    /// end→request only when missing/stale and Island toggle (startedKey) is on.
+    func syncOnBecomeActive(pet: Pet) {
+        lastError = nil
+        let activities = Activity<PetActivityAttributes>.activities
+
+        if let existing = activities.first {
+            currentActivity = existing
+            isActivityActive = true
+            // Keep exactly one Activity — dismiss orphans without requesting extras.
+            if activities.count > 1 {
+                let orphans = Array(activities.dropFirst())
+                Task {
+                    for orphan in orphans {
+                        let finalContent = ActivityContent(state: orphan.content.state, staleDate: nil)
+                        await orphan.end(finalContent, dismissalPolicy: .immediate)
+                    }
+                }
+            }
+
+            if needsRenew {
+                // Stale + Island on (Activity still present) → end→request.
+                start(pet: pet)
+            } else {
+                if AppGroup.defaults.object(forKey: Self.startedKey) == nil {
+                    AppGroup.defaults.set(Date(), forKey: Self.startedKey)
+                }
+                // Fresh → update only (never request a second Activity).
+                let stale = renewDeadline ?? Date().addingTimeInterval(Self.staleLeeway)
+                let content = ActivityContent(state: pet.activityState, staleDate: stale)
+                Task {
+                    await existing.update(content)
+                }
+                scheduleRenew(pet: pet)
+            }
+            return
+        }
+
+        // No live Activity.
+        currentActivity = nil
+        isActivityActive = false
+        guard islandDesired else { return }
+        // Missing + Island was left on → request (endThenRequest is a no-op end).
+        start(pet: pet)
+    }
+
     func end(dismissalPolicy: ActivityUIDismissalPolicy = .default, cancelRenew: Bool = true) {
         lastError = nil
         if cancelRenew {
@@ -68,6 +123,7 @@ final class PetLiveActivityManager: ObservableObject {
         }
         guard let activity = currentActivity else {
             isActivityActive = false
+            AppGroup.defaults.removeObject(forKey: Self.startedKey)
             return
         }
 
@@ -84,13 +140,15 @@ final class PetLiveActivityManager: ObservableObject {
     }
 
     func restoreIfNeeded() {
-        if let existing = Activity<PetActivityAttributes>.activities.first {
+        let activities = Activity<PetActivityAttributes>.activities
+        if let existing = activities.first {
             currentActivity = existing
             isActivityActive = true
             if AppGroup.defaults.object(forKey: Self.startedKey) == nil {
                 AppGroup.defaults.set(Date(), forKey: Self.startedKey)
             }
         } else {
+            currentActivity = nil
             isActivityActive = false
         }
     }

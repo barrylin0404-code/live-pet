@@ -22,6 +22,24 @@ struct SettingsView: View {
             }
 
             Section {
+                Picker(
+                    "Room",
+                    selection: Binding(
+                        get: { store.selectedScene },
+                        set: { store.setScene($0) }
+                    )
+                ) {
+                    ForEach(PetRoomScene.allCases) { scene in
+                        Text(scene.displayName).tag(scene)
+                    }
+                }
+            } header: {
+                Text("Room")
+            } footer: {
+                Text("Sun Nook by day, Moon Porch for a cool evening porch. Widgets and the Island stay pet-forward.")
+            }
+
+            Section {
                 Toggle(
                     "Show on Dynamic Island",
                     isOn: Binding(
@@ -57,6 +75,17 @@ struct SettingsView: View {
                 Button("How to add the widget") {
                     showWidgetTip = true
                 }
+            }
+
+            Section {
+                Label("Shake your phone to tuck them in.", systemImage: "iphone.gen3.radiowaves.left.and.right")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .labelStyle(.titleAndIcon)
+            } header: {
+                Text("Help")
+            } footer: {
+                Text("Shake → sleep. Fallback: Sleep / Tuck in on Pet Home, or Lull from the Dynamic Island (iOS 17+).")
             }
 
             Section {

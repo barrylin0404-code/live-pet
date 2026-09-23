@@ -4,6 +4,7 @@ import SwiftUI
 struct LivePetApp: App {
     @StateObject private var store = PetStore()
     @StateObject private var activityManager = PetLiveActivityManager()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -22,6 +23,11 @@ struct LivePetApp: App {
                     activityManager.renewIfNeeded(pet: store.pet)
                     activityManager.update(pet: store.pet)
                 }
+            }
+            .onChange(of: scenePhase) { phase in
+                guard phase == .active else { return }
+                // Enumerate → update-only if fresh; end→request only if missing/stale + Island on.
+                activityManager.syncOnBecomeActive(pet: store.pet)
             }
         }
     }

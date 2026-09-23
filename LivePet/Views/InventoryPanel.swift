@@ -33,6 +33,23 @@ struct InventoryPanel: View {
                     }
                 }
             }
+
+            if !store.careItems.isEmpty {
+                Text("Care")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text("Soap is optional — Clean on Pet Home always works free.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    ForEach(store.careItems) { item in
+                        InventoryButton(item: item, tint: .cyan) {
+                            store.clean()
+                            onChanged()
+                        }
+                    }
+                }
+            }
         }
         .padding(14)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))

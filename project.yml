@@ -35,6 +35,7 @@ targets:
   LivePetWidget:
     type: app-extension
     platform: iOS
+    deploymentTarget: "17.0"
     sources:
       - path: LivePetWidget
       - path: Shared

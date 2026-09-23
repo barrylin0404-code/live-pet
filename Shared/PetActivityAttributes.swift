@@ -47,6 +47,8 @@ public enum PetPose: String, Codable, Hashable, CaseIterable {
     case eat
     case play
     case sleep
+    /// Bath / clean oneshot — sprite maps to idle + bubble or walk frames.
+    case clean
 }
 
 public enum PetMood: String, Codable, Hashable, CaseIterable {

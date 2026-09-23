@@ -6,5 +6,6 @@ struct LivePetWidgetBundle: WidgetBundle {
     var body: some Widget {
         PetHomeWidget()
         PetLiveActivityWidget()
+        PetAccessoryWidget()
     }
 }

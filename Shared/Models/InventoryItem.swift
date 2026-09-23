@@ -4,6 +4,7 @@ import SwiftUI
 enum InventoryCategory: String, Codable, CaseIterable {
     case food
     case toy
+    case care
 }
 
 /// Catalog + owned count for a single inventory item.
@@ -22,6 +23,7 @@ struct InventoryItem: Identifiable, Codable, Equatable, Hashable {
 
     var isFood: Bool { category == .food }
     var isToy: Bool { category == .toy }
+    var isCare: Bool { category == .care }
 
     static let catalog: [InventoryItem] = [
         InventoryItem(
@@ -83,6 +85,16 @@ struct InventoryItem: Identifiable, Codable, Equatable, Hashable {
             satietyBoost: 0,
             moodBoost: 14,
             energyDelta: -6
+        ),
+        InventoryItem(
+            id: "bubble_soap",
+            name: "Bubble Soap",
+            category: .care,
+            symbolName: "drop.fill",
+            quantity: 2,
+            satietyBoost: 0,
+            moodBoost: 2,
+            energyDelta: 0
         )
     ]
 }

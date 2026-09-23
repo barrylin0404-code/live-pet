@@ -8,6 +8,7 @@ final class PetStore: ObservableObject {
     @Published private(set) var pet: Pet
     @Published private(set) var items: [InventoryItem]
     @Published private(set) var hasCompletedOnboarding: Bool
+    @Published private(set) var selectedScene: PetRoomScene
 
     private let defaults: UserDefaults
     private var tickTask: Task<Void, Never>?
@@ -20,6 +21,13 @@ final class PetStore: ObservableObject {
         Self.migrateFromStandardIfNeeded(into: defaults)
 
         hasCompletedOnboarding = defaults.bool(forKey: AppGroup.onboardingKey)
+
+        if let raw = defaults.string(forKey: AppGroup.sceneKey),
+           let scene = PetRoomScene(rawValue: raw) {
+            selectedScene = scene
+        } else {
+            selectedScene = .sunNook
+        }
 
         if let data = defaults.data(forKey: AppGroup.petKey),
            let saved = try? JSONDecoder().decode(Pet.self, from: data) {
@@ -35,7 +43,7 @@ final class PetStore: ObservableObject {
 
         if let data = defaults.data(forKey: AppGroup.inventoryKey),
            let saved = try? JSONDecoder().decode([InventoryItem].self, from: data) {
-            items = saved
+            items = Self.mergeCatalog(into: saved)
         } else {
             items = InventoryItem.catalog
         }
@@ -48,6 +56,7 @@ final class PetStore: ObservableObject {
 
     var foods: [InventoryItem] { items.filter(\.isFood) }
     var toys: [InventoryItem] { items.filter(\.isToy) }
+    var careItems: [InventoryItem] { items.filter(\.isCare) }
 
     func startTicking() {
         tickTask?.cancel()
@@ -85,6 +94,11 @@ final class PetStore: ObservableObject {
         commit()
     }
 
+    func setScene(_ scene: PetRoomScene) {
+        selectedScene = scene
+        defaults.set(scene.rawValue, forKey: AppGroup.sceneKey)
+    }
+
     func feed(itemID: String) {
         guard let index = items.firstIndex(where: { $0.id == itemID && $0.isFood }) else { return }
         guard items[index].quantity > 0 else { return }
@@ -120,6 +134,17 @@ final class PetStore: ObservableObject {
         play(itemID: id)
     }
 
+    /// Clean / bathe — always free. Optional soap gives a slightly bigger Feeling bump.
+    func clean() {
+        var usedSoap = false
+        if let index = items.firstIndex(where: { $0.id == "bubble_soap" && $0.quantity > 0 }) {
+            items[index].quantity -= 1
+            usedSoap = true
+        }
+        pet.clean(usingSoap: usedSoap)
+        commit()
+    }
+
     func sleep() {
         pet.sleep()
         commit()
@@ -130,8 +155,10 @@ final class PetStore: ObservableObject {
         stopTicking()
         pet = Pet()
         items = InventoryItem.catalog
+        selectedScene = .sunNook
         hasCompletedOnboarding = false
         defaults.set(false, forKey: AppGroup.onboardingKey)
+        defaults.set(PetRoomScene.sunNook.rawValue, forKey: AppGroup.sceneKey)
         defaults.removeObject(forKey: AppGroup.petKey)
         defaults.removeObject(forKey: AppGroup.inventoryKey)
         defaults.removeObject(forKey: AppGroup.snapshotKey)
@@ -157,6 +184,7 @@ final class PetStore: ObservableObject {
         if let data = try? JSONEncoder().encode(items) {
             defaults.set(data, forKey: AppGroup.inventoryKey)
         }
+        defaults.set(selectedScene.rawValue, forKey: AppGroup.sceneKey)
         PetSnapshot(
             name: pet.name,
             petGlyph: pet.petGlyph,
@@ -167,6 +195,15 @@ final class PetStore: ObservableObject {
             lastAction: pet.lastAction,
             lastUpdated: pet.lastUpdated
         ).save(to: defaults)
+    }
+
+    /// Ensure newer catalog entries (e.g. soap) appear for existing installs.
+    private static func mergeCatalog(into saved: [InventoryItem]) -> [InventoryItem] {
+        var merged = saved
+        for item in InventoryItem.catalog where !merged.contains(where: { $0.id == item.id }) {
+            merged.append(item)
+        }
+        return merged
     }
 
     private static func migrateFromStandardIfNeeded(into suite: UserDefaults) {

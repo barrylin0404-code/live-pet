@@ -5,6 +5,7 @@ struct ContentView: View {
     @EnvironmentObject private var activityManager: PetLiveActivityManager
 
     @State private var showFloatingHeart = false
+    @State private var showFloatingSparkles = false
     @State private var showSettings = false
 
     var body: some View {
@@ -41,19 +42,21 @@ struct ContentView: View {
                         .transition(.scale.combined(with: .opacity))
                         .allowsHitTesting(false)
                 }
+
+                if showFloatingSparkles {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 68, weight: .bold))
+                        .foregroundStyle(Color(red: 0.45, green: 0.85, blue: 0.95))
+                        .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
+                        .transition(.scale.combined(with: .opacity))
+                        .allowsHitTesting(false)
+                }
             }
             .background(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.98, green: 0.94, blue: 0.88),
-                        Color(red: 0.90, green: 0.95, blue: 0.92)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                roomBackground
+                    .ignoresSafeArea()
             )
-            .navigationTitle("Sun Nook")
+            .navigationTitle(store.selectedScene.displayName)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -82,12 +85,47 @@ struct ContentView: View {
             .onDisappear {
                 store.stopTicking()
             }
+            #if canImport(UIKit)
+            .background(ShakeDetector().frame(width: 0, height: 0))
+            .onReceive(NotificationCenter.default.publisher(for: .livePetDidShake)) { _ in
+                store.sleep()
+                syncActivity()
+            }
+            #endif
+        }
+    }
+
+    private var roomBackground: some View {
+        switch store.selectedScene {
+        case .sunNook:
+            return AnyView(
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.98, green: 0.94, blue: 0.88),
+                        Color(red: 0.90, green: 0.95, blue: 0.92)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+        case .moonPorch:
+            return AnyView(
+                LinearGradient(
+                    colors: [
+                        Color(red: 0x2C / 255.0, green: 0x3A / 255.0, blue: 0x4A / 255.0),
+                        Color(red: 0.18, green: 0.22, blue: 0.30)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
         }
     }
 
     private var roomCard: some View {
         VStack(spacing: 8) {
-            SunNookScene(
+            PetRoomSceneView(
+                scene: store.selectedScene,
                 mood: store.pet.mood,
                 pose: store.pet.pose,
                 isSleeping: store.pet.isSleeping,
@@ -101,30 +139,54 @@ struct ContentView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text("Sun Nook")
+                Text(store.selectedScene.displayName)
                     .font(.caption.weight(.semibold))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(
-                        Color(red: 0.91, green: 0.96, blue: 0.89).opacity(0.9),
-                        in: Capsule()
-                    )
+                    .background(sceneChipFill, in: Capsule())
             }
             .padding(.horizontal, 4)
         }
         .padding(12)
         .background(
-            Color(red: 0.91, green: 0.96, blue: 0.89).opacity(0.55),
+            sceneCardFill.opacity(0.55),
             in: RoundedRectangle(cornerRadius: 28, style: .continuous)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .strokeBorder(Color(red: 0.77, green: 0.85, blue: 0.75), lineWidth: 2)
+                .strokeBorder(sceneCardBorder, lineWidth: 2)
         )
     }
 
+    private var sceneChipFill: Color {
+        switch store.selectedScene {
+        case .sunNook:
+            return Color(red: 0.91, green: 0.96, blue: 0.89).opacity(0.9)
+        case .moonPorch:
+            return Color(red: 0xF4 / 255.0, green: 0xD5 / 255.0, blue: 0xA0 / 255.0).opacity(0.85)
+        }
+    }
+
+    private var sceneCardFill: Color {
+        switch store.selectedScene {
+        case .sunNook:
+            return Color(red: 0.91, green: 0.96, blue: 0.89)
+        case .moonPorch:
+            return Color(red: 0.28, green: 0.34, blue: 0.44)
+        }
+    }
+
+    private var sceneCardBorder: Color {
+        switch store.selectedScene {
+        case .sunNook:
+            return Color(red: 0.77, green: 0.85, blue: 0.75)
+        case .moonPorch:
+            return Color(red: 0xF4 / 255.0, green: 0xD5 / 255.0, blue: 0xA0 / 255.0).opacity(0.55)
+        }
+    }
+
     private var quickActions: some View {
-        HStack(spacing: 12) {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
             ActionButton(title: "Feed", systemImage: "fork.knife", tint: .orange) {
                 store.feedDefault()
                 pulseHeart()
@@ -135,7 +197,12 @@ struct ContentView: View {
                 pulseHeart()
                 syncActivity()
             }
-            ActionButton(title: "Sleep", systemImage: "moon.zzz", tint: .purple) {
+            ActionButton(title: "Clean", systemImage: "drop.fill", tint: .cyan) {
+                store.clean()
+                pulseSparkles()
+                syncActivity()
+            }
+            ActionButton(title: "Sleep", systemImage: "moon.zzz", tint: .purple, accessibilityLabel: "Tuck in") {
                 store.sleep()
                 syncActivity()
             }
@@ -156,6 +223,20 @@ struct ContentView: View {
         }
     }
 
+    private func pulseSparkles() {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.55)) {
+            showFloatingSparkles = true
+        }
+        Task {
+            try? await Task.sleep(nanoseconds: 700_000_000)
+            await MainActor.run {
+                withAnimation(.easeOut(duration: 0.25)) {
+                    showFloatingSparkles = false
+                }
+            }
+        }
+    }
+
     private func syncActivity() {
         guard activityManager.isActivityActive else { return }
         activityManager.renewIfNeeded(pet: store.pet)
@@ -167,6 +248,7 @@ private struct ActionButton: View {
     let title: String
     let systemImage: String
     var tint: Color = .accentColor
+    var accessibilityLabel: String? = nil
     let action: () -> Void
 
     var body: some View {
@@ -181,6 +263,7 @@ private struct ActionButton: View {
             .padding(.vertical, 12)
         }
         .buttonStyle(.bordered)
+        .accessibilityLabel(accessibilityLabel ?? title)
     }
 }
 

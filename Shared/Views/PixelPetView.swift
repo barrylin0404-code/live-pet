@@ -100,29 +100,37 @@ public struct AnimatedPixelPetView: View {
                 return frames[tick % frames.count]
             }()
 
-            Group {
-                if Self.assetExists(name) {
-                    Image(name)
-                        .interpolation(.none)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 32 * scale * 3, height: 32 * scale * 3)
-                } else {
-                    let blink = !isSleeping && effective == .idle && (tick % 8 == 0)
-                    let bob: CGFloat = {
-                        switch effective {
-                        case .walk, .play: return (tick % 2 == 0) ? -0.35 : 0.15
-                        case .eat: return (tick % 2 == 0) ? 0.2 : 0
-                        case .sleep: return 0
-                        case .idle: return (tick % 10 == 0) ? -0.1 : 0
-                        }
-                    }()
-                    PixelPetView(
-                        mood: effective == .sleep ? .sleepy : mood,
-                        scale: scale,
-                        blinking: blink || effective == .sleep,
-                        bobOffset: bob
-                    )
+            ZStack(alignment: .topTrailing) {
+                Group {
+                    if Self.assetExists(name) {
+                        Image(name)
+                            .interpolation(.none)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 32 * scale * 3, height: 32 * scale * 3)
+                    } else {
+                        let blink = !isSleeping && effective == .idle && (tick % 8 == 0)
+                        let bob: CGFloat = {
+                            switch effective {
+                            case .walk, .play, .clean: return (tick % 2 == 0) ? -0.35 : 0.15
+                            case .eat: return (tick % 2 == 0) ? 0.2 : 0
+                            case .sleep: return 0
+                            case .idle: return (tick % 10 == 0) ? -0.1 : 0
+                            }
+                        }()
+                        PixelPetView(
+                            mood: effective == .sleep ? .sleepy : mood,
+                            scale: scale,
+                            blinking: blink || effective == .sleep,
+                            bobOffset: bob
+                        )
+                    }
+                }
+                if effective == .clean {
+                    Image(systemName: "bubble.fill")
+                        .font(.system(size: 14 * scale))
+                        .foregroundStyle(.cyan.opacity(0.85))
+                        .offset(x: 4, y: -2)
                 }
             }
             .accessibilityLabel("Nubby the pixel pet, \(mood.label)")
@@ -135,6 +143,7 @@ public struct AnimatedPixelPetView: View {
         case .eat: return 0.30
         case .sleep: return 0.60
         case .walk, .play: return 0.18
+        case .clean: return 0.28
         }
     }
 
@@ -148,6 +157,9 @@ public struct AnimatedPixelPetView: View {
             return ["nubby-sleep-0", "nubby-sleep-1"]
         case .walk, .play:
             return ["nubby-walk-0", "nubby-walk-1", "nubby-walk-2", "nubby-walk-3"]
+        case .clean:
+            // Placeholder until clean sheets land: idle + walk sparkle feel.
+            return ["nubby-idle-0", "nubby-walk-1", "nubby-idle-2"]
         }
     }
 

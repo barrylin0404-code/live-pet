@@ -86,3 +86,11 @@ open LivePet.xcodeproj
 ## License
 
 Add a license of your choice. No third-party dependencies. Original pet/room art and names.
+
+## App Group & Home Screen widget (P0)
+
+- App Group ID: `group.com.barrylin.livepet` (enable for **LivePet** and **LivePetWidget** in Xcode → Signing & Capabilities).
+- Pet state is shared via `UserDefaults(suiteName:)` so the Home Screen widget and Live Activity stay in sync.
+- After `xcodegen generate`, add the App Group capability if XcodeGen did not surface it, matching that ID exactly.
+- Home Screen widget: **Live Pet** (small + medium) — shows Nubby + Feeling/Satiety from shared state.
+

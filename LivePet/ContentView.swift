@@ -89,7 +89,7 @@ struct ContentView: View {
 
     private var meters: some View {
         VStack(spacing: 12) {
-            StatBar(title: "Mood", value: store.pet.moodScore, tint: .pink, systemImage: "heart.fill")
+            StatBar(title: "Feeling", value: store.pet.moodScore, tint: .pink, systemImage: "heart.fill")
             StatBar(title: "Satiety", value: store.pet.satiety, tint: .orange, systemImage: "fork.knife")
             StatBar(title: "Energy", value: store.pet.energy, tint: .green, systemImage: "bolt.fill")
         }

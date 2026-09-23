@@ -1,35 +1,38 @@
 import Foundation
 import SwiftUI
+import WidgetKit
 
-/// Owns pet + inventory, persists to UserDefaults, drives need decay.
+/// Owns pet + inventory, persists to the App Group, drives need decay.
 @MainActor
 final class PetStore: ObservableObject {
     @Published private(set) var pet: Pet
     @Published private(set) var items: [InventoryItem]
 
     private let defaults: UserDefaults
-    private let petKey = "livepet.v1.pet"
-    private let inventoryKey = "livepet.v1.inventory"
     private var tickTask: Task<Void, Never>?
 
     /// Called whenever pet state changes so Live Activity can sync.
     var onPetChange: ((Pet) -> Void)?
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = AppGroup.defaults) {
         self.defaults = defaults
-        if let data = defaults.data(forKey: petKey),
+        Self.migrateFromStandardIfNeeded(into: defaults)
+
+        if let data = defaults.data(forKey: AppGroup.petKey),
            let saved = try? JSONDecoder().decode(Pet.self, from: data) {
-            self.pet = saved
+            pet = saved
         } else {
-            self.pet = Pet()
+            pet = Pet()
         }
-        if let data = defaults.data(forKey: inventoryKey),
+
+        if let data = defaults.data(forKey: AppGroup.inventoryKey),
            let saved = try? JSONDecoder().decode([InventoryItem].self, from: data) {
-            self.items = saved
+            items = saved
         } else {
-            self.items = InventoryItem.catalog
+            items = InventoryItem.catalog
         }
-        self.pet.applyOfflineDecay()
+
+        pet.applyOfflineDecay()
         persist()
     }
 
@@ -40,11 +43,9 @@ final class PetStore: ObservableObject {
         tickTask?.cancel()
         tickTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 20_000_000_000) // 20s
+                try? await Task.sleep(nanoseconds: 20_000_000_000)
                 guard !Task.isCancelled else { return }
-                await MainActor.run {
-                    self?.applyTick()
-                }
+                await MainActor.run { self?.applyTick() }
             }
         }
     }
@@ -60,10 +61,10 @@ final class PetStore: ObservableObject {
         let item = items[index]
         items[index].quantity -= 1
         pet.feed(with: item)
-        // Soft refill so v1 never soft-locks the player out of food.
         if items[index].quantity == 0 {
             items[index].quantity = 1
             pet.lastAction = "Ate \(item.name) · crumb restocked"
+            pet.touch()
         }
         commit()
     }
@@ -71,23 +72,8 @@ final class PetStore: ObservableObject {
     func play(itemID: String) {
         guard let index = items.firstIndex(where: { $0.id == itemID && $0.isToy }) else { return }
         guard items[index].quantity > 0 else { return }
-        // Toys are reusable in v1 (quantity stays); still require owning at least 1.
         pet.play(with: items[index])
         commit()
-    }
-
-    /// Convenience: feed with the first available food.
-    func feedDefault() {
-        if let food = foods.first(where: { $0.quantity > 0 }) {
-            feed(itemID: food.id)
-        }
-    }
-
-    /// Convenience: play with the first owned toy.
-    func playDefault() {
-        if let toy = toys.first(where: { $0.quantity > 0 }) {
-            play(itemID: toy.id)
-        }
     }
 
     func sleep() {
@@ -109,14 +95,40 @@ final class PetStore: ObservableObject {
     private func commit() {
         persist()
         onPetChange?(pet)
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     private func persist() {
         if let data = try? JSONEncoder().encode(pet) {
-            defaults.set(data, forKey: petKey)
+            defaults.set(data, forKey: AppGroup.petKey)
         }
         if let data = try? JSONEncoder().encode(items) {
-            defaults.set(data, forKey: inventoryKey)
+            defaults.set(data, forKey: AppGroup.inventoryKey)
         }
+        PetSnapshot(
+            name: pet.name,
+            petGlyph: pet.petGlyph,
+            moodScore: pet.moodScore,
+            satiety: pet.satiety,
+            energy: pet.energy,
+            moodRaw: pet.mood.rawValue,
+            lastAction: pet.lastAction,
+            lastUpdated: pet.lastUpdated
+        ).save(to: defaults)
+    }
+
+    private static func migrateFromStandardIfNeeded(into suite: UserDefaults) {
+        let flag = "livepet.v1.migratedToAppGroup"
+        guard suite.bool(forKey: flag) == false else { return }
+        let legacy = UserDefaults.standard
+        if suite.data(forKey: AppGroup.petKey) == nil,
+           let data = legacy.data(forKey: AppGroup.petKey) ?? legacy.data(forKey: "livepet.v1.pet") {
+            suite.set(data, forKey: AppGroup.petKey)
+        }
+        if suite.data(forKey: AppGroup.inventoryKey) == nil,
+           let data = legacy.data(forKey: AppGroup.inventoryKey) ?? legacy.data(forKey: "livepet.v1.inventory") {
+            suite.set(data, forKey: AppGroup.inventoryKey)
+        }
+        suite.set(true, forKey: flag)
     }
 }

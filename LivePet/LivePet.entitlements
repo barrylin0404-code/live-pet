@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
+<!-- Mac enablement: add WeatherKit capability in Xcode / Developer Portal.
+     Entitlement key: com.apple.developer.weatherkit (app target; widget renders App Group cache only). -->
 <dict>
 	<key>com.apple.security.application-groups</key>
 	<array>

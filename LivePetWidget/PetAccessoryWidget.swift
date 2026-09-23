@@ -52,11 +52,12 @@ struct PetAccessoryProvider: TimelineProvider {
     }
 }
 
-// MARK: - Hearts (1…4 filled dots from Feeling 0…100)
+// MARK: - Hearts (0…4 filled dots from Feeling 0…100)
 
 private enum AccessoryHearts {
     static func filledCount(moodScore: Int) -> Int {
-        min(4, max(1, moodScore <= 0 ? 1 : (moodScore + 24) / 25))
+        guard moodScore > 0 else { return 0 }
+        return min(4, (moodScore + 24) / 25)
     }
 }
 

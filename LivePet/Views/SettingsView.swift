@@ -1,4 +1,6 @@
 import SwiftUI
+import PhotosUI
+import WidgetKit
 
 struct SettingsView: View {
     @EnvironmentObject private var store: PetStore
@@ -8,6 +10,9 @@ struct SettingsView: View {
     @State private var draftName: String = ""
     @State private var showResetConfirm = false
     @State private var showWidgetTip = false
+    @State private var photoItem: PhotosPickerItem?
+    @State private var photoStatus: String = ""
+    @State private var weatherStatus: String = ""
 
     var body: some View {
         Form {
@@ -112,8 +117,53 @@ struct SettingsView: View {
                 Text("Live Activity renews before the ~8h Island limit (≥7h end→request). Care actions update the Island when it’s on.")
             }
 
-            Section("Home Screen widget") {
-                Button("How to add the widget") {
+            Section {
+                PhotosPicker(selection: $photoItem, matching: .images, photoLibrary: .shared()) {
+                    Label("Choose pet frame photo", systemImage: "photo.on.rectangle")
+                }
+                if hasPetFrame {
+                    Button("Remove frame photo", role: .destructive) {
+                        removePetFrame()
+                    }
+                }
+                if !photoStatus.isEmpty {
+                    Text(photoStatus)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("Pet Photo widget")
+            } footer: {
+                Text("Saved on-device in the App Group as pet-frame.jpg. The widget never uploads your photo.")
+            }
+
+            Section {
+                Button {
+                    Task {
+                        await WeatherFetchService.shared.refresh()
+                        weatherStatus = WeatherFetchService.shared.statusMessage
+                    }
+                } label: {
+                    Label("Update weather for widget", systemImage: "cloud.sun")
+                }
+                if let cache = WeatherCache.load(), cache.hasObservation, let temp = cache.displayTemperature {
+                    Text("Cached: \(temp) \(cache.conditionLabel)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if !weatherStatus.isEmpty {
+                    Text(weatherStatus)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("Pet Weather")
+            } footer: {
+                Text("Location is requested in the app only (When In Use). The weather widget reads the App Group cache and never prompts. Enable WeatherKit on the App ID on a Mac — see README.")
+            }
+
+            Section("Home Screen widgets") {
+                Button("How to add widgets") {
                     showWidgetTip = true
                 }
             }
@@ -139,7 +189,14 @@ struct SettingsView: View {
         }
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear { draftName = store.pet.name }
+        .onAppear {
+            draftName = store.pet.name
+            weatherStatus = WeatherFetchService.shared.statusMessage
+        }
+        .onChange(of: photoItem) { newItem in
+            guard let newItem else { return }
+            Task { await savePetFrame(from: newItem) }
+        }
         .alert("Reset pet?", isPresented: $showResetConfirm) {
             Button("Reset", role: .destructive) {
                 activityManager.end()
@@ -150,15 +207,59 @@ struct SettingsView: View {
         } message: {
             Text("This can’t be undone. You’ll name a new pet.")
         }
-        .alert("Add Live Pet widget", isPresented: $showWidgetTip) {
+        .alert("Add Live Pet widgets", isPresented: $showWidgetTip) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Long-press the Home Screen → tap + → search “Live Pet” → add the small or medium widget.")
+            Text("Long-press the Home Screen → tap + → search “Live Pet” or “Pet” → add Pet Feeling, Pet Clock, Pet Weather, Pet Day, Pet Note, or Pet Photo.")
         }
+    }
+
+    private var hasPetFrame: Bool {
+        guard let url = AppGroup.petFrameURL else { return false }
+        return FileManager.default.fileExists(atPath: url.path)
     }
 
     private func applyRename() {
         store.rename(draftName)
         draftName = store.pet.name
     }
+
+    @MainActor
+    private func savePetFrame(from item: PhotosPickerItem) async {
+        do {
+            guard let loaded = try await item.loadTransferable(type: RawImageTransfer.self) else {
+                photoStatus = "Couldn’t read that photo"
+                return
+            }
+            let data = loaded.data
+            guard let url = AppGroup.petFrameURL else {
+                photoStatus = "App Group container missing"
+                return
+            }
+            // Re-encode as JPEG when possible for a stable pet-frame.jpg.
+            let jpeg: Data
+            #if canImport(UIKit)
+            if let ui = UIImage(data: data), let encoded = ui.jpegData(compressionQuality: 0.85) {
+                jpeg = encoded
+            } else {
+                jpeg = data
+            }
+            #else
+            jpeg = data
+            #endif
+            try jpeg.write(to: url, options: .atomic)
+            photoStatus = "Saved for Pet Photo widget"
+            WidgetCenter.shared.reloadAllTimelines()
+        } catch {
+            photoStatus = "Save failed"
+        }
+    }
+
+    private func removePetFrame() {
+        guard let url = AppGroup.petFrameURL else { return }
+        try? FileManager.default.removeItem(at: url)
+        photoStatus = "Photo removed"
+        WidgetCenter.shared.reloadAllTimelines()
+    }
 }
+

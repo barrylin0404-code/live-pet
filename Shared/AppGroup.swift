@@ -17,10 +17,22 @@ enum AppGroup {
     static let feelingFullDayKey = "livepet.v1.feelingFullDay"
     static let pipUnlockedKey = "livepet.v1.pipUnlocked"
     static let meetPipShownKey = "livepet.v1.meetPipShown"
+    static let weatherCacheKey = "livepet.v1.weatherCache"
+    /// Filename inside the App Group container (not UserDefaults).
+    static let petFrameFileName = "pet-frame.jpg"
 
     static var defaults: UserDefaults {
         UserDefaults(suiteName: identifier) ?? .standard
     }
+
+    static var containerURL: URL? {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: identifier)
+    }
+
+    static var petFrameURL: URL? {
+        containerURL?.appendingPathComponent(petFrameFileName)
+    }
+
 }
 
 /// Lightweight pet mirror for WidgetKit timelines (readable from app + extensions).

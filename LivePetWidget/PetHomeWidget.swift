@@ -122,8 +122,8 @@ struct PetHomeWidget: Widget {
                 PetHomeWidgetView(entry: entry)
             }
         }
-        .configurationDisplayName("Live Pet")
-        .description("See Nubby’s Feeling and Satiety on your Home Screen.")
+        .configurationDisplayName("Pet Feeling")
+        .description("See how they’re doing")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

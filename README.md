@@ -12,10 +12,38 @@ Care for **Nubby** in the **Sun Nook** — feed, play, and sleep while Feeling, 
 ## P0 status (Engineer)
 
 - App Group `group.com.barrylin.livepet` shared by app + widget + Live Activity snapshot
-- Home Screen widget (small + medium): pet + Feeling / Satiety
+- Home Screen widgets: Pet Feeling + Wave 4 Clock / Weather / Day / Note / Photo
 - Island: tiny ContentState (`speciesId` / `pose` / `moodBand` / `isSleeping`); meters from App Group snapshot; `TimelineView` idle loops; renew/restart before ~8h
 - UI shows Feeling + Satiety only (Energy kept in model for Sleep / decay)
 - Island intents (iOS 17+) deferred until after widget ships; Designer art swap next
+
+
+## Wave 4 — utility widgets
+
+Five Home Screen widgets (plus Wave 1 Pet Feeling + Wave 2 Lock Screen accessories):
+
+| Gallery name | Kind | Notes |
+|--------------|------|-------|
+| Pet Feeling | `PetHomeWidget` | Feeling + Satiety (Wave 1) |
+| Pet Clock | `PetClockWidget` | SwiftUI date/time styles — **no** per-minute timeline |
+| Pet Weather | `PetWeatherWidget` | Renders App Group `WeatherCache` only; Apple Weather attribution |
+| Pet Day | `PetCalendarWidget` | Today + care tip; Day ageDays; EventKit optional later |
+| Pet Note | `PetDailyMessageWidget` | 20 original cozy lines seeded by dayOfYear + name |
+| Pet Photo | `PetPhotoWidget` | App Group `pet-frame.jpg`; polaroid; `containerBackgroundRemovable(false)` |
+
+Shared rules: App Group `PetSnapshot`, `WidgetCenter.shared.reloadAllTimelines()` after care, cream/mint materials via `.containerBackground(for: .widget)`, deep link `livepet://home`.
+
+### WeatherKit (Mac enablement)
+
+Linux/sandbox cannot turn on the Apple Developer WeatherKit entitlement. On a Mac:
+
+1. Developer Portal → App ID `com.barrylin.livepet` → enable **WeatherKit**
+2. Xcode → LivePet target → Signing & Capabilities → **+ WeatherKit**
+3. This adds entitlement `com.apple.developer.weatherkit` (documented in `LivePet.entitlements` XML comment). Widget target does **not** need WeatherKit if the app fetches and caches.
+4. Confirm `NSLocationWhenInUseUsageDescription` is present (ships in `LivePet/Info.plist`)
+5. Settings → **Update weather for widget** requests When-In-Use location in-app; widget never prompts
+
+Without WeatherKit / location, `WeatherFetchService` writes a sample or empty `WeatherCache` so the weather widget never goes blank (hides ° when `hasObservation == false`).
 
 ## V1 features
 

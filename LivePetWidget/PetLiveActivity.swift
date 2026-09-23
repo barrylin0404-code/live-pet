@@ -5,21 +5,19 @@ import WidgetKit
 struct PetLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: PetActivityAttributes.self) { context in
-            // Lock Screen / banner presentation
             LockScreenPetView(context: context)
                 .activityBackgroundTint(.black.opacity(0.35))
                 .activitySystemActionForegroundColor(.white)
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Text(context.attributes.speciesEmoji)
-                        .font(.largeTitle)
-                        .padding(.leading, 4)
+                    PixelPetView(mood: context.state.mood, scale: 0.55)
+                        .padding(.leading, 2)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text(context.state.mood.emoji)
-                            .font(.title2)
+                        Image(systemName: context.state.mood.symbolName)
+                            .font(.title3)
                         Text(context.state.mood.label)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
@@ -31,21 +29,24 @@ struct PetLiveActivityWidget: Widget {
                         .font(.headline)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    HStack(spacing: 16) {
-                        MetricChip(title: "Hunger", value: context.state.hunger, tint: .orange)
+                    HStack(spacing: 10) {
+                        MetricChip(title: "Mood", value: context.state.moodScore, tint: .pink)
+                        MetricChip(title: "Satiety", value: context.state.satiety, tint: .orange)
                         MetricChip(title: "Energy", value: context.state.energy, tint: .green)
                     }
                     .padding(.horizontal, 8)
                     .padding(.bottom, 4)
                 }
             } compactLeading: {
-                Text(context.attributes.speciesEmoji)
+                Image(systemName: "square.fill")
+                    .foregroundStyle(Color(red: 0.98, green: 0.52, blue: 0.42))
             } compactTrailing: {
-                Text(context.state.mood.emoji)
+                Image(systemName: context.state.mood.symbolName)
             } minimal: {
-                Text(context.attributes.speciesEmoji)
+                Image(systemName: "square.fill")
+                    .foregroundStyle(Color(red: 0.98, green: 0.52, blue: 0.42))
             }
-            .keylineTint(.orange)
+            .keylineTint(Color(red: 0.98, green: 0.52, blue: 0.42))
         }
     }
 }
@@ -54,18 +55,18 @@ private struct LockScreenPetView: View {
     let context: ActivityViewContext<PetActivityAttributes>
 
     var body: some View {
-        HStack(spacing: 16) {
-            Text(context.attributes.speciesEmoji)
-                .font(.system(size: 40))
+        HStack(spacing: 14) {
+            PixelPetView(mood: context.state.mood, scale: 0.7)
             VStack(alignment: .leading, spacing: 4) {
                 Text(context.attributes.petName)
                     .font(.headline)
-                Text("\(context.state.mood.emoji) \(context.state.mood.label) · \(context.state.lastAction)")
+                Text("\(context.state.mood.label) · \(context.state.lastAction)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
-                HStack(spacing: 12) {
-                    Label("\(context.state.hunger)%", systemImage: "fork.knife")
+                HStack(spacing: 10) {
+                    Label("\(context.state.moodScore)%", systemImage: "heart.fill")
+                    Label("\(context.state.satiety)%", systemImage: "fork.knife")
                     Label("\(context.state.energy)%", systemImage: "bolt.fill")
                 }
                 .font(.caption2)

@@ -1,73 +1,108 @@
 import Foundation
-import SwiftUI
 
 /// In-app pet state mirrored into the Live Activity content state.
-struct Pet: Identifiable, Equatable {
+/// Needs meters: moodScore, satiety, energy — all 0...100.
+struct Pet: Identifiable, Equatable, Codable {
     let id: UUID
     var name: String
-    var speciesEmoji: String
-    var mood: PetMood
-    var hunger: Int
+    /// Stable glyph key for Live Activity compact regions.
+    var petGlyph: String
+    var moodScore: Int
+    var satiety: Int
     var energy: Int
     var lastAction: String
+    var lastUpdated: Date
 
     init(
         id: UUID = UUID(),
-        name: String = "Pixel",
-        speciesEmoji: String = "🐱",
-        mood: PetMood = .happy,
-        hunger: Int = 40,
+        name: String = "Nubby",
+        petGlyph: String = "nubby",
+        moodScore: Int = 72,
+        satiety: Int = 65,
         energy: Int = 80,
-        lastAction: String = "Ready to play"
+        lastAction: String = "Ready to hang out",
+        lastUpdated: Date = .now
     ) {
         self.id = id
         self.name = name
-        self.speciesEmoji = speciesEmoji
-        self.mood = mood
-        self.hunger = max(0, min(100, hunger))
-        self.energy = max(0, min(100, energy))
+        self.petGlyph = petGlyph
+        self.moodScore = Self.clamp(moodScore)
+        self.satiety = Self.clamp(satiety)
+        self.energy = Self.clamp(energy)
         self.lastAction = lastAction
+        self.lastUpdated = lastUpdated
+    }
+
+    var mood: PetMood {
+        PetMood.derived(moodScore: moodScore, satiety: satiety, energy: energy)
     }
 
     var activityState: PetActivityAttributes.ContentState {
         .init(
             mood: mood,
-            hunger: hunger,
+            moodScore: moodScore,
+            satiety: satiety,
             energy: energy,
-            lastAction: lastAction
+            lastAction: lastAction,
+            updatedAt: lastUpdated
         )
     }
 
-    mutating func feed() {
-        hunger = max(0, hunger - 25)
-        energy = min(100, energy + 5)
-        mood = hunger < 30 ? .happy : .content
-        lastAction = "Fed \(name)"
+    mutating func feed(with item: InventoryItem) {
+        satiety = Self.clamp(satiety + item.satietyBoost)
+        moodScore = Self.clamp(moodScore + item.moodBoost)
+        energy = Self.clamp(energy + item.energyDelta)
+        lastAction = "Ate \(item.name)"
+        touch()
     }
 
-    mutating func play() {
-        energy = max(0, energy - 15)
-        hunger = min(100, hunger + 10)
-        mood = energy > 20 ? .playful : .sleepy
-        lastAction = "Played with \(name)"
+    mutating func play(with item: InventoryItem) {
+        moodScore = Self.clamp(moodScore + item.moodBoost)
+        energy = Self.clamp(energy + item.energyDelta)
+        satiety = Self.clamp(satiety - 8)
+        lastAction = "Played with \(item.name)"
+        touch()
     }
 
-    mutating func rest() {
-        energy = min(100, energy + 30)
-        mood = energy > 70 ? .content : .sleepy
-        lastAction = "\(name) rested"
+    /// Sleep / rest — restores energy, small mood bump.
+    mutating func sleep() {
+        energy = Self.clamp(energy + 35)
+        moodScore = Self.clamp(moodScore + 6)
+        lastAction = "\(name) took a nap"
+        touch()
     }
 
+    /// Passive decay while the app is open (per tick interval).
     mutating func tick() {
-        hunger = min(100, hunger + 2)
-        energy = max(0, energy - 1)
-        if hunger > 70 {
-            mood = .hungry
-        } else if energy < 25 {
-            mood = .sleepy
-        } else if mood == .hungry || mood == .sleepy {
-            mood = .content
-        }
+        satiety = Self.clamp(satiety - 2)
+        moodScore = Self.clamp(moodScore - 1)
+        energy = Self.clamp(energy - 1)
         lastAction = "\(name) is hanging out"
+        touch()
+    }
+
+    /// Apply offline decay based on elapsed wall time since last update.
+    mutating func applyOfflineDecay(since date: Date = .now) {
+        let elapsed = date.timeIntervalSince(lastUpdated)
+        guard elapsed > 0 else { return }
+        // One decay unit roughly every 90 seconds offline.
+        let units = Int(elapsed / 90)
+        guard units > 0 else {
+            lastUpdated = date
+            return
+        }
+        satiety = Self.clamp(satiety - units * 2)
+        moodScore = Self.clamp(moodScore - units)
+        energy = Self.clamp(energy - units)
+        lastAction = "\(name) waited for you"
+        lastUpdated = date
+    }
+
+    mutating func touch() {
+        lastUpdated = .now
+    }
+
+    private static func clamp(_ value: Int) -> Int {
+        max(0, min(100, value))
     }
 }

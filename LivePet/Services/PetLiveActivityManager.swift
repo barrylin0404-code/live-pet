@@ -25,7 +25,7 @@ final class PetLiveActivityManager: ObservableObject {
 
         let attributes = PetActivityAttributes(
             petName: pet.name,
-            speciesEmoji: pet.speciesEmoji
+            petGlyph: pet.petGlyph
         )
         let state = pet.activityState
         let content = ActivityContent(state: state, staleDate: nil)
@@ -46,10 +46,7 @@ final class PetLiveActivityManager: ObservableObject {
 
     func update(pet: Pet) {
         lastError = nil
-        guard let activity = currentActivity else {
-            lastError = "No active Live Activity to update."
-            return
-        }
+        guard let activity = currentActivity else { return }
 
         let content = ActivityContent(state: pet.activityState, staleDate: nil)
         Task {

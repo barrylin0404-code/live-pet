@@ -774,6 +774,16 @@ struct ContentView: View {
                 colors: [Color(red: 0xc4 / 255.0, green: 0xa0 / 255.0, blue: 0xc8 / 255.0), Color(red: 0.28, green: 0.20, blue: 0.34)],
                 startPoint: .topLeading, endPoint: .bottomTrailing
             ))
+        case .meadowWalk:
+            return AnyView(LinearGradient(
+                colors: [Color(red: 0xA8 / 255.0, green: 0xD4 / 255.0, blue: 0xF0 / 255.0), Color(red: 0xD6 / 255.0, green: 0xEA / 255.0, blue: 0xF8 / 255.0)],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            ))
+        case .snowPorch, .coralShelf:
+            return AnyView(LinearGradient(
+                colors: [Color(red: 0.98, green: 0.94, blue: 0.88), Color(red: 0.90, green: 0.95, blue: 0.92)],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            ))
         }
     }
 }

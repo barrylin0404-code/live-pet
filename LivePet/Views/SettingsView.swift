@@ -89,14 +89,14 @@ struct SettingsView: View {
                         set: { store.setScene($0) }
                     )
                 ) {
-                    ForEach(PetRoomScene.allCases) { scene in
+                    ForEach(PetRoomScene.availableInDisplayOrder) { scene in
                         Text(scene.displayName).tag(scene)
                     }
                 }
             } header: {
                 Text("Room")
             } footer: {
-                Text("Sun Nook, Moon Porch, Tide Glass, and Skyline Dusk. Widgets and the Island stay pet-forward.")
+                Text("Sun Nook, Moon Porch, Meadow Walk, Tide Glass, and Skyline Dusk — all free. Widgets and the Island stay pet-forward.")
             }
 
             Section {

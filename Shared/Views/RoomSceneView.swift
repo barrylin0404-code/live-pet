@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 #endif
 
-/// Original room Canvas scenes (not third-party art). Sun Nook (default) | Moon Porch.
+/// Original room Canvas scenes (not third-party art). Indoor quartet + Meadow Walk (pass 18).
 public struct RoomSceneView<PetContent: View>: View {
     public var scene: PetRoomScene
     public var mood: PetMood
@@ -78,14 +78,20 @@ public struct RoomSceneView<PetContent: View>: View {
                         drawTideGlass(context: context, size: size)
                     case .skylineDusk:
                         drawSkylineDusk(context: context, size: size)
+                    case .meadowWalk:
+                        drawMeadowWalk(context: context, size: size)
+                    case .snowPorch, .coralShelf:
+                        // Stubs: not selectable; fall back to Sun Nook art if decoded.
+                        drawSunNook(context: context, size: size)
                     }
                 }
+                let feetY = CGFloat(scene.petFeetYFraction)
                 if let symbol = droppedSymbol {
                     Image(systemName: symbol)
                         .font(.system(size: 28, weight: .bold))
                         .foregroundStyle(Color.orange)
                         .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
-                        .position(x: geo.size.width * droppedXFraction, y: geo.size.height * 0.72)
+                        .position(x: geo.size.width * droppedXFraction, y: geo.size.height * (feetY + 0.10))
                         .transition(.scale.combined(with: .opacity))
                 }
                 if ballVisible {
@@ -106,7 +112,7 @@ public struct RoomSceneView<PetContent: View>: View {
                 }
                 pet()
                     .scaleEffect(x: facingLeft ? -1 : 1, y: 1)
-                    .position(x: geo.size.width * petXFraction, y: geo.size.height * 0.62)
+                    .position(x: geo.size.width * petXFraction, y: geo.size.height * feetY)
                 Color.clear
                     .contentShape(Rectangle())
                     .gesture(
@@ -194,8 +200,8 @@ public struct RoomSceneView<PetContent: View>: View {
         context.fill(Path(roundedRect: rug, cornerRadius: 8), with: .color(Color(red: 0.35, green: 0.55, blue: 0.48)))
         context.stroke(Path(roundedRect: rug, cornerRadius: 8), with: .color(.white.opacity(0.25)), lineWidth: 2)
 
-        // Plant pot
-        let potX = w * 0.78
+        // Plant pot — right margin (keep mid-band clear)
+        let potX = w * 0.82
         let potY = floorY - 8
         context.fill(
             Path(CGRect(x: potX, y: potY - 28, width: 18, height: 22)),
@@ -214,6 +220,23 @@ public struct RoomSceneView<PetContent: View>: View {
         // Tiny blocks on shelf (decor)
         context.fill(Path(CGRect(x: w * 0.62, y: h * 0.22, width: 12, height: 12)), with: .color(Color(red: 0.95, green: 0.55, blue: 0.35)))
         context.fill(Path(CGRect(x: w * 0.72, y: h * 0.20, width: 10, height: 14)), with: .color(Color(red: 0.45, green: 0.60, blue: 0.90)))
+
+        // Pass 18 props — margins / wall only (mid-band 0.22–0.78 clear)
+        // Window seat cushion (behind pet Y / against wall under window)
+        let cushion = CGRect(x: win.minX + 4, y: win.maxY - 2, width: win.width - 8, height: 10)
+        context.fill(Path(roundedRect: cushion, cornerRadius: 4), with: .color(Color(red: 0xF5 / 255.0, green: 0xC6 / 255.0, blue: 0xA8 / 255.0)))
+        // Picture frame — wall right of shelf
+        let frame = CGRect(x: w * 0.88, y: h * 0.18, width: 16, height: 14)
+        context.fill(Path(frame.insetBy(dx: -2, dy: -2)), with: .color(Color(red: 0.55, green: 0.40, blue: 0.28)))
+        context.fill(Path(frame), with: .color(Color(red: 0.55, green: 0.75, blue: 0.55)))
+        // Yarn basket — right margin (outside plant)
+        let basketX = w * 0.90
+        let basketY = floorY - 4
+        context.fill(Path(ellipseIn: CGRect(x: basketX, y: basketY - 14, width: 22, height: 16)), with: .color(Color(red: 0.72, green: 0.55, blue: 0.38)))
+        context.fill(Path(ellipseIn: CGRect(x: basketX + 5, y: basketY - 18, width: 10, height: 10)), with: .color(Color(red: 0xFA / 255.0, green: 0x85 / 255.0, blue: 0x6B / 255.0)))
+        // Floor pouf — left margin
+        context.fill(Path(ellipseIn: CGRect(x: w * 0.06, y: floorY - 6, width: 28, height: 14)), with: .color(Color(red: 0xF5 / 255.0, green: 0xC6 / 255.0, blue: 0xA8 / 255.0).opacity(0.95)))
+        context.fill(Path(ellipseIn: CGRect(x: w * 0.08, y: floorY - 10, width: 22, height: 10)), with: .color(Color(red: 0.93, green: 0.70, blue: 0.55)))
     }
 
     /// Cool evening pastel — soft indigo sky `#2C3A4A`, warm lamp `#F4D5A0`.
@@ -299,17 +322,44 @@ public struct RoomSceneView<PetContent: View>: View {
             with: .color(Color(red: 0.45, green: 0.38, blue: 0.30))
         )
 
-        // Porch plant silhouette
-        let potX = w * 0.78
+        // Night bloom pot — right margin (upgrade plant)
+        let potX = w * 0.86
         let potY = floorY - 8
         context.fill(
-            Path(CGRect(x: potX, y: potY - 28, width: 18, height: 22)),
-            with: .color(Color(red: 0.20, green: 0.40, blue: 0.32))
+            Path(CGRect(x: potX, y: potY - 30, width: 16, height: 20)),
+            with: .color(Color(red: 0.28, green: 0.48, blue: 0.42))
         )
         context.fill(
-            Path(CGRect(x: potX + 2, y: potY - 8, width: 14, height: 14)),
+            Path(ellipseIn: CGRect(x: potX + 3, y: potY - 36, width: 10, height: 10)),
+            with: .color(Color(red: 0.85, green: 0.88, blue: 0.95))
+        )
+        context.fill(
+            Path(CGRect(x: potX + 1, y: potY - 10, width: 14, height: 12)),
             with: .color(Color(red: 0.45, green: 0.35, blue: 0.30))
         )
+
+        // Pass 18 props — margins / wall / sky only
+        // Porch rail — left margin silhouette
+        let railX = w * 0.04
+        context.fill(Path(CGRect(x: railX, y: floorY - 36, width: 4, height: 36)), with: .color(Color(red: 0.35, green: 0.28, blue: 0.24)))
+        context.fill(Path(CGRect(x: railX + 14, y: floorY - 36, width: 4, height: 36)), with: .color(Color(red: 0.35, green: 0.28, blue: 0.24)))
+        context.fill(Path(CGRect(x: railX, y: floorY - 38, width: 18, height: 4)), with: .color(Color(red: 0.42, green: 0.34, blue: 0.28)))
+        // Hanging lantern — upper right / sky-wall band
+        let lanX = w * 0.90
+        let lanY = h * 0.14
+        context.stroke(
+            Path { p in
+                p.move(to: CGPoint(x: lanX + 6, y: h * 0.10))
+                p.addLine(to: CGPoint(x: lanX + 6, y: lanY))
+            },
+            with: .color(.white.opacity(0.35)),
+            lineWidth: 1.5
+        )
+        context.fill(Path(ellipseIn: CGRect(x: lanX, y: lanY, width: 14, height: 16)), with: .color(lamp.opacity(0.9)))
+        context.fill(Path(ellipseIn: CGRect(x: lanX - 4, y: lanY + 2, width: 22, height: 20)), with: .color(lamp.opacity(0.22)))
+        // Indigo floor cushion — left margin
+        context.fill(Path(ellipseIn: CGRect(x: w * 0.08, y: floorY - 4, width: 26, height: 12)), with: .color(Color(red: 0.32, green: 0.28, blue: 0.42)))
+        context.fill(Path(ellipseIn: CGRect(x: w * 0.10, y: floorY - 8, width: 20, height: 9)), with: .color(Color(red: 0.40, green: 0.34, blue: 0.52)))
     }
     /// Soft teal `#7ec8c8` water window, sand floor — Tide Glass.
     private func drawTideGlass(context: GraphicsContext, size: CGSize) {
@@ -348,6 +398,24 @@ public struct RoomSceneView<PetContent: View>: View {
         }
         let rug = CGRect(x: w * 0.28, y: h * 0.72, width: w * 0.44, height: h * 0.12)
         context.fill(Path(roundedRect: rug, cornerRadius: 8), with: .color(teal.opacity(0.45)))
+
+        // Pass 18 props — margins / wall only (water stays in window)
+        // Glass float / buoy — wall hook upper right of window
+        let floatR = CGRect(x: w * 0.58, y: h * 0.16, width: 16, height: 16)
+        context.fill(Path(ellipseIn: floatR), with: .color(teal.opacity(0.85)))
+        context.stroke(Path(ellipseIn: floatR.insetBy(dx: 3, dy: 3)), with: .color(.white.opacity(0.45)), lineWidth: 1.5)
+        // Shell trio — left margin sand
+        let shellY = floorY + 6
+        context.fill(Path(ellipseIn: CGRect(x: w * 0.06, y: shellY, width: 10, height: 7)), with: .color(Color(red: 0.95, green: 0.88, blue: 0.78)))
+        context.fill(Path(ellipseIn: CGRect(x: w * 0.10, y: shellY + 2, width: 8, height: 6)), with: .color(Color(red: 0.90, green: 0.78, blue: 0.70)))
+        context.fill(Path(ellipseIn: CGRect(x: w * 0.14, y: shellY, width: 9, height: 6)), with: .color(Color(red: 0.92, green: 0.85, blue: 0.72)))
+        // Seaweed pot — left margin
+        context.fill(Path(CGRect(x: w * 0.08, y: floorY - 26, width: 8, height: 18)), with: .color(Color(red: 0.25, green: 0.55, blue: 0.42)))
+        context.fill(Path(CGRect(x: w * 0.12, y: floorY - 22, width: 7, height: 14)), with: .color(Color(red: 0.22, green: 0.50, blue: 0.38)))
+        context.fill(Path(CGRect(x: w * 0.07, y: floorY - 8, width: 16, height: 10)), with: .color(Color(red: 0.70, green: 0.55, blue: 0.40)))
+        // Driftwood stump — right margin
+        context.fill(Path(roundedRect: CGRect(x: w * 0.84, y: floorY - 16, width: 28, height: 16), cornerRadius: 4), with: .color(Color(red: 0.55, green: 0.42, blue: 0.30)))
+        context.fill(Path(CGRect(x: w * 0.88, y: floorY - 22, width: 10, height: 8)), with: .color(Color(red: 0.48, green: 0.36, blue: 0.26)))
     }
 
     /// Mauve `#c4a0c8` sky, warm windows — Skyline Dusk.
@@ -372,7 +440,7 @@ public struct RoomSceneView<PetContent: View>: View {
             )
         )
         // Distant warm windows
-        for (x, y) in [(0.18, 0.22), (0.28, 0.30), (0.38, 0.20), (0.45, 0.28)]:
+        for (x, y) in [(0.18, 0.22), (0.28, 0.30), (0.38, 0.20), (0.45, 0.28)] {
             context.fill(
                 Path(CGRect(x: win.minX + win.width * x, y: win.minY + win.height * y, width: 5, height: 7)),
                 with: .color(lamp.opacity(0.85))
@@ -384,6 +452,139 @@ public struct RoomSceneView<PetContent: View>: View {
             Path(ellipseIn: CGRect(x: w * 0.68, y: h * 0.20, width: 28, height: 22)),
             with: .color(lamp.opacity(0.3))
         )
+
+        // Pass 18 props — margins / sill / wall
+        // City sill planters inside window frame
+        context.fill(Path(CGRect(x: win.minX + 8, y: win.maxY - 10, width: 14, height: 6)), with: .color(Color(red: 0.45, green: 0.35, blue: 0.30)))
+        context.fill(Path(CGRect(x: win.minX + 12, y: win.maxY - 16, width: 6, height: 8)), with: .color(Color(red: 0.35, green: 0.55, blue: 0.38)))
+        context.fill(Path(CGRect(x: win.maxX - 24, y: win.maxY - 10, width: 14, height: 6)), with: .color(Color(red: 0.45, green: 0.35, blue: 0.30)))
+        context.fill(Path(CGRect(x: win.maxX - 20, y: win.maxY - 16, width: 6, height: 8)), with: .color(Color(red: 0.32, green: 0.50, blue: 0.36)))
+        // Floor lamp — right margin (readable body + warm pool)
+        let flX = w * 0.88
+        context.fill(Path(ellipseIn: CGRect(x: flX - 10, y: floorY - 52, width: 28, height: 18)), with: .color(lamp.opacity(0.35)))
+        context.fill(Path(ellipseIn: CGRect(x: flX - 4, y: floorY - 48, width: 16, height: 12)), with: .color(lamp))
+        context.fill(Path(CGRect(x: flX + 2, y: floorY - 38, width: 4, height: 38)), with: .color(Color(red: 0.40, green: 0.32, blue: 0.28)))
+        context.fill(Path(ellipseIn: CGRect(x: flX - 6, y: floorY - 4, width: 20, height: 6)), with: .color(Color(red: 0.35, green: 0.28, blue: 0.26)))
+        // Throw blanket heap — left margin (under/beside table cluster)
+        context.fill(Path(roundedRect: CGRect(x: w * 0.02, y: floorY - 6, width: w * 0.14, height: 11), cornerRadius: 4), with: .color(mauve.opacity(0.85)))
+        context.fill(Path(roundedRect: CGRect(x: w * 0.04, y: floorY - 12, width: w * 0.10, height: 7), cornerRadius: 3), with: .color(Color(red: 0xFA / 255.0, green: 0x85 / 255.0, blue: 0x6B / 255.0).opacity(0.75)))
+        // Side table + mug — left margin only (≤0.18)
+        context.fill(Path(CGRect(x: w * 0.12, y: floorY - 20, width: w * 0.06, height: 4)), with: .color(Color(red: 0.42, green: 0.32, blue: 0.28)))
+        context.fill(Path(CGRect(x: w * 0.13, y: floorY - 16, width: 3, height: 16)), with: .color(Color(red: 0.38, green: 0.28, blue: 0.24)))
+        context.fill(Path(CGRect(x: w * 0.16, y: floorY - 16, width: 3, height: 16)), with: .color(Color(red: 0.38, green: 0.28, blue: 0.24)))
+        context.fill(Path(roundedRect: CGRect(x: w * 0.135, y: floorY - 28, width: 8, height: 7), cornerRadius: 2), with: .color(Color(red: 0.92, green: 0.88, blue: 0.82)))
+    }
+
+    /// Soft day meadow with dirt path — outdoor horizon (pass 18).
+    private func drawMeadowWalk(context: GraphicsContext, size: CGSize) {
+        let w = size.width
+        let h = size.height
+        let skyTop = Color(red: 0xA8 / 255.0, green: 0xD4 / 255.0, blue: 0xF0 / 255.0)
+        let skyBot = Color(red: 0xD6 / 255.0, green: 0xEA / 255.0, blue: 0xF8 / 255.0)
+        let hills = Color(red: 0x8F / 255.0, green: 0xBF / 255.0, blue: 0x8A / 255.0)
+        let horizon = Color(red: 0x6F / 255.0, green: 0xA0 / 255.0, blue: 0x6A / 255.0)
+        let nearGrass = Color(red: 0x7C / 255.0, green: 0xB8 / 255.0, blue: 0x7A / 255.0)
+        let grassShadow = Color(red: 0x5A / 255.0, green: 0x94 / 255.0, blue: 0x58 / 255.0)
+        let pathFill = Color(red: 0xC4 / 255.0, green: 0xA5 / 255.0, blue: 0x74 / 255.0)
+        let pathEdge = Color(red: 0xA8 / 255.0, green: 0x88 / 255.0, blue: 0x58 / 255.0)
+        let fenceWood = Color(red: 0x8B / 255.0, green: 0x6B / 255.0, blue: 0x4A / 255.0)
+        let fenceHi = Color(red: 0xB0 / 255.0, green: 0x89 / 255.0, blue: 0x60 / 255.0)
+        let flowerPink = Color(red: 0xF2 / 255.0, green: 0xA0 / 255.0, blue: 0xB8 / 255.0)
+        let flowerYellow = Color(red: 0xF0 / 255.0, green: 0xD0 / 255.0, blue: 0x60 / 255.0)
+        let flowerCenter = Color(red: 0xE8 / 255.0, green: 0xA0 / 255.0, blue: 0x40 / 255.0)
+
+        // 1. Sky gradient
+        context.fill(
+            Path(CGRect(origin: .zero, size: size)),
+            with: .linearGradient(
+                Gradient(colors: [skyTop, skyBot]),
+                startPoint: CGPoint(x: w * 0.5, y: 0),
+                endPoint: CGPoint(x: w * 0.5, y: h * 0.55)
+            )
+        )
+
+        // 2. Clouds (upper sky; left + right — mid-band X free below)
+        func cloud(_ cx: CGFloat, _ cy: CGFloat, _ s: CGFloat) {
+            context.fill(Path(ellipseIn: CGRect(x: cx, y: cy, width: 22 * s, height: 12 * s)), with: .color(Color.white.opacity(0.85)))
+            context.fill(Path(ellipseIn: CGRect(x: cx + 10 * s, y: cy - 4 * s, width: 18 * s, height: 14 * s)), with: .color(Color.white.opacity(0.85)))
+            context.fill(Path(ellipseIn: CGRect(x: cx + 20 * s, y: cy + 1 * s, width: 16 * s, height: 11 * s)), with: .color(Color.white.opacity(0.85)))
+            context.fill(Path(ellipseIn: CGRect(x: cx + 6 * s, y: cy + 6 * s, width: 20 * s, height: 8 * s)), with: .color(Color(red: 0xE8 / 255.0, green: 0xF0 / 255.0, blue: 0xF8 / 255.0).opacity(0.7)))
+        }
+        cloud(w * 0.06, h * 0.10, 1.1)
+        cloud(w * 0.72, h * 0.14, 1.0)
+        cloud(w * 0.40, h * 0.06, 0.75)
+
+        // 3. Distant hills silhouette (~ y = 0.42–0.50)
+        var hill = Path()
+        hill.move(to: CGPoint(x: 0, y: h * 0.50))
+        hill.addQuadCurve(to: CGPoint(x: w * 0.28, y: h * 0.42), control: CGPoint(x: w * 0.12, y: h * 0.40))
+        hill.addQuadCurve(to: CGPoint(x: w * 0.55, y: h * 0.46), control: CGPoint(x: w * 0.42, y: h * 0.44))
+        hill.addQuadCurve(to: CGPoint(x: w, y: h * 0.44), control: CGPoint(x: w * 0.78, y: h * 0.38))
+        hill.addLine(to: CGPoint(x: w, y: h * 0.58))
+        hill.addLine(to: CGPoint(x: 0, y: h * 0.58))
+        hill.closeSubpath()
+        context.fill(hill, with: .color(hills))
+
+        // 4. Horizon grass seam
+        let floorY = h * 0.58
+        context.fill(Path(CGRect(x: 0, y: floorY - 4, width: w, height: 6)), with: .color(horizon))
+
+        // 5. Near grass floor
+        context.fill(Path(CGRect(x: 0, y: floorY, width: w, height: h - floorY)), with: .color(nearGrass))
+        // Soft grass clumps (margins + under fence — not mid walk blockers)
+        for (gx, gw) in [(0.04, 0.10), (0.88, 0.10), (0.00, 0.06)] as [(CGFloat, CGFloat)] {
+            context.fill(Path(ellipseIn: CGRect(x: w * gx, y: floorY + h * 0.08, width: w * gw, height: h * 0.04)), with: .color(grassShadow.opacity(0.35)))
+        }
+
+        // 6. Dirt path through mid-band (~14% height, ~60% width)
+        let pathH = h * 0.14
+        let path = CGRect(x: w * 0.20, y: floorY - pathH * 0.35, width: w * 0.60, height: pathH)
+        context.fill(Path(roundedRect: path, cornerRadius: 10), with: .color(pathFill))
+        context.stroke(Path(roundedRect: path, cornerRadius: 10), with: .color(pathEdge.opacity(0.55)), lineWidth: 2)
+
+        // 7. Path stones on edges (not centerline)
+        let stoneYTop = path.minY + 2
+        let stoneYBot = path.maxY - 8
+        for (sx, sy) in [
+            (0.24, stoneYTop), (0.32, stoneYBot), (0.45, stoneYTop + 2),
+            (0.58, stoneYBot), (0.68, stoneYTop), (0.74, stoneYBot - 1)
+        ] as [(CGFloat, CGFloat)] {
+            context.fill(
+                Path(ellipseIn: CGRect(x: w * sx, y: sy, width: 7, height: 5)),
+                with: .color(pathEdge.opacity(0.85))
+            )
+        }
+
+        // 8. Fence — LEFT margin only (posts outside 0.22–0.78)
+        let postXs: [CGFloat] = [0.05, 0.11, 0.17]
+        for px in postXs {
+            let x = w * px
+            context.fill(Path(CGRect(x: x, y: floorY - 34, width: 5, height: 34)), with: .color(fenceWood))
+            context.fill(Path(CGRect(x: x, y: floorY - 34, width: 5, height: 3)), with: .color(fenceHi))
+        }
+        context.fill(Path(CGRect(x: w * 0.05, y: floorY - 28, width: w * 0.14, height: 3.5)), with: .color(fenceWood))
+        context.fill(Path(CGRect(x: w * 0.05, y: floorY - 16, width: w * 0.14, height: 3.5)), with: .color(fenceWood))
+        context.fill(Path(CGRect(x: w * 0.05, y: floorY - 28, width: w * 0.14, height: 1.5)), with: .color(fenceHi.opacity(0.7)))
+
+        // 9. Flower clusters — LEFT + RIGHT margins only
+        func flowerCluster(atX fx: CGFloat, baseY: CGFloat) {
+            let colors = [flowerPink, flowerYellow, flowerPink, flowerYellow]
+            let offsets: [(CGFloat, CGFloat)] = [(-6, -4), (4, -8), (10, -2), (-2, -12)]
+            for (i, off) in offsets.enumerated() {
+                let r = CGRect(x: fx + off.0, y: baseY + off.1, width: 8, height: 8)
+                context.fill(Path(ellipseIn: r), with: .color(colors[i % colors.count]))
+                context.fill(Path(ellipseIn: r.insetBy(dx: 2.5, dy: 2.5)), with: .color(flowerCenter))
+            }
+            // Stems / leaves
+            context.fill(Path(CGRect(x: fx + 2, y: baseY, width: 3, height: 10)), with: .color(grassShadow))
+            context.fill(Path(CGRect(x: fx + 8, y: baseY + 2, width: 3, height: 8)), with: .color(nearGrass))
+        }
+        flowerCluster(atX: w * 0.10, baseY: floorY - 6)
+        flowerCluster(atX: w * 0.88, baseY: floorY - 4)
+
+        // Optional butterfly mote (cosmetic 2×2)
+        context.fill(Path(CGRect(x: w * 0.30, y: h * 0.30, width: 2, height: 2)), with: .color(flowerPink.opacity(0.9)))
+        context.fill(Path(CGRect(x: w * 0.70, y: h * 0.26, width: 2, height: 2)), with: .color(flowerYellow.opacity(0.85)))
     }
 
 }

@@ -298,13 +298,18 @@ struct ScenesSheet: View {
 
     private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
     private let coral = Color(red: 0xFA / 255.0, green: 0x85 / 255.0, blue: 0x6B / 255.0)
-    private let columns = [GridItem(.flexible()), GridItem(.flexible())]
+    /// 2×3-ready: three columns (slot 6 empty — Snow/Coral stubbed out).
+    private let columns = [
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
+    ]
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 14) {
-                    ForEach(PetRoomScene.allCases) { scene in
+                    ForEach(PetRoomScene.availableInDisplayOrder) { scene in
                         Button {
                             #if canImport(UIKit)
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -317,8 +322,11 @@ struct ScenesSheet: View {
                                     .frame(height: 100)
                                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                                 Text(scene.displayName)
-                                    .font(.subheadline.weight(.semibold))
+                                    .font(.system(size: 12, weight: .semibold))
                                     .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
+                                    .multilineTextAlignment(.center)
+                                    .lineLimit(2)
+                                    .minimumScaleFactor(0.85)
                             }
                             .padding(8)
                             .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -354,8 +362,17 @@ struct SceneThumbView: View {
     let scene: PetRoomScene
 
     var body: some View {
-        RoomSceneView(scene: scene, mood: .content, firefliesUnlocked: 0, showFireflies: false) {
-            EmptyView()
+        Group {
+            if let name = scene.thumbImageName {
+                Image(name)
+                    .interpolation(.none)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                RoomSceneView(scene: scene, mood: .content, firefliesUnlocked: 0, showFireflies: false) {
+                    EmptyView()
+                }
+            }
         }
         .allowsHitTesting(false)
     }

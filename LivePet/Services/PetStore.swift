@@ -38,7 +38,8 @@ final class PetStore: ObservableObject {
         pipUnlocked = defaults.bool(forKey: AppGroup.pipUnlockedKey)
 
         if let raw = defaults.string(forKey: AppGroup.sceneKey),
-           let scene = PetRoomScene(rawValue: raw) {
+           let scene = PetRoomScene(rawValue: raw),
+           scene.isAvailable {
             selectedScene = scene
         } else {
             selectedScene = .sunNook
@@ -172,6 +173,7 @@ final class PetStore: ObservableObject {
     }
 
     func setScene(_ scene: PetRoomScene) {
+        guard scene.isAvailable else { return }
         selectedScene = scene
         defaults.set(scene.rawValue, forKey: AppGroup.sceneKey)
     }

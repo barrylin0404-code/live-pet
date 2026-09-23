@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Original room Canvas scenes (not third-party art). Sun Nook (default) | Moon Porch.
 public struct RoomSceneView<PetContent: View>: View {
@@ -45,7 +48,7 @@ public struct RoomSceneView<PetContent: View>: View {
                 }
             }
         }
-        .aspectRatio(1.35, contentMode: .fit)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -319,6 +322,8 @@ public struct PetRoomSceneView: View {
     public var growthStage: GrowthStage
     public var firefliesUnlocked: Int
     public var showFireflies: Bool
+    public var bounceOffset: CGFloat
+    public var onPetTap: (() -> Void)?
 
     public init(
         scene: PetRoomScene = .sunNook,
@@ -329,7 +334,9 @@ public struct PetRoomSceneView: View {
         speciesId: String = "nubby",
         growthStage: GrowthStage = .nubby,
         firefliesUnlocked: Int = 0,
-        showFireflies: Bool = true
+        showFireflies: Bool = true,
+        bounceOffset: CGFloat = 0,
+        onPetTap: (() -> Void)? = nil
     ) {
         self.scene = scene
         self.mood = mood
@@ -340,6 +347,8 @@ public struct PetRoomSceneView: View {
         self.growthStage = growthStage
         self.firefliesUnlocked = firefliesUnlocked
         self.showFireflies = showFireflies
+        self.bounceOffset = bounceOffset
+        self.onPetTap = onPetTap
     }
 
     public var body: some View {
@@ -349,15 +358,48 @@ public struct PetRoomSceneView: View {
             firefliesUnlocked: firefliesUnlocked,
             showFireflies: showFireflies
         ) {
-            AnimatedPixelPetView(
-                mood: mood,
-                pose: pose,
-                isSleeping: isSleeping,
-                scale: petScale,
-                speciesId: speciesId,
-                growthStage: growthStage
-            )
+            TappablePetHost(onTap: onPetTap) {
+                AnimatedPixelPetView(
+                    mood: mood,
+                    pose: pose,
+                    isSleeping: isSleeping,
+                    scale: petScale,
+                    speciesId: speciesId,
+                    growthStage: growthStage
+                )
+                .offset(y: bounceOffset)
+            }
         }
+    }
+}
+
+/// Scales the pet on press and forwards taps (heart/bob without inventory).
+private struct TappablePetHost<Content: View>: View {
+    var onTap: (() -> Void)?
+    @ViewBuilder var content: () -> Content
+    @State private var pressed = false
+
+    var body: some View {
+        content()
+            .scaleEffect(pressed ? 0.92 : 1.0)
+            .animation(.spring(response: 0.28, dampingFraction: 0.55), value: pressed)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                #if canImport(UIKit)
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                #endif
+                withAnimation(.spring(response: 0.28, dampingFraction: 0.55)) {
+                    pressed = true
+                }
+                onTap?()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.6)) {
+                        pressed = false
+                    }
+                }
+            }
+            .accessibilityAddTraits(.isButton)
+            .accessibilityHint("Pet me")
     }
 }
 

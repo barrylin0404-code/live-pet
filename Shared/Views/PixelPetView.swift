@@ -117,6 +117,27 @@ public struct AnimatedPixelPetView: View {
                 return frames[tick % max(frames.count, 1)]
             }()
 
+            let baseSide = 32 * scale * stageScale * 3
+            // Home pass uses scale ≥1.45 — enforce ≥140pt without blowing up widgets/avatars.
+            let displaySide = scale >= 1.45 ? max(baseSide, 140) : baseSide
+            // Visible idle bob ≥2pt logical (Canvas unit + whole-view offset).
+            let bobY: CGFloat = {
+                switch effective {
+                case .walk, .play, .clean:
+                    return (tick % 2 == 0) ? -4 : 2
+                case .eat:
+                    return (tick % 2 == 0) ? 2 : 0
+                case .sleep:
+                    return 0
+                case .idle:
+                    // ~2–3pt bob every other idle tick + blink on 3rd frame cadence
+                    let phase = tick % 4
+                    if phase == 1 { return -3 }
+                    if phase == 3 { return 2 }
+                    return 0
+                }
+            }()
+            let blink = !isSleeping && effective == .idle && (tick % 4 == 2)
             ZStack(alignment: .topTrailing) {
                 Group {
                     if Self.assetExists(name) {
@@ -124,26 +145,31 @@ public struct AnimatedPixelPetView: View {
                             .interpolation(.none)
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 32 * scale * stageScale * 3, height: 32 * scale * stageScale * 3)
+                            .frame(width: displaySide, height: displaySide)
                     } else {
-                        let blink = !isSleeping && effective == .idle && (tick % 8 == 0)
-                        let bob: CGFloat = {
+                        // bobOffset is in 16ths of canvas — ~0.35 units ≈ 2pt+ at home scale
+                        let unitBob: CGFloat = {
                             switch effective {
-                            case .walk, .play, .clean: return (tick % 2 == 0) ? -0.35 : 0.15
-                            case .eat: return (tick % 2 == 0) ? 0.2 : 0
+                            case .walk, .play, .clean: return (tick % 2 == 0) ? -0.55 : 0.25
+                            case .eat: return (tick % 2 == 0) ? 0.35 : 0
                             case .sleep: return 0
-                            case .idle: return (tick % 10 == 0) ? -0.1 : 0
+                            case .idle:
+                                let phase = tick % 4
+                                if phase == 1 { return -0.45 }
+                                if phase == 3 { return 0.30 }
+                                return 0
                             }
                         }()
                         PixelPetView(
                             mood: effective == .sleep ? .sleepy : mood,
-                            scale: scale * stageScale,
+                            scale: scale >= 1.45 ? max(scale * stageScale, 1.45) : scale * stageScale,
                             blinking: blink || effective == .sleep,
-                            bobOffset: bob,
+                            bobOffset: unitBob,
                             speciesId: speciesId
                         )
                     }
                 }
+                .offset(y: bobY)
                 if effective == .clean {
                     Image(systemName: "bubble.fill")
                         .font(.system(size: 14 * scale))

@@ -1,112 +1,91 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
+/// Always-visible horizontal inventory ribbon — 13-playable-home (≥4 cells).
 struct InventoryPanel: View {
     @ObservedObject var store: PetStore
-    var onChanged: () -> Void
+    var onFeed: () -> Void
+    var onPlay: () -> Void
+    var onClean: () -> Void
 
     private let favoriteGold = Color(red: 0xE8 / 255.0, green: 0xC5 / 255.0, blue: 0x47 / 255.0)
+    private let cellBorder = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Inventory")
-                .font(.headline)
-
-            Text("Food")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                ForEach(store.foods) { item in
-                    InventoryButton(
-                        item: item,
-                        tint: .orange,
-                        isFavorite: store.pet.isFavoriteFood(item.id),
-                        favoriteGold: favoriteGold
-                    ) {
-                        store.feed(itemID: item.id)
-                        onChanged()
-                    }
-                    .disabled(item.quantity <= 0)
-                }
-            }
-
-            Text("Toys")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                ForEach(store.toys) { item in
-                    InventoryButton(
-                        item: item,
-                        tint: .indigo,
-                        showQuantity: false,
-                        isFavorite: store.pet.isFavoriteToy(item.id),
-                        favoriteGold: favoriteGold
-                    ) {
-                        store.play(itemID: item.id)
-                        onChanged()
-                    }
-                }
-            }
-
-            if !store.careItems.isEmpty {
-                Text("Care")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                Text("Soap is optional — Clean on Pet Home always works free.")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                    ForEach(store.careItems) { item in
-                        InventoryButton(item: item, tint: .cyan, favoriteGold: favoriteGold) {
-                            store.clean()
-                            onChanged()
-                        }
-                    }
-                }
-            }
-        }
-        .padding(14)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    private var ribbonItems: [InventoryItem] {
+        var list: [InventoryItem] = []
+        list.append(contentsOf: store.foods)
+        list.append(contentsOf: store.toys)
+        list.append(contentsOf: store.careItems)
+        return list
     }
-}
-
-private struct InventoryButton: View {
-    let item: InventoryItem
-    var tint: Color
-    var showQuantity: Bool = true
-    var isFavorite: Bool = false
-    var favoriteGold: Color
-    let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            VStack(spacing: 6) {
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: item.symbolName)
-                        .font(.title3)
-                        .foregroundStyle(tint)
-                    if isFavorite {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 9))
-                            .foregroundStyle(favoriteGold)
-                            .offset(x: 6, y: -4)
-                    }
-                }
-                Text(item.name)
-                    .font(.caption2)
-                    .lineLimit(1)
-                if showQuantity {
-                    Text("×\(item.quantity)")
-                        .font(.caption2.monospacedDigit())
-                        .foregroundStyle(.secondary)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(ribbonItems) { item in
+                    ribbonCell(item)
                 }
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(isFavorite ? favoriteGold : .clear, lineWidth: 2)
-            )
+            .padding(.horizontal, 4)
+            .padding(.vertical, 6)
+            .frame(minHeight: 64)
         }
-        .buttonStyle(.bordered)
+        .frame(height: 64)
+        .accessibilityLabel("Inventory")
+    }
+
+    @ViewBuilder
+    private func ribbonCell(_ item: InventoryItem) -> some View {
+        let isFavorite = item.isFood
+            ? store.pet.isFavoriteFood(item.id)
+            : (item.isToy ? store.pet.isFavoriteToy(item.id) : false)
+        let tint: Color = item.isFood ? .orange : (item.isToy ? Color(red: 0.45, green: 0.55, blue: 0.90) : .cyan)
+
+        Button {
+            #if canImport(UIKit)
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            #endif
+            if item.isFood {
+                store.feed(itemID: item.id)
+                onFeed()
+            } else if item.isToy {
+                store.play(itemID: item.id)
+                onPlay()
+            } else {
+                store.clean()
+                onClean()
+            }
+        } label: {
+            ZStack(alignment: .topTrailing) {
+                VStack(spacing: 2) {
+                    Image(systemName: item.symbolName)
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(tint)
+                    if item.isFood || item.isCare {
+                        Text("×\(item.quantity)")
+                            .font(.system(size: 9, weight: .bold).monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(width: 52, height: 52)
+                .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(isFavorite ? favoriteGold : cellBorder, lineWidth: isFavorite ? 2.5 : 2)
+                )
+
+                if isFavorite {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 9))
+                        .foregroundStyle(favoriteGold)
+                        .offset(x: 2, y: -2)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(item.name)
+        .disabled(item.isFood && item.quantity <= 0)
     }
 }

@@ -3,19 +3,19 @@ import SwiftUI
 import UIKit
 #endif
 
-/// Premium Feeling hearts + Satiety slots + age — Wave 1 Reviewer gate / 08-premium-chrome.
+/// Floating Feeling / Satiety / age pill — 13-playable-home + 08-premium-chrome values.
 struct StatusStripView: View {
     let pet: Pet
 
-    private let mint = Color(red: 0.91, green: 0.96, blue: 0.89)
-    private let mintBorder = Color(red: 0.77, green: 0.85, blue: 0.75)
+    private let mint = Color(red: 0xE8 / 255.0, green: 0xF5 / 255.0, blue: 0xE4 / 255.0)
+    private let mintBorder = Color(red: 0xC5 / 255.0, green: 0xD9 / 255.0, blue: 0xC0 / 255.0)
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
     private let ageInk = Color(red: 0.55, green: 0.45, blue: 0.33)
     private let heartFill = Color(red: 1.0, green: 0.30, blue: 0.43)
     private let heartEmpty = Color(red: 1.0, green: 0.70, blue: 0.76)
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 avatar
                     .frame(width: 36, height: 36)
@@ -56,12 +56,13 @@ struct StatusStripView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Satiety, \(pet.satiety) percent, \(filledSatiety) of 3")
         }
-        .padding(12)
-        .background(mint.opacity(0.95), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(14)
+        .background(mint.opacity(0.95), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(mintBorder, lineWidth: 2)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(mintBorder, lineWidth: 2.5)
         )
+        .shadow(color: .black.opacity(0.08), radius: 8, y: 3)
     }
 
     @ViewBuilder
@@ -89,8 +90,8 @@ struct StatusStripView: View {
             pose: pet.pose,
             isSleeping: pet.isSleeping,
             speciesId: pet.petGlyph,
-                growthStage: pet.growthStage,
-                scale: 0.38
+            growthStage: pet.growthStage,
+            scale: 0.38
         )
         #endif
     }

@@ -229,6 +229,21 @@ final class PetStore: ObservableObject {
         commit()
     }
 
+    /// Brief body tap — play-lite Feeling bump without consuming inventory.
+    func petTap() {
+        lastUsedFavorite = false
+        pet.pet()
+        commit()
+    }
+
+    /// Return eat/play/clean to idle after care hold (≥800ms). Sleep stays until wake.
+    func clearTransientCarePose() {
+        guard pet.pose == .eat || pet.pose == .play || pet.pose == .clean else { return }
+        pet.pose = .idle
+        pet.touch()
+        commit()
+    }
+
     /// Confirm Grow from banner — celebration sheet follows. Never say Evolve.
     func confirmGrow() {
         guard isGrowEligible else { return }

@@ -1,0 +1,57 @@
+# XcodeGen project spec — on a Mac: brew install xcodegen && xcodegen generate
+name: LivePet
+options:
+  bundleIdPrefix: com.barrylin
+  deploymentTarget:
+    iOS: "16.2"
+  createIntermediateGroups: true
+  developmentLanguage: en
+settings:
+  SWIFT_VERSION: "5.9"
+  TARGETED_DEVICE_FAMILY: "1"
+  CURRENT_PROJECT_VERSION: "1"
+  MARKETING_VERSION: "1.0.0"
+targets:
+  LivePet:
+    type: application
+    platform: iOS
+    sources:
+      - path: LivePet
+      - path: Shared
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.barrylin.livepet
+      INFOPLIST_FILE: LivePet/Info.plist
+      GENERATE_INFOPLIST_FILE: true
+      INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
+      INFOPLIST_KEY_UILaunchScreen_Generation: true
+      INFOPLIST_KEY_CFBundleDisplayName: Live Pet
+      CODE_SIGN_ENTITLEMENTS: LivePet/LivePet.entitlements
+      ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+      ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    dependencies:
+      - target: LivePetWidget
+    entitlements:
+      path: LivePet/LivePet.entitlements
+  LivePetWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: LivePetWidget
+      - path: Shared
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.barrylin.livepet.widget
+      INFOPLIST_FILE: LivePetWidget/Info.plist
+      GENERATE_INFOPLIST_FILE: true
+      CODE_SIGN_ENTITLEMENTS: LivePetWidget/LivePetWidget.entitlements
+      LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"
+      SKIP_INSTALL: true
+    entitlements:
+      path: LivePetWidget/LivePetWidget.entitlements
+schemes:
+  LivePet:
+    build:
+      targets:
+        LivePet: all
+        LivePetWidget: all
+    run:
+      config: Debug

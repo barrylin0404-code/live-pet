@@ -28,7 +28,7 @@ public struct IslandWalkPetView: View {
         isSleeping: Bool = false,
         speciesId: String = "nubby",
         growthStage: GrowthStage = .nubby,
-        scale: CGFloat = 0.28,
+        scale: CGFloat = 0.5,
         forceWalkWhenIdle: Bool = true
     ) {
         self.mood = mood
@@ -68,15 +68,17 @@ public struct IslandWalkPetView: View {
 
     private var walkBody: some View {
         let stageScale = CGFloat(growthStage.bodyScaleMultiplier)
-        let side = 32 * scale * stageScale * 3
+        // Base hop larger than in-app sprites so Island slots read big; slight overflow OK.
+        let side = 40 * scale * stageScale * 3
         TimelineView(.animation(minimumInterval: Self.frameInterval, paused: false)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let frameTick = Int(t / Self.frameInterval)
             let facingRight = (Int(t / Self.facingPeriod) % 2) == 0
             let frames = Self.walkFrames(speciesId: speciesId, growthStage: growthStage)
             let name = frames[frameTick % max(frames.count, 1)]
-            // Hop on every other walk frame.
-            let hop: CGFloat = (frameTick % 2 == 0) ? -3 : 2
+            // Hop scaled to sprite size so motion still reads without eating ears/feet.
+            let hopAmp = max(2.5, side * 0.06)
+            let hop: CGFloat = (frameTick % 2 == 0) ? -hopAmp : hopAmp * 0.65
 
             Group {
                 if Self.assetExists(name) {

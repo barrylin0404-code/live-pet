@@ -18,10 +18,9 @@ struct PetLiveActivityWidget: Widget {
                         isSleeping: context.state.isSleeping,
                         speciesId: context.state.speciesId,
                         growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
-                        scale: 0.55,
+                        scale: 0.95,
                         forceWalkWhenIdle: true
                     )
-                    .padding(.leading, 2)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     VStack(alignment: .trailing, spacing: 2) {
@@ -48,7 +47,7 @@ struct PetLiveActivityWidget: Widget {
                     isSleeping: context.state.isSleeping,
                     speciesId: context.state.speciesId,
                     growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
-                    scale: 0.28,
+                    scale: 0.52,
                     forceWalkWhenIdle: true
                 )
             } compactTrailing: {
@@ -60,7 +59,7 @@ struct PetLiveActivityWidget: Widget {
                     isSleeping: context.state.isSleeping,
                     speciesId: context.state.speciesId,
                     growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
-                    scale: 0.22,
+                    scale: 0.58,
                     forceWalkWhenIdle: true
                 )
             }
@@ -154,7 +153,7 @@ private struct LockScreenPetView: View {
                 isSleeping: context.state.isSleeping,
                 speciesId: context.state.speciesId,
                 growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
-                scale: 0.7,
+                scale: 1.05,
                 forceWalkWhenIdle: true
             )
             VStack(alignment: .leading, spacing: 4) {

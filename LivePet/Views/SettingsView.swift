@@ -52,6 +52,20 @@ struct SettingsView: View {
 
             Section {
                 Toggle(
+                    "Sound effects",
+                    isOn: Binding(
+                        get: { PetSound.shared.isEnabled },
+                        set: { PetSound.shared.isEnabled = $0 }
+                    )
+                )
+            } header: {
+                Text("Sound")
+            } footer: {
+                Text("Care, ball, and Island cues. Mixes with Music (ambient). Mute anytime.")
+            }
+
+            Section {
+                Toggle(
                     "Show fireflies",
                     isOn: Binding(
                         get: { store.showFireflies },

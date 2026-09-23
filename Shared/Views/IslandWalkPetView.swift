@@ -4,8 +4,9 @@ import UIKit
 #endif
 
 /// Dynamic Island / Lock Screen walking pet.
-/// Frame loop + facing flip are driven by `TimelineView` dates inside the widget
-/// extension so we never spam `Activity.update` for sprite animation.
+/// Strict 1D horizontal glide across the capsule with *instant* facing mirror at each
+/// edge (zero turn frames). Frame loop + pace driven by `TimelineView` so we never
+/// spam `Activity.update` for sprite animation.
 /// Care oneshots (eat / play / sleep) still come from ContentState via `update(pet:)`.
 public struct IslandWalkPetView: View {
     public var mood: PetMood
@@ -16,11 +17,16 @@ public struct IslandWalkPetView: View {
     public var scale: CGFloat
     /// When true (Island default), idle maps to walk for denser motion than a static crop.
     public var forceWalkWhenIdle: Bool
+    /// Half-width of L↔R travel in points. Compact leading needs visible pace in-slot;
+    /// expanded / Lock Screen can use a wider range.
+    public var travelAmplitude: CGFloat
 
-    /// Walk frame tick (~6 fps).
-    private static let frameInterval: TimeInterval = 0.16
-    /// Simulated "edge" turn — flip facing every ~3.2s.
-    private static let facingPeriod: TimeInterval = 3.2
+    /// ~8 fps pixel feel (4-frame walk sheet).
+    private static let frameInterval: TimeInterval = 0.125
+    /// Full L→R→L glide cycle (~2.0s). Instant mirror at edges.
+    private static let travelPeriod: TimeInterval = 2.0
+    /// Hop cycle in frames (squash → stretch → land squash).
+    private static let hopFrames: Int = 4
 
     public init(
         mood: PetMood,
@@ -29,7 +35,8 @@ public struct IslandWalkPetView: View {
         speciesId: String = "nubby",
         growthStage: GrowthStage = .nubby,
         scale: CGFloat = 0.5,
-        forceWalkWhenIdle: Bool = true
+        forceWalkWhenIdle: Bool = true,
+        travelAmplitude: CGFloat = 11
     ) {
         self.mood = mood
         self.pose = pose
@@ -38,6 +45,7 @@ public struct IslandWalkPetView: View {
         self.growthStage = growthStage
         self.scale = scale
         self.forceWalkWhenIdle = forceWalkWhenIdle
+        self.travelAmplitude = travelAmplitude
     }
 
     private var effectivePose: PetPose {
@@ -50,7 +58,6 @@ public struct IslandWalkPetView: View {
 
     public var body: some View {
         let display = effectivePose
-        // Care oneshots / sleep: reuse shared sprite loops (no Island static crop).
         if display != .walk {
             AnimatedPixelPetView(
                 mood: mood,
@@ -68,17 +75,21 @@ public struct IslandWalkPetView: View {
 
     private var walkBody: some View {
         let stageScale = CGFloat(growthStage.bodyScaleMultiplier)
-        // Base hop larger than in-app sprites so Island slots read big; slight overflow OK.
+        // Large scales from d3d51dd kept (side = 40 * scale * stage * 3).
         let side = 40 * scale * stageScale * 3
+        let amp = travelAmplitude
         TimelineView(.animation(minimumInterval: Self.frameInterval, paused: false)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let frameTick = Int(t / Self.frameInterval)
-            let facingRight = (Int(t / Self.facingPeriod) % 2) == 0
+
+            // Strict 1D triangle glide; facing flips instantly at each edge (no turn frames).
+            let (xNorm, facingRight) = Self.glide(at: t, period: Self.travelPeriod)
+
             let frames = Self.walkFrames(speciesId: speciesId, growthStage: growthStage)
             let name = frames[frameTick % max(frames.count, 1)]
-            // Hop scaled to sprite size so motion still reads without eating ears/feet.
-            let hopAmp = max(2.5, side * 0.06)
-            let hop: CGFloat = (frameTick % 2 == 0) ? -hopAmp : hopAmp * 0.65
+
+            // Idle hop: squash → stretch → land squash (pixel cadence).
+            let (squashX, squashY, hopY) = Self.hopTransform(frameTick: frameTick, side: side)
 
             Group {
                 if Self.assetExists(name) {
@@ -92,25 +103,52 @@ public struct IslandWalkPetView: View {
                         mood: mood,
                         scale: scale * stageScale,
                         blinking: false,
-                        bobOffset: (frameTick % 2 == 0) ? -0.4 : 0.2,
+                        bobOffset: hopY * 0.15,
                         speciesId: speciesId
                     )
                 }
             }
-            .scaleEffect(x: facingRight ? 1 : -1, y: 1)
-            .offset(y: hop)
+            .scaleEffect(x: (facingRight ? 1 : -1) * squashX, y: squashY)
+            .offset(x: CGFloat(xNorm) * amp, y: hopY)
             .accessibilityLabel("\(speciesId) walking on Island, \(mood.label)")
+        }
+    }
+
+    /// Triangle wave -1…1 across the capsule; `facingRight` true while moving L→R.
+    /// Mirror swaps the instant we hit an edge — zero interpolated turn frames.
+    private static func glide(at t: TimeInterval, period: TimeInterval) -> (xNorm: Double, facingRight: Bool) {
+        let phase = t.truncatingRemainder(dividingBy: period)
+        let half = period * 0.5
+        if phase < half {
+            let u = phase / half // 0…1
+            return (-1.0 + 2.0 * u, true)
+        } else {
+            let u = (phase - half) / half // 0…1
+            return (1.0 - 2.0 * u, false)
+        }
+    }
+
+    /// Squash→stretch→land squash hop keyed to walk frames.
+    private static func hopTransform(frameTick: Int, side: CGFloat) -> (sx: CGFloat, sy: CGFloat, y: CGFloat) {
+        let hopAmp = max(3.5, side * 0.10)
+        switch frameTick % hopFrames {
+        case 0: // crouch squash
+            return (1.12, 0.88, hopAmp * 0.15)
+        case 1: // stretch airborne
+            return (0.90, 1.14, -hopAmp)
+        case 2: // peak / settle
+            return (0.96, 1.06, -hopAmp * 0.55)
+        default: // land squash
+            return (1.10, 0.90, hopAmp * 0.25)
         }
     }
 
     private static func walkFrames(speciesId: String, growthStage: GrowthStage) -> [String] {
         if speciesId == "pip" {
-            // Pip has no dedicated walk sheet yet — denser idle loop beats a static crop.
             return ["pip-idle-0", "pip-idle-1", "pip-idle-2", "pip-idle-3"]
         }
         switch growthStage {
         case .kit:
-            // Prefer real walk frames; fall back to kit idle if walk assets missing.
             return firstExisting(
                 ["nubby-walk-0", "nubby-walk-1", "nubby-walk-2", "nubby-walk-3"],
                 fallback: ["nubby-kit-idle-0", "nubby-kit-idle-1", "nubby-kit-idle-2", "nubby-kit-idle-3"]

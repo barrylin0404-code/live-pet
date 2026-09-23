@@ -38,7 +38,10 @@ struct ContentView: View {
     @State private var droppedX: CGFloat = 0.70
     @State private var ballVisible = false
     @State private var ballX: CGFloat = 0.72
+    @State private var ballY: CGFloat = 0.70
     @State private var wandVisible = false
+    @State private var wandInteractive = false
+    @State private var playParticles: [CareParticle] = []
     @State private var wandX: CGFloat = 0.55
     @State private var wandY: CGFloat = 0.38
     @State private var showHitIsland = false
@@ -105,14 +108,23 @@ struct ContentView: View {
                 SelectFoodSheet(store: store) { item in
                     dropFoodAndEat(item)
                 }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(24)
             }
             .sheet(isPresented: $showGames) {
                 SelectGameSheet(
                     petName: store.pet.name,
                     onPlayBall: { startPlayBall() },
                     onFollowWand: { startFollowWand() },
-                    onHitIsland: { showHitIsland = true }
+                    onHitIsland: {
+                        PetSound.shared.play(.islandStart)
+                        showHitIsland = true
+                    }
                 )
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(24)
             }
             .fullScreenCover(isPresented: $showHitIsland) {
                 HitIslandGameView(
@@ -190,11 +202,17 @@ struct ContentView: View {
             droppedXFraction: droppedX,
             ballVisible: ballVisible,
             ballXFraction: ballX,
+            ballYFraction: ballY,
             onBallTap: { bounceBallHit() },
             wandVisible: wandVisible,
             wandXFraction: wandX,
             wandYFraction: wandY,
-            onPetTap: { performPetTap() }
+            onRoomDrag: wandInteractive ? { fx, fy in
+                wandX = fx
+                wandY = fy
+            } : nil,
+            onPetTap: { performPetTap() },
+            onPetDrag: { performPetStroke() }
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay {
@@ -286,6 +304,14 @@ struct ContentView: View {
                         .frame(width: p.size, height: p.size)
                         .position(x: cx + p.x, y: cy + p.y)
                 }
+                ForEach(playParticles) { p in
+                    Image(systemName: p.size > 8 ? "heart.fill" : "star.fill")
+                        .font(.system(size: p.size, weight: .bold))
+                        .foregroundStyle(p.size > 8
+                            ? Color(red: 1.0, green: 0.30, blue: 0.43).opacity(p.opacity)
+                            : Color(red: 0xE8 / 255.0, green: 0xC5 / 255.0, blue: 0x47 / 255.0).opacity(p.opacity))
+                        .position(x: cx + p.x, y: cy + p.y + heartRise * 0.35)
+                }
             }
         }
     }
@@ -300,21 +326,21 @@ struct ContentView: View {
                     try? await Task.sleep(nanoseconds: 400_000_000)
                     continue
                 }
-                // Pace L/R across ~0.28...0.72 (≥40pt on typical phone width)
-                let target: CGFloat = facingLeft ? 0.28 : 0.72
+                // Pace L/R across ~0.22...0.78 — denser never-static walk
+                let target: CGFloat = facingLeft ? 0.22 : 0.78
                 let start = petX
                 let distance = abs(target - start)
-                let steps = max(12, Int(distance * 40))
+                let steps = max(10, Int(distance * 36))
                 for i in 1...steps {
                     if Task.isCancelled || careBusy || store.pet.isSleeping { break }
                     let t = CGFloat(i) / CGFloat(steps)
                     petX = start + (target - start) * t
-                    try? await Task.sleep(nanoseconds: 55_000_000)
+                    try? await Task.sleep(nanoseconds: 42_000_000)
                 }
                 if careBusy || store.pet.isSleeping { continue }
                 facingLeft.toggle()
-                // Brief idle pause at edge
-                try? await Task.sleep(nanoseconds: 350_000_000)
+                // Short edge pause — keep motion dense
+                try? await Task.sleep(nanoseconds: 160_000_000)
             }
         }
     }
@@ -325,29 +351,25 @@ struct ContentView: View {
         careBusy = true
         droppedX = facingLeft ? 0.32 : 0.68
         droppedSymbol = item.symbolName
+        PetSound.shared.play(.feed)
         #if canImport(UIKit)
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         #endif
 
         Task { @MainActor in
-            // Walk to dropped food
-            let start = petX
-            let target = droppedX
-            facingLeft = target < start
-            let steps = 16
-            for i in 1...steps {
-                let t = CGFloat(i) / CGFloat(steps)
-                petX = start + (target - start) * t
-                try? await Task.sleep(nanoseconds: 45_000_000)
-            }
+            // Drop settle beat, then walk → eat 1–1.5s
+            try? await Task.sleep(nanoseconds: 180_000_000)
+            await walkPet(to: droppedX, steps: 14, stepMs: 40)
 
             store.feed(itemID: item.id)
             droppedSymbol = nil
+            PetSound.shared.play(.eatCrunch)
             pulseHeart(crumbs: true)
-            schedulePoseClear(holdMs: 1200)
+            spawnPlayBurst()
+            schedulePoseClear(holdMs: 1300)
             syncActivity()
 
-            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            try? await Task.sleep(nanoseconds: 1_300_000_000)
             careBusy = false
         }
     }
@@ -358,43 +380,70 @@ struct ContentView: View {
         guard !careBusy else { return }
         careBusy = true
         ballX = facingLeft ? 0.28 : 0.78
+        ballY = 0.18
         ballVisible = true
+        PetSound.shared.play(.play)
         #if canImport(UIKit)
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         #endif
 
         Task { @MainActor in
-            // Run to ball
-            await walkPet(to: ballX, steps: 18, stepMs: 45)
-            // Hit + bounce chase (total play ≥1.5s)
-            store.playDefault()
-            bouncePet()
-            pulseHeart(crumbs: false)
-            withAnimation(.spring(response: 0.28, dampingFraction: 0.45)) {
-                ballX = min(0.88, max(0.12, ballX + (facingLeft ? -0.18 : 0.18)))
-            }
+            // Toss / drop into room with bounce settle
+            withAnimation(.easeIn(duration: 0.28)) { ballY = 0.72 }
             try? await Task.sleep(nanoseconds: 280_000_000)
-            await walkPet(to: ballX, steps: 12, stepMs: 40)
-            bouncePet()
-            withAnimation(.spring(response: 0.28, dampingFraction: 0.5)) {
-                ballX = min(0.88, max(0.12, ballX + (facingLeft ? 0.12 : -0.12)))
+            PetSound.shared.play(.ballBounce)
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.38)) { ballY = 0.62 }
+            try? await Task.sleep(nanoseconds: 160_000_000)
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.55)) { ballY = 0.70 }
+            try? await Task.sleep(nanoseconds: 120_000_000)
+            PetSound.shared.play(.ballBounce)
+
+            // Pathfind to ball
+            await walkPet(to: ballX, steps: 16, stepMs: 38)
+
+            // Multi-hit chase ≥2s + clearer play pose
+            store.playDefault()
+            let hits: [(CGFloat, UInt64)] = [
+                (facingLeft ? -0.20 : 0.20, 320),
+                (facingLeft ? 0.16 : -0.16, 300),
+                (facingLeft ? -0.14 : 0.14, 280),
+                (facingLeft ? 0.10 : -0.10, 260)
+            ]
+            for (dx, waitMs) in hits {
+                bouncePetPlay()
+                PetSound.shared.play(.ballHit)
+                #if canImport(UIKit)
+                UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+                #endif
+                withAnimation(.spring(response: 0.26, dampingFraction: 0.42)) {
+                    ballX = min(0.88, max(0.12, ballX + dx))
+                    ballY = 0.58
+                }
+                try? await Task.sleep(nanoseconds: 90_000_000)
+                withAnimation(.spring(response: 0.30, dampingFraction: 0.5)) { ballY = 0.70 }
+                PetSound.shared.play(.ballBounce)
+                await walkPet(to: ballX, steps: 10, stepMs: 32)
+                try? await Task.sleep(nanoseconds: waitMs * 1_000_000)
             }
-            try? await Task.sleep(nanoseconds: 350_000_000)
+
             pulseHeart(crumbs: false)
-            schedulePoseClear(holdMs: 1600)
+            spawnPlayBurst()
+            schedulePoseClear(holdMs: 1800)
             syncActivity()
-            try? await Task.sleep(nanoseconds: 700_000_000)
-            withAnimation { ballVisible = false }
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            withAnimation(.easeOut(duration: 0.25)) { ballVisible = false }
             careBusy = false
         }
     }
 
     private func bounceBallHit() {
         guard ballVisible, !careBusy else { return }
-        bouncePet()
+        bouncePetPlay()
         pulseHeart(crumbs: false)
+        spawnPlayBurst()
+        PetSound.shared.play(.ballBoing)
         store.playDefault()
-        schedulePoseClear(holdMs: 1000)
+        schedulePoseClear(holdMs: 1100)
         syncActivity()
     }
 
@@ -403,39 +452,41 @@ struct ContentView: View {
     private func startFollowWand() {
         guard !careBusy else { return }
         careBusy = true
-        wandX = 0.30
+        wandX = 0.50
         wandY = 0.36
         wandVisible = true
+        wandInteractive = true
+        PetSound.shared.play(.play)
         #if canImport(UIKit)
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         #endif
 
         Task { @MainActor in
-            // Wand drifts across room; pet tracks underneath
-            let keypoints: [(CGFloat, CGFloat)] = [
-                (0.30, 0.36), (0.48, 0.30), (0.68, 0.38), (0.55, 0.28), (0.40, 0.34)
-            ]
-            for (tx, ty) in keypoints {
-                facingLeft = tx < petX
-                // Move wand + pet in parallel-ish steps
-                let startX = petX
-                let startWX = wandX
-                let startWY = wandY
-                let steps = 10
-                for i in 1...steps {
-                    let t = CGFloat(i) / CGFloat(steps)
-                    wandX = startWX + (tx - startWX) * t
-                    wandY = startWY + (ty - startWY) * t
-                    petX = startX + (tx - startX) * t
-                    try? await Task.sleep(nanoseconds: 40_000_000)
+            // Finger-follow: drag moves wand; pet tracks for ≥2s
+            let duration: Double = 2.4
+            let tick: UInt64 = 40_000_000
+            var elapsed: Double = 0
+            while elapsed < duration {
+                if Task.isCancelled { break }
+                facingLeft = wandX < petX
+                let dx = wandX - petX
+                petX += dx * 0.22
+                petX = min(0.88, max(0.12, petX))
+                // Soft hop while tracking
+                if Int(elapsed * 10) % 4 == 0 {
+                    bouncePet()
                 }
+                try? await Task.sleep(nanoseconds: tick)
+                elapsed += Double(tick) / 1_000_000_000
             }
+            wandInteractive = false
             store.playDefault()
-            bouncePet()
+            bouncePetPlay()
             pulseHeart(crumbs: false)
+            spawnPlayBurst()
             schedulePoseClear(holdMs: 1600)
             syncActivity()
-            try? await Task.sleep(nanoseconds: 400_000_000)
+            try? await Task.sleep(nanoseconds: 350_000_000)
             withAnimation { wandVisible = false }
             careBusy = false
         }
@@ -471,6 +522,7 @@ struct ContentView: View {
     private func performClean() {
         careBusy = true
         store.clean()
+        PetSound.shared.play(.clean)
         pulseBubbles()
         schedulePoseClear(holdMs: 1000)
         syncActivity()
@@ -483,6 +535,7 @@ struct ContentView: View {
     private func performSleep() {
         careBusy = true
         store.sleep()
+        PetSound.shared.play(.sleep)
         pulseZzz()
         syncActivity()
         Task { @MainActor in
@@ -493,9 +546,27 @@ struct ContentView: View {
 
     private func performPetTap() {
         store.petTap()
-        bouncePet()
+        PetSound.shared.play(.pet)
+        PetSound.shared.play(.meow)
+        bouncePetPlay()
         pulseHeart(crumbs: false)
-        schedulePoseClear(holdMs: 900)
+        spawnPlayBurst()
+        #if canImport(UIKit)
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        #endif
+        schedulePoseClear(holdMs: 1100)
+        syncActivity()
+    }
+
+    /// Drag/stroke petting — denser bob + hearts, longer reaction ≥0.8–1.2s
+    private func performPetStroke() {
+        store.petTap()
+        PetSound.shared.play(.pet)
+        PetSound.shared.play(.meow)
+        bouncePetPlay()
+        pulseHeart(crumbs: false)
+        spawnPlayBurst()
+        schedulePoseClear(holdMs: 1200)
         syncActivity()
     }
 
@@ -523,8 +594,51 @@ struct ContentView: View {
         }
     }
 
+    /// Clearer play pose bob — taller hop for ball chase / petting density
+    private func bouncePetPlay() {
+        withAnimation(.spring(response: 0.20, dampingFraction: 0.42)) {
+            playBounce = -16
+        }
+        Task {
+            try? await Task.sleep(nanoseconds: 180_000_000)
+            await MainActor.run {
+                withAnimation(.spring(response: 0.28, dampingFraction: 0.55)) {
+                    playBounce = -4
+                }
+            }
+            try? await Task.sleep(nanoseconds: 140_000_000)
+            await MainActor.run {
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.68)) {
+                    playBounce = 0
+                }
+            }
+        }
+    }
+
+    private func spawnPlayBurst() {
+        playParticles = (0..<6).map { i in
+            CareParticle(
+                id: UUID(),
+                x: CGFloat([-22, -8, 6, 18, -14, 12][i]),
+                y: CGFloat([4, -6, 8, -2, 12, -10][i]),
+                size: CGFloat([12, 7, 14, 6, 10, 8][i]),
+                opacity: 0.95
+            )
+        }
+        withAnimation(.easeOut(duration: 0.7)) {
+            playParticles = playParticles.map {
+                CareParticle(id: $0.id, x: $0.x * 1.35, y: $0.y - 36, size: $0.size, opacity: 0.05)
+            }
+        }
+        Task {
+            try? await Task.sleep(nanoseconds: 750_000_000)
+            await MainActor.run { playParticles = [] }
+        }
+    }
+
     private func pulseHeart(crumbs: Bool) {
         heartRise = 0
+        PetSound.shared.play(.heartPop)
         withAnimation(.easeOut(duration: 0.15)) {
             showFloatingHeart = true
             showFloatingStar = store.lastUsedFavorite

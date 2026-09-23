@@ -180,6 +180,7 @@ struct HitIslandGameView: View {
                     .multilineTextAlignment(.center)
                     .foregroundStyle(ink.opacity(0.75))
                 Button {
+                    PetSound.shared.play(.uiTick)
                     #if canImport(UIKit)
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     #endif
@@ -290,6 +291,7 @@ struct HitIslandGameView: View {
             orb.y += orb.speed * CGFloat(dt)
             if orb.y >= catchY && abs(orb.x - paddleX) <= catchRadius {
                 catches += 1
+                PetSound.shared.play(.ballHit)
                 #if canImport(UIKit)
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 #endif

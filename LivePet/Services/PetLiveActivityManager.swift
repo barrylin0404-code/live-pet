@@ -13,6 +13,8 @@ final class PetLiveActivityManager: ObservableObject {
 
     private var currentActivity: Activity<PetActivityAttributes>?
     private var renewTask: Task<Void, Never>?
+    /// Soft Island ambient meow while Live Activity is desired (main app only).
+    private var ambientMeowTask: Task<Void, Never>?
 
     /// Renew before the hard ~8h ActivityKit cap (restart at 7h).
     private static let renewAfter: TimeInterval = 7 * 60 * 60
@@ -121,6 +123,8 @@ final class PetLiveActivityManager: ObservableObject {
             renewTask?.cancel()
             renewTask = nil
         }
+        ambientMeowTask?.cancel()
+        ambientMeowTask = nil
         guard let activity = currentActivity else {
             isActivityActive = false
             AppGroup.defaults.removeObject(forKey: Self.startedKey)
@@ -197,6 +201,8 @@ final class PetLiveActivityManager: ObservableObject {
             currentActivity = activity
             isActivityActive = true
             AppGroup.defaults.set(Date(), forKey: Self.startedKey)
+            PetSound.shared.play(.islandStart)
+            scheduleAmbientMeow()
             scheduleRenew(pet: pet)
         } catch {
             lastError = error.localizedDescription
@@ -223,6 +229,24 @@ final class PetLiveActivityManager: ObservableObject {
                     latest = fallback
                 }
                 self?.start(pet: latest)
+            }
+        }
+    }
+
+    /// Occasional happy meow while Island is on. Soft priority — only runs in the
+    /// main app process; ActivityKit extensions cannot reliably play AVAudioPlayer.
+    private func scheduleAmbientMeow() {
+        ambientMeowTask?.cancel()
+        ambientMeowTask = Task { [weak self] in
+            while !Task.isCancelled {
+                // 14–20s jitter so it feels alive, not metronomic.
+                let delay = UInt64.random(in: 14_000_000_000...20_000_000_000)
+                try? await Task.sleep(nanoseconds: delay)
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    guard let self, self.isActivityActive else { return }
+                    PetSound.shared.play(.meow)
+                }
             }
         }
     }

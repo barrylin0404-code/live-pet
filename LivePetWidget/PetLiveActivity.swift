@@ -19,7 +19,8 @@ struct PetLiveActivityWidget: Widget {
                         speciesId: context.state.speciesId,
                         growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
                         scale: 0.95,
-                        forceWalkWhenIdle: true
+                        forceWalkWhenIdle: true,
+                        travelAmplitude: 22
                     )
                 }
                 DynamicIslandExpandedRegion(.trailing) {
@@ -48,7 +49,8 @@ struct PetLiveActivityWidget: Widget {
                     speciesId: context.state.speciesId,
                     growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
                     scale: 0.52,
-                    forceWalkWhenIdle: true
+                    forceWalkWhenIdle: true,
+                    travelAmplitude: 10
                 )
             } compactTrailing: {
                 Image(systemName: context.state.mood.symbolName)
@@ -60,7 +62,8 @@ struct PetLiveActivityWidget: Widget {
                     speciesId: context.state.speciesId,
                     growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
                     scale: 0.58,
-                    forceWalkWhenIdle: true
+                    forceWalkWhenIdle: true,
+                    travelAmplitude: 8
                 )
             }
             .keylineTint(Color(red: 0.98, green: 0.52, blue: 0.42))
@@ -154,7 +157,8 @@ private struct LockScreenPetView: View {
                 speciesId: context.state.speciesId,
                 growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
                 scale: 1.05,
-                forceWalkWhenIdle: true
+                forceWalkWhenIdle: true,
+                travelAmplitude: 24
             )
             VStack(alignment: .leading, spacing: 4) {
                 Text(context.attributes.petName)

@@ -17,6 +17,9 @@ public struct RoomSceneView<PetContent: View>: View {
     public var ballVisible: Bool
     public var ballXFraction: CGFloat
     public var onBallTap: (() -> Void)?
+    public var wandVisible: Bool
+    public var wandXFraction: CGFloat
+    public var wandYFraction: CGFloat
     @ViewBuilder public var pet: () -> PetContent
 
     public init(
@@ -31,6 +34,9 @@ public struct RoomSceneView<PetContent: View>: View {
         ballVisible: Bool = false,
         ballXFraction: CGFloat = 0.72,
         onBallTap: (() -> Void)? = nil,
+        wandVisible: Bool = false,
+        wandXFraction: CGFloat = 0.5,
+        wandYFraction: CGFloat = 0.4,
         @ViewBuilder pet: @escaping () -> PetContent
     ) {
         self.scene = scene
@@ -44,6 +50,9 @@ public struct RoomSceneView<PetContent: View>: View {
         self.ballVisible = ballVisible
         self.ballXFraction = ballXFraction
         self.onBallTap = onBallTap
+        self.wandVisible = wandVisible
+        self.wandXFraction = wandXFraction
+        self.wandYFraction = wandYFraction
         self.pet = pet
     }
 
@@ -77,6 +86,14 @@ public struct RoomSceneView<PetContent: View>: View {
                         .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
                         .position(x: geo.size.width * ballXFraction, y: geo.size.height * 0.70)
                         .onTapGesture { onBallTap?() }
+                }
+                if wandVisible {
+                    Image(systemName: "wand.and.stars")
+                        .font(.system(size: 34, weight: .bold))
+                        .foregroundStyle(Color(red: 0.75, green: 0.45, blue: 0.95))
+                        .shadow(color: Color(red: 0.75, green: 0.45, blue: 0.95).opacity(0.45), radius: 6, y: 1)
+                        .position(x: geo.size.width * wandXFraction, y: geo.size.height * wandYFraction)
+                        .transition(.scale.combined(with: .opacity))
                 }
                 pet()
                     .scaleEffect(x: facingLeft ? -1 : 1, y: 1)
@@ -369,6 +386,9 @@ public struct PetRoomSceneView: View {
     public var ballVisible: Bool
     public var ballXFraction: CGFloat
     public var onBallTap: (() -> Void)?
+    public var wandVisible: Bool
+    public var wandXFraction: CGFloat
+    public var wandYFraction: CGFloat
     public var onPetTap: (() -> Void)?
 
     public init(
@@ -389,6 +409,9 @@ public struct PetRoomSceneView: View {
         ballVisible: Bool = false,
         ballXFraction: CGFloat = 0.72,
         onBallTap: (() -> Void)? = nil,
+        wandVisible: Bool = false,
+        wandXFraction: CGFloat = 0.5,
+        wandYFraction: CGFloat = 0.4,
         onPetTap: (() -> Void)? = nil
     ) {
         self.scene = scene
@@ -408,6 +431,9 @@ public struct PetRoomSceneView: View {
         self.ballVisible = ballVisible
         self.ballXFraction = ballXFraction
         self.onBallTap = onBallTap
+        self.wandVisible = wandVisible
+        self.wandXFraction = wandXFraction
+        self.wandYFraction = wandYFraction
         self.onPetTap = onPetTap
     }
 
@@ -423,7 +449,10 @@ public struct PetRoomSceneView: View {
             droppedXFraction: droppedXFraction,
             ballVisible: ballVisible,
             ballXFraction: ballXFraction,
-            onBallTap: onBallTap
+            onBallTap: onBallTap,
+            wandVisible: wandVisible,
+            wandXFraction: wandXFraction,
+            wandYFraction: wandYFraction
         ) {
             TappablePetHost(onTap: onPetTap) {
                 AnimatedPixelPetView(

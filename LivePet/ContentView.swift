@@ -38,6 +38,10 @@ struct ContentView: View {
     @State private var droppedX: CGFloat = 0.70
     @State private var ballVisible = false
     @State private var ballX: CGFloat = 0.72
+    @State private var wandVisible = false
+    @State private var wandX: CGFloat = 0.55
+    @State private var wandY: CGFloat = 0.38
+    @State private var showHitIsland = false
 
     var body: some View {
         NavigationStack {
@@ -106,9 +110,19 @@ struct ContentView: View {
                 SelectGameSheet(
                     petName: store.pet.name,
                     onPlayBall: { startPlayBall() },
-                    onFollowWand: { showComingSoon("Follow the wand — Coming soon") },
-                    onHitIsland: { showComingSoon("Hit the Island — Coming soon") }
+                    onFollowWand: { startFollowWand() },
+                    onHitIsland: { showHitIsland = true }
                 )
+            }
+            .fullScreenCover(isPresented: $showHitIsland) {
+                HitIslandGameView(
+                    petName: store.pet.name,
+                    speciesId: store.pet.petGlyph,
+                    growthStage: store.pet.growthStage,
+                    mood: store.pet.mood
+                ) { catches in
+                    finishHitIsland(catches: catches)
+                }
             }
             .sheet(isPresented: $showPets) {
                 PetsSheet(store: store) { syncActivity() }
@@ -177,6 +191,9 @@ struct ContentView: View {
             ballVisible: ballVisible,
             ballXFraction: ballX,
             onBallTap: { bounceBallHit() },
+            wandVisible: wandVisible,
+            wandXFraction: wandX,
+            wandYFraction: wandY,
             onPetTap: { performPetTap() }
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -335,46 +352,118 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Play Ball (minimal)
+    // MARK: - Play Ball (spawn → run → hit ≥1.5s + heart)
 
     private func startPlayBall() {
+        guard !careBusy else { return }
         careBusy = true
-        ballX = facingLeft ? 0.30 : 0.75
+        ballX = facingLeft ? 0.28 : 0.78
         ballVisible = true
         #if canImport(UIKit)
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         #endif
 
         Task { @MainActor in
-            let start = petX
-            let target = ballX
-            facingLeft = target < start
-            for i in 1...14 {
-                let t = CGFloat(i) / 14.0
-                petX = start + (target - start) * t
-                try? await Task.sleep(nanoseconds: 45_000_000)
-            }
+            // Run to ball
+            await walkPet(to: ballX, steps: 18, stepMs: 45)
+            // Hit + bounce chase (total play ≥1.5s)
             store.playDefault()
             bouncePet()
             pulseHeart(crumbs: false)
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
-                ballX += facingLeft ? -0.08 : 0.08
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.45)) {
+                ballX = min(0.88, max(0.12, ballX + (facingLeft ? -0.18 : 0.18)))
             }
-            schedulePoseClear(holdMs: 1500)
+            try? await Task.sleep(nanoseconds: 280_000_000)
+            await walkPet(to: ballX, steps: 12, stepMs: 40)
+            bouncePet()
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.5)) {
+                ballX = min(0.88, max(0.12, ballX + (facingLeft ? 0.12 : -0.12)))
+            }
+            try? await Task.sleep(nanoseconds: 350_000_000)
+            pulseHeart(crumbs: false)
+            schedulePoseClear(holdMs: 1600)
             syncActivity()
-            try? await Task.sleep(nanoseconds: 1_600_000_000)
+            try? await Task.sleep(nanoseconds: 700_000_000)
             withAnimation { ballVisible = false }
             careBusy = false
         }
     }
 
     private func bounceBallHit() {
-        guard ballVisible else { return }
+        guard ballVisible, !careBusy else { return }
         bouncePet()
         pulseHeart(crumbs: false)
         store.playDefault()
         schedulePoseClear(holdMs: 1000)
         syncActivity()
+    }
+
+    // MARK: - Follow the wand (drift + track ≥1.5s + heart)
+
+    private func startFollowWand() {
+        guard !careBusy else { return }
+        careBusy = true
+        wandX = 0.30
+        wandY = 0.36
+        wandVisible = true
+        #if canImport(UIKit)
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        #endif
+
+        Task { @MainActor in
+            // Wand drifts across room; pet tracks underneath
+            let keypoints: [(CGFloat, CGFloat)] = [
+                (0.30, 0.36), (0.48, 0.30), (0.68, 0.38), (0.55, 0.28), (0.40, 0.34)
+            ]
+            for (tx, ty) in keypoints {
+                facingLeft = tx < petX
+                // Move wand + pet in parallel-ish steps
+                let startX = petX
+                let startWX = wandX
+                let startWY = wandY
+                let steps = 10
+                for i in 1...steps {
+                    let t = CGFloat(i) / CGFloat(steps)
+                    wandX = startWX + (tx - startWX) * t
+                    wandY = startWY + (ty - startWY) * t
+                    petX = startX + (tx - startX) * t
+                    try? await Task.sleep(nanoseconds: 40_000_000)
+                }
+            }
+            store.playDefault()
+            bouncePet()
+            pulseHeart(crumbs: false)
+            schedulePoseClear(holdMs: 1600)
+            syncActivity()
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            withAnimation { wandVisible = false }
+            careBusy = false
+        }
+    }
+
+    // MARK: - Hit the Island finish
+
+    private func finishHitIsland(catches: Int) {
+        showHitIsland = false
+        // Completing the mini-game always bumps Feeling (play pose for Island sync).
+        store.playDefault()
+        bouncePet()
+        if catches > 0 {
+            pulseHeart(crumbs: false)
+        }
+        schedulePoseClear(holdMs: 1400)
+        syncActivity()
+    }
+
+    private func walkPet(to target: CGFloat, steps: Int, stepMs: UInt64) async {
+        let start = petX
+        facingLeft = target < start
+        for i in 1...steps {
+            if Task.isCancelled { return }
+            let t = CGFloat(i) / CGFloat(steps)
+            petX = start + (target - start) * t
+            try? await Task.sleep(nanoseconds: stepMs * 1_000_000)
+        }
     }
 
     // MARK: - Care (Clean / Sleep / tap)

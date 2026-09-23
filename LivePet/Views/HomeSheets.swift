@@ -101,8 +101,8 @@ struct SelectGameSheet: View {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 14) {
                     gameCard(title: "Play Ball", icon: "tennisball.fill", stub: false, action: onPlayBall)
-                    gameCard(title: "Follow the wand", icon: "wand.and.stars", stub: true, action: onFollowWand)
-                    gameCard(title: "Hit the Island", icon: "rectangle.portrait.and.arrow.right", stub: true, action: onHitIsland)
+                    gameCard(title: "Follow the wand", icon: "wand.and.stars", stub: false, action: onFollowWand)
+                    gameCard(title: "Hit the Island", icon: "sportscourt.fill", stub: false, action: onHitIsland)
                 }
                 .padding(16)
             }
@@ -359,23 +359,55 @@ struct SceneThumbView: View {
 struct WidgetsGallerySheet: View {
     @Environment(\.dismiss) private var dismiss
 
+    private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
+    private let border = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
+    private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
+    private let columns = [GridItem(.flexible()), GridItem(.flexible())]
+
+    private let widgets: [(String, String, String)] = [
+        ("Pet Feeling", "heart.fill", "Mood hearts on Home Screen"),
+        ("Pet Clock", "clock.fill", "Time with your pet"),
+        ("Pet Weather", "cloud.sun.fill", "Local weather peek"),
+        ("Pet Day", "calendar", "Date + care streak"),
+        ("Pet Note", "text.bubble.fill", "Daily message"),
+        ("Pet Photo", "photo.fill", "Portrait widget")
+    ]
+
     var body: some View {
         NavigationStack {
-            List {
-                Section("Add Live Pet widgets") {
-                    Label("Pet Feeling", systemImage: "heart.fill")
-                    Label("Pet Clock", systemImage: "clock.fill")
-                    Label("Pet Weather", systemImage: "cloud.sun.fill")
-                    Label("Pet Day", systemImage: "calendar")
-                    Label("Pet Note", systemImage: "text.bubble.fill")
-                    Label("Pet Photo", systemImage: "photo.fill")
+            ScrollView {
+                LazyVGrid(columns: columns, spacing: 12) {
+                    ForEach(widgets, id: \.0) { title, icon, blurb in
+                        VStack(alignment: .leading, spacing: 8) {
+                            Image(systemName: icon)
+                                .font(.system(size: 28, weight: .semibold))
+                                .foregroundStyle(Color(red: 0xE8 / 255.0, green: 0x91 / 255.0, blue: 0xB8 / 255.0))
+                            Text(title)
+                                .font(.subheadline.weight(.bold))
+                                .foregroundStyle(ink)
+                            Text(blurb)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(12)
+                        .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .strokeBorder(border, lineWidth: 2)
+                        )
+                    }
                 }
-                Section {
-                    Text("Long-press the Home Screen → tap + → search “Live Pet” → add a widget.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+                .padding(16)
+
+                Text("Long-press Home Screen → + → search “Live Pet” → add a widget. Free forever — no Upgrade tab.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 12)
             }
+            .background(cream.ignoresSafeArea())
             .navigationTitle("Widgets")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -384,7 +416,7 @@ struct WidgetsGallerySheet: View {
                 }
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large])
     }
 }
 

@@ -45,6 +45,24 @@ Linux/sandbox cannot turn on the Apple Developer WeatherKit entitlement. On a Ma
 
 Without WeatherKit / location, `WeatherFetchService` writes a sample or empty `WeatherCache` so the weather widget never goes blank (hides ° when `hasObservation == false`).
 
+Optional: Apple Weather logo asset from WeatherKit attribution API — text attribution alone is enough for Review/Research clear.
+
+## Mac / device verify (post Wave 4)
+
+Reviewer stamped Waves 1–4 on `main` @ `52b7890`. Code gate is done; shippable after this checklist on a Mac + Dynamic Island phone:
+
+1. Enable **WeatherKit** on App ID `com.barrylin.livepet` (steps above)
+2. `xcodegen generate` → open `LivePet.xcodeproj` → set Team / signing for **LivePet** + **LivePetWidget**
+3. Confirm App Groups `group.com.barrylin.livepet` on both targets
+4. Build & run on a Dynamic Island device (14 Pro / 15 / 16 / etc.)
+5. Start Island → care Feed/Play/Sleep → confirm Island updates + Feeling widget refresh
+6. Add all five utility widgets: **Pet Clock**, **Pet Weather**, **Pet Day**, **Pet Note**, **Pet Photo** (+ Pet Feeling)
+7. Settings: pick a Photo-frame image; tap **Update weather for widget**; confirm Weather shows attribution and never blanks
+8. Smoke Island renew: leave Island running, background/foreground (scenePhase `.active` reattach), confirm no duplicate Activities
+9. Lock Screen accessory circular + rectangular (mono) still render; Feeling hearts can show **0** when mood is empty
+
+Linux hosts cannot run this pass — no Xcode / Simulator.
+
 ## V1 features
 
 | Feature | Details |

@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 #endif
 
-/// Short full-screen catch mini-game (~10–20s). Original Live Pet branding only.
+/// Short full-screen basketball-style bounce mini-game (~15s). Drag paddle; orbs bounce.
 struct HitIslandGameView: View {
     var petName: String
     var speciesId: String
@@ -27,6 +27,7 @@ struct HitIslandGameView: View {
     @State private var finished = false
     @State private var loopTask: Task<Void, Never>?
     @State private var showIntro = true
+    @State private var paddleFlash = false
 
     var body: some View {
         ZStack {
@@ -44,16 +45,11 @@ struct HitIslandGameView: View {
                 header
                 playfield
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                sliderBar
                 footerHint
             }
 
-            if showIntro {
-                introOverlay
-            }
-            if finished {
-                resultOverlay
-            }
+            if showIntro { introOverlay }
+            if finished { resultOverlay }
         }
         .onDisappear { loopTask?.cancel() }
     }
@@ -64,7 +60,7 @@ struct HitIslandGameView: View {
                 Text("Hit the Island")
                     .font(.headline.weight(.bold))
                     .foregroundStyle(ink)
-                Text("Live Pet · catch for \(petName)")
+                Text("Live Pet · bounce for \(petName)")
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(ink.opacity(0.55))
             }
@@ -100,13 +96,12 @@ struct HitIslandGameView: View {
                     )
                     .padding(.horizontal, 12)
 
-                // Score chips
                 HStack {
                     Label("\(catches)", systemImage: "star.fill")
                         .font(.subheadline.weight(.bold))
                         .foregroundStyle(Color(red: 0xE8 / 255.0, green: 0xC5 / 255.0, blue: 0x47 / 255.0))
                     Spacer()
-                    Text("Feeling+")
+                    Text("Drag to bounce")
                         .font(.caption.weight(.bold))
                         .foregroundStyle(ink.opacity(0.45))
                 }
@@ -115,17 +110,16 @@ struct HitIslandGameView: View {
                 .frame(maxHeight: .infinity, alignment: .top)
 
                 ForEach(orbs) { orb in
-                    Image(systemName: "circle.fill")
+                    Image(systemName: "basketball.fill")
                         .font(.system(size: orb.size))
                         .foregroundStyle(orb.color)
-                        .shadow(color: .black.opacity(0.15), radius: 2, y: 1)
+                        .shadow(color: .black.opacity(0.18), radius: 2, y: 1)
                         .position(
                             x: geo.size.width * orb.x,
                             y: geo.size.height * orb.y
                         )
                 }
 
-                // Catcher pet
                 VStack(spacing: 2) {
                     AnimatedPixelPetView(
                         mood: mood,
@@ -137,28 +131,27 @@ struct HitIslandGameView: View {
                     )
                     Capsule()
                         .fill(coral)
-                        .frame(width: 64, height: 10)
-                        .shadow(color: coral.opacity(0.4), radius: 3, y: 1)
+                        .frame(width: paddleFlash ? 76 : 68, height: paddleFlash ? 14 : 11)
+                        .shadow(color: coral.opacity(0.45), radius: 3, y: 1)
+                        .scaleEffect(paddleFlash ? 1.08 : 1.0)
                 }
                 .position(
                     x: geo.size.width * paddleX,
                     y: geo.size.height * 0.86
                 )
+                .animation(.spring(response: 0.22, dampingFraction: 0.5), value: paddleFlash)
             }
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        guard running, !finished else { return }
+                        paddleX = min(0.88, max(0.12, value.location.x / max(geo.size.width, 1)))
+                    }
+            )
+            .accessibilityHint("Drag left and right to bounce balls")
         }
-    }
-
-    private var sliderBar: some View {
-        VStack(spacing: 6) {
-            Text("Slide to catch")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(ink.opacity(0.6))
-            Slider(value: $paddleX, in: 0.12...0.88)
-                .tint(coral)
-                .padding(.horizontal, 24)
-                .disabled(!running || finished)
-        }
-        .padding(.vertical, 10)
+        .padding(.bottom, 8)
     }
 
     private var footerHint: some View {
@@ -175,12 +168,12 @@ struct HitIslandGameView: View {
                 Text("Hit the Island")
                     .font(.title2.weight(.heavy))
                     .foregroundStyle(ink)
-                Text("Slide \(petName) under falling stars.\nCatch as many as you can — 15 seconds!")
+                Text("Drag \(petName) under falling balls.\nBounce them skyward — 15 seconds!")
                     .font(.subheadline)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(ink.opacity(0.75))
                 Button {
-                    PetSound.shared.play(.uiTick)
+                    PetSound.shared.play(.islandStart)
                     #if canImport(UIKit)
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     #endif
@@ -194,6 +187,7 @@ struct HitIslandGameView: View {
                         .padding(.vertical, 14)
                         .background(coral, in: Capsule())
                 }
+                .buttonStyle(PressScaleButtonStyle())
                 .padding(.horizontal, 8)
             }
             .padding(24)
@@ -209,13 +203,14 @@ struct HitIslandGameView: View {
                 Image(systemName: "heart.fill")
                     .font(.system(size: 36))
                     .foregroundStyle(Color(red: 1.0, green: 0.30, blue: 0.43))
-                Text(catches > 0 ? "Nice catch!" : "Good try!")
+                Text(catches > 0 ? "Nice bounce!" : "Good try!")
                     .font(.title3.weight(.heavy))
                     .foregroundStyle(ink)
                 Text("\(catches) catch\(catches == 1 ? "" : "es") · Feeling up")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(ink.opacity(0.7))
                 Button {
+                    PetSound.shared.play(.heartPop)
                     #if canImport(UIKit)
                     UINotificationFeedbackGenerator().notificationOccurred(.success)
                     #endif
@@ -229,6 +224,7 @@ struct HitIslandGameView: View {
                         .padding(.vertical, 14)
                         .background(ink, in: Capsule())
                 }
+                .buttonStyle(PressScaleButtonStyle())
                 .padding(.horizontal, 8)
                 .padding(.top, 4)
             }
@@ -271,13 +267,15 @@ struct HitIslandGameView: View {
             id: UUID(),
             x: CGFloat.random(in: 0.18...0.82),
             y: -0.05,
-            speed: CGFloat.random(in: 0.28...0.42),
-            size: CGFloat.random(in: 16...24),
+            vy: CGFloat.random(in: 0.32...0.48),
+            vx: CGFloat.random(in: -0.06...0.06),
+            size: CGFloat.random(in: 18...26),
+            bounces: 0,
             color: [
+                Color(red: 0.92, green: 0.45, blue: 0.18),
                 Color(red: 1.0, green: 0.85, blue: 0.35),
                 Color(red: 0x7E / 255.0, green: 0xC8 / 255.0, blue: 0xE3 / 255.0),
-                Color(red: 1.0, green: 0.30, blue: 0.43),
-                Color(red: 0.55, green: 0.85, blue: 0.45)
+                Color(red: 1.0, green: 0.30, blue: 0.43)
             ].randomElement()!
         )
         orbs.append(orb)
@@ -285,20 +283,41 @@ struct HitIslandGameView: View {
 
     private func advanceOrbs(dt: Double) {
         var next: [FallingOrb] = []
-        let catchY: CGFloat = 0.82
-        let catchRadius: CGFloat = 0.11
+        let paddleY: CGFloat = 0.82
+        let catchRadius: CGFloat = 0.13
+        let g: CGFloat = 0.55
         for var orb in orbs {
-            orb.y += orb.speed * CGFloat(dt)
-            if orb.y >= catchY && abs(orb.x - paddleX) <= catchRadius {
-                catches += 1
+            orb.vy += g * CGFloat(dt)
+            orb.y += orb.vy * CGFloat(dt)
+            orb.x += orb.vx * CGFloat(dt)
+            if orb.x < 0.1 { orb.x = 0.1; orb.vx = abs(orb.vx) }
+            if orb.x > 0.9 { orb.x = 0.9; orb.vx = -abs(orb.vx) }
+
+            if orb.vy > 0, orb.y >= paddleY, orb.y <= paddleY + 0.09, abs(orb.x - paddleX) <= catchRadius {
+                orb.vy = -abs(orb.vy) * 0.92 - 0.10
+                orb.vx += (orb.x - paddleX) * 0.85
+                orb.bounces += 1
+                paddleFlash = true
                 PetSound.shared.play(.ballHit)
                 #if canImport(UIKit)
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
                 #endif
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 120_000_000)
+                    paddleFlash = false
+                }
+                if orb.bounces >= 2 {
+                    catches += 1
+                    PetSound.shared.play(.heartPop)
+                    continue
+                }
+            }
+            if orb.y > 1.08 {
+                misses += 1
                 continue
             }
-            if orb.y > 1.05 {
-                misses += 1
+            if orb.y < -0.12, orb.bounces > 0 {
+                catches += 1
                 continue
             }
             next.append(orb)
@@ -323,7 +342,9 @@ private struct FallingOrb: Identifiable {
     let id: UUID
     var x: CGFloat
     var y: CGFloat
-    var speed: CGFloat
+    var vy: CGFloat
+    var vx: CGFloat
     var size: CGFloat
+    var bounces: Int
     var color: Color
 }

@@ -16,10 +16,13 @@ public struct RoomSceneView<PetContent: View>: View {
     public var droppedXFraction: CGFloat
     public var ballVisible: Bool
     public var ballXFraction: CGFloat
+    public var ballYFraction: CGFloat
     public var onBallTap: (() -> Void)?
     public var wandVisible: Bool
     public var wandXFraction: CGFloat
     public var wandYFraction: CGFloat
+    public var onRoomDrag: ((CGFloat, CGFloat) -> Void)?
+    public var onPetDrag: (() -> Void)?
     @ViewBuilder public var pet: () -> PetContent
 
     public init(
@@ -33,10 +36,13 @@ public struct RoomSceneView<PetContent: View>: View {
         droppedXFraction: CGFloat = 0.7,
         ballVisible: Bool = false,
         ballXFraction: CGFloat = 0.72,
+        ballYFraction: CGFloat = 0.70,
         onBallTap: (() -> Void)? = nil,
         wandVisible: Bool = false,
         wandXFraction: CGFloat = 0.5,
         wandYFraction: CGFloat = 0.4,
+        onRoomDrag: ((CGFloat, CGFloat) -> Void)? = nil,
+        onPetDrag: (() -> Void)? = nil,
         @ViewBuilder pet: @escaping () -> PetContent
     ) {
         self.scene = scene
@@ -49,10 +55,13 @@ public struct RoomSceneView<PetContent: View>: View {
         self.droppedXFraction = droppedXFraction
         self.ballVisible = ballVisible
         self.ballXFraction = ballXFraction
+        self.ballYFraction = ballYFraction
         self.onBallTap = onBallTap
         self.wandVisible = wandVisible
         self.wandXFraction = wandXFraction
         self.wandYFraction = wandYFraction
+        self.onRoomDrag = onRoomDrag
+        self.onPetDrag = onPetDrag
         self.pet = pet
     }
 
@@ -84,7 +93,7 @@ public struct RoomSceneView<PetContent: View>: View {
                         .font(.system(size: 30, weight: .bold))
                         .foregroundStyle(Color(red: 0.85, green: 0.92, blue: 0.35))
                         .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
-                        .position(x: geo.size.width * ballXFraction, y: geo.size.height * 0.70)
+                        .position(x: geo.size.width * ballXFraction, y: geo.size.height * ballYFraction)
                         .onTapGesture { onBallTap?() }
                 }
                 if wandVisible {
@@ -98,6 +107,18 @@ public struct RoomSceneView<PetContent: View>: View {
                 pet()
                     .scaleEffect(x: facingLeft ? -1 : 1, y: 1)
                     .position(x: geo.size.width * petXFraction, y: geo.size.height * 0.62)
+                Color.clear
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                guard wandVisible || onRoomDrag != nil else { return }
+                                let fx = min(0.92, max(0.08, value.location.x / max(geo.size.width, 1)))
+                                let fy = min(0.85, max(0.18, value.location.y / max(geo.size.height, 1)))
+                                onRoomDrag?(fx, fy)
+                            }
+                    )
+                    .allowsHitTesting(wandVisible && onRoomDrag != nil)
                 if showFireflies && firefliesUnlocked > 0 {
                     FirefliesOverlay(count: firefliesUnlocked)
                         .allowsHitTesting(false)
@@ -385,11 +406,14 @@ public struct PetRoomSceneView: View {
     public var droppedXFraction: CGFloat
     public var ballVisible: Bool
     public var ballXFraction: CGFloat
+    public var ballYFraction: CGFloat
     public var onBallTap: (() -> Void)?
     public var wandVisible: Bool
     public var wandXFraction: CGFloat
     public var wandYFraction: CGFloat
+    public var onRoomDrag: ((CGFloat, CGFloat) -> Void)?
     public var onPetTap: (() -> Void)?
+    public var onPetDrag: (() -> Void)?
 
     public init(
         scene: PetRoomScene = .sunNook,
@@ -408,11 +432,14 @@ public struct PetRoomSceneView: View {
         droppedXFraction: CGFloat = 0.7,
         ballVisible: Bool = false,
         ballXFraction: CGFloat = 0.72,
+        ballYFraction: CGFloat = 0.70,
         onBallTap: (() -> Void)? = nil,
         wandVisible: Bool = false,
         wandXFraction: CGFloat = 0.5,
         wandYFraction: CGFloat = 0.4,
-        onPetTap: (() -> Void)? = nil
+        onRoomDrag: ((CGFloat, CGFloat) -> Void)? = nil,
+        onPetTap: (() -> Void)? = nil,
+        onPetDrag: (() -> Void)? = nil
     ) {
         self.scene = scene
         self.mood = mood
@@ -430,11 +457,14 @@ public struct PetRoomSceneView: View {
         self.droppedXFraction = droppedXFraction
         self.ballVisible = ballVisible
         self.ballXFraction = ballXFraction
+        self.ballYFraction = ballYFraction
         self.onBallTap = onBallTap
         self.wandVisible = wandVisible
         self.wandXFraction = wandXFraction
         self.wandYFraction = wandYFraction
+        self.onRoomDrag = onRoomDrag
         self.onPetTap = onPetTap
+        self.onPetDrag = onPetDrag
     }
 
     public var body: some View {
@@ -449,12 +479,15 @@ public struct PetRoomSceneView: View {
             droppedXFraction: droppedXFraction,
             ballVisible: ballVisible,
             ballXFraction: ballXFraction,
+            ballYFraction: ballYFraction,
             onBallTap: onBallTap,
             wandVisible: wandVisible,
             wandXFraction: wandXFraction,
-            wandYFraction: wandYFraction
+            wandYFraction: wandYFraction,
+            onRoomDrag: onRoomDrag,
+            onPetDrag: onPetDrag
         ) {
-            TappablePetHost(onTap: onPetTap) {
+            TappablePetHost(onTap: onPetTap, onDrag: onPetDrag) {
                 AnimatedPixelPetView(
                     mood: mood,
                     pose: pose,
@@ -472,28 +505,47 @@ public struct PetRoomSceneView: View {
 /// Scales the pet on press and forwards taps (heart/bob without inventory).
 private struct TappablePetHost<Content: View>: View {
     var onTap: (() -> Void)?
+    var onDrag: (() -> Void)?
     @ViewBuilder var content: () -> Content
     @State private var pressed = false
+    @State private var lastDragFire: Date = .distantPast
 
     var body: some View {
         content()
-            .scaleEffect(pressed ? 0.92 : 1.0)
-            .animation(.spring(response: 0.28, dampingFraction: 0.55), value: pressed)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                #if canImport(UIKit)
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                #endif
-                withAnimation(.spring(response: 0.28, dampingFraction: 0.55)) {
-                    pressed = true
-                }
-                onTap?()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
-                    withAnimation(.spring(response: 0.32, dampingFraction: 0.6)) {
-                        pressed = false
+            .scaleEffect(pressed ? 0.90 : 1.0)
+            .animation(.spring(response: 0.22, dampingFraction: 0.48), value: pressed)
+            .contentShape(Rectangle().size(width: 140, height: 140))
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        if !pressed {
+                            withAnimation(.spring(response: 0.22, dampingFraction: 0.48)) { pressed = true }
+                        }
+                        // Stroke petting: fire while dragging across the pet
+                        if hypot(value.translation.width, value.translation.height) > 8 {
+                            let now = Date()
+                            if now.timeIntervalSince(lastDragFire) > 0.28 {
+                                lastDragFire = now
+                                #if canImport(UIKit)
+                                UIImpactFeedbackGenerator(.light).impactOccurred()
+                                #endif
+                                onDrag?()
+                            }
+                        }
                     }
-                }
-            }
+                    .onEnded { value in
+                        let traveled = hypot(value.translation.width, value.translation.height)
+                        if traveled < 8 {
+                            #if canImport(UIKit)
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            #endif
+                            onTap?()
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+                            withAnimation(.spring(response: 0.32, dampingFraction: 0.58)) { pressed = false }
+                        }
+                    }
+            )
             .accessibilityAddTraits(.isButton)
             .accessibilityHint("Pet me")
     }

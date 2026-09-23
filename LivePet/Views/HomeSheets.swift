@@ -38,11 +38,13 @@ struct SelectFoodSheet: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        .presentationCornerRadius(24)
     }
 
     private func foodCell(_ item: InventoryItem) -> some View {
         let isFavorite = store.pet.isFavoriteFood(item.id)
         return Button {
+            PetSound.shared.play(.feed)
             #if canImport(UIKit)
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             #endif
@@ -119,10 +121,13 @@ struct SelectGameSheet: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        .presentationCornerRadius(24)
     }
 
     private func gameCard(title: String, icon: String, stub: Bool, action: @escaping () -> Void) -> some View {
         Button {
+            PetSound.shared.play(.uiTick)
+            
             #if canImport(UIKit)
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             #endif
@@ -221,6 +226,7 @@ struct PetsSheet: View {
         }
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
+        .presentationCornerRadius(24)
     }
 
     private func petCard(_ p: Pet) -> some View {
@@ -340,6 +346,7 @@ struct ScenesSheet: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        .presentationCornerRadius(24)
     }
 }
 

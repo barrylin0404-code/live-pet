@@ -51,41 +51,44 @@ struct ContentView: View {
             ZStack {
                 roomBackground.ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    if store.isGrowEligible {
-                        growChip
-                            .padding(.horizontal, 12)
-                            .padding(.top, 6)
-                            .padding(.bottom, 4)
+                // 17 layout: Room 52% / Console 41% / Bottom utility 7% of safe height
+                GeometryReader { geo in
+                    let h = geo.size.height
+                    VStack(spacing: 0) {
+                        ZStack(alignment: .top) {
+                            roomViewport
+                                .padding(.horizontal, 8)
+                                .padding(.top, 4)
+                            if store.isGrowEligible {
+                                growChip
+                                    .padding(.horizontal, 12)
+                                    .padding(.top, 6)
+                            }
+                        }
+                        .frame(height: h * 0.52)
+                        .frame(maxWidth: .infinity)
+
+                        ConsolePanelView(
+                            store: store,
+                            onFood: { showFood = true },
+                            onPlay: { showGames = true },
+                            onPets: { showPets = true },
+                            onScenes: { showScenes = true },
+                            onClean: { performClean() },
+                            onSleep: { performSleep() },
+                            onRename: { store.rename($0) }
+                        )
+                        .frame(height: h * 0.41)
+                        .frame(maxWidth: .infinity)
+
+                        BottomUtilityBar(
+                            onWidgets: { showWidgets = true },
+                            onSettings: { showSettings = true }
+                        )
+                        .frame(height: h * 0.07)
+                        .frame(maxWidth: .infinity)
                     }
-
-                    roomViewport
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .padding(.horizontal, 8)
-                        .padding(.top, store.isGrowEligible ? 0 : 8)
-
-                    ConsolePanelView(
-                        store: store,
-                        activityManager: activityManager,
-                        onFood: { showFood = true },
-                        onPlay: { showGames = true },
-                        onPets: { showPets = true },
-                        onScenes: { showScenes = true },
-                        onWidgets: { showWidgets = true },
-                        onSettings: { showSettings = true },
-                        onClean: { performClean() },
-                        onSleep: { performSleep() },
-                        onRename: { store.rename($0) }
-                    )
-
-                    if let error = activityManager.lastError {
-                        Text(error)
-                            .font(.caption2)
-                            .foregroundStyle(.red)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                            .padding(.bottom, 2)
-                    }
+                    .frame(width: geo.size.width, height: h)
                 }
 
                 floatingFeedback.allowsHitTesting(false)
@@ -552,7 +555,7 @@ struct ContentView: View {
         pulseHeart(crumbs: false)
         spawnPlayBurst()
         #if canImport(UIKit)
-        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
         #endif
         schedulePoseClear(holdMs: 1100)
         syncActivity()

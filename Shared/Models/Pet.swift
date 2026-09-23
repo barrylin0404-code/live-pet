@@ -223,7 +223,7 @@ struct Pet: Identifiable, Equatable, Codable {
     private static func clamp(_ value: Int) -> Int { max(0, min(100, value)) }
 
     static func defaultFavoriteFood(for species: String) -> String {
-        species == "pip" ? "berry_cube" : "fish_biscuit"
+        species == "pip" ? "berry" : "fish"
     }
 
     static func defaultFavoriteToy(for species: String) -> String {

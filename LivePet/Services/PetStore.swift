@@ -82,6 +82,20 @@ final class PetStore: ObservableObject {
             items = InventoryItem.catalog
         }
 
+        // Remap legacy favorite food ids after catalog revamp
+        let foodMap: [String: String] = [
+            "fish_biscuit": "fish", "crumb_cake": "cupcake",
+            "berry_cube": "berry", "glow_pellet": "sprout"
+        ]
+        if let fid = pet.favoriteFoodId, let neu = foodMap[fid] {
+            pet.favoriteFoodId = neu
+        }
+        for i in pets.indices {
+            if let fid = pets[i].favoriteFoodId, let neu = foodMap[fid] {
+                pets[i].favoriteFoodId = neu
+            }
+        }
+
         if hasCompletedOnboarding {
             pet.applyOfflineDecay()
             syncActiveIntoPets()
@@ -111,7 +125,7 @@ final class PetStore: ObservableObject {
     var growBannerTitle: String { "\(pet.name)’s ready to grow!" }
 
     var lovesSummary: String {
-        let food = items.first(where: { $0.id == pet.favoriteFoodId })?.name ?? "Fish biscuit"
+        let food = items.first(where: { $0.id == pet.favoriteFoodId })?.name ?? "Fish"
         let toy = items.first(where: { $0.id == pet.favoriteToyId })?.name ?? "Bounce Block"
         return "Loves: \(food) · \(toy)"
     }
@@ -177,16 +191,12 @@ final class PetStore: ObservableObject {
 
     func feed(itemID: String) {
         guard let index = items.firstIndex(where: { $0.id == itemID && $0.isFood }) else { return }
-        guard items[index].quantity > 0 else { return }
+        // Free forever: foods never softlock — auto-refill to 99.
+        if items[index].quantity <= 0 { items[index].quantity = 99 }
         let item = items[index]
         lastUsedFavorite = pet.isFavoriteFood(item.id)
-        items[index].quantity -= 1
+        items[index].quantity = max(98, items[index].quantity) // display stays full
         pet.feed(with: item)
-        if items[index].quantity == 0 {
-            items[index].quantity = 1
-            pet.lastAction = "Ate \(item.name) · crumb restocked"
-            pet.touch()
-        }
         commit()
     }
 
@@ -416,11 +426,33 @@ final class PetStore: ObservableObject {
     }
 
     private static func mergeCatalog(into saved: [InventoryItem]) -> [InventoryItem] {
-        var merged = saved
-        for item in InventoryItem.catalog where !merged.contains(where: { $0.id == item.id }) {
-            merged.append(item)
+        let legacyFoodMap: [String: String] = [
+            "fish_biscuit": "fish",
+            "crumb_cake": "cupcake",
+            "berry_cube": "berry",
+            "glow_pellet": "sprout"
+        ]
+        var remapped: [InventoryItem] = []
+        for var item in saved {
+            if let neu = legacyFoodMap[item.id] {
+                if let cat = InventoryItem.catalog.first(where: { $0.id == neu }) {
+                    var copy = cat
+                    copy.quantity = max(item.quantity, 99)
+                    if !remapped.contains(where: { $0.id == copy.id }) {
+                        remapped.append(copy)
+                    }
+                    continue
+                }
+            }
+            if item.isFood { item.quantity = max(item.quantity, 99) }
+            remapped.append(item)
         }
-        return merged
+        for item in InventoryItem.catalog where !remapped.contains(where: { $0.id == item.id }) {
+            remapped.append(item)
+        }
+        // Drop obsolete food ids not in catalog
+        let keep = Set(InventoryItem.catalog.map(\.id))
+        return remapped.filter { keep.contains($0.id) }
     }
 
     private static func migrateFromStandardIfNeeded(into suite: UserDefaults) {

@@ -13,53 +13,63 @@ struct ContentView: View {
     @State private var showZzz = false
     @State private var crumbDots: [CareParticle] = []
     @State private var bubbleParticles: [CareParticle] = []
-    @State private var showSettings = false
     @State private var roomDim = false
     @State private var playBounce: CGFloat = 0
     @State private var heartRise: CGFloat = 0
     @State private var poseClearTask: Task<Void, Never>?
 
+    // Console sheets
+    @State private var showSettings = false
+    @State private var showFood = false
+    @State private var showGames = false
+    @State private var showPets = false
+    @State private var showScenes = false
+    @State private var showWidgets = false
+    @State private var comingSoonText: String?
+
+    // Continuous walk (≥40pt across room)
+    @State private var petX: CGFloat = 0.52
+    @State private var facingLeft = false
+    @State private var walkTask: Task<Void, Never>?
+    @State private var careBusy = false
+
+    // Drop-to-room
+    @State private var droppedSymbol: String?
+    @State private var droppedX: CGFloat = 0.70
+    @State private var ballVisible = false
+    @State private var ballX: CGFloat = 0.72
+
     var body: some View {
         NavigationStack {
             ZStack {
-                roomBackground
-                    .ignoresSafeArea()
+                roomBackground.ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    topBar
-                        .padding(.horizontal, 16)
-                        .padding(.top, 4)
-
-                    roomViewport
-                        .padding(.horizontal, 12)
-                        .frame(maxHeight: .infinity)
-
                     if store.isGrowEligible {
                         growChip
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 6)
+                            .padding(.horizontal, 12)
+                            .padding(.top, 6)
+                            .padding(.bottom, 4)
                     }
 
-                    CareTrayView(
-                        satiety: store.pet.satiety,
-                        feelingScore: store.pet.moodScore,
-                        onFeed: { performFeed() },
-                        onPlay: { performPlay() },
-                        onClean: { performClean() },
-                        onSleep: { performSleep() }
-                    )
-                    .padding(.horizontal, 12)
-                    .padding(.top, 8)
+                    roomViewport
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .padding(.horizontal, 8)
+                        .padding(.top, store.isGrowEligible ? 0 : 8)
 
-                    InventoryPanel(
+                    ConsolePanelView(
                         store: store,
-                        onFeed: { pulseHeart(crumbs: true); schedulePoseClear(); syncActivity() },
-                        onPlay: { pulseHeart(crumbs: false); bouncePet(); schedulePoseClear(); syncActivity() },
-                        onClean: { pulseBubbles(); schedulePoseClear(); syncActivity() }
+                        activityManager: activityManager,
+                        onFood: { showFood = true },
+                        onPlay: { showGames = true },
+                        onPets: { showPets = true },
+                        onScenes: { showScenes = true },
+                        onWidgets: { showWidgets = true },
+                        onSettings: { showSettings = true },
+                        onClean: { performClean() },
+                        onSleep: { performSleep() },
+                        onRename: { store.rename($0) }
                     )
-                    .padding(.horizontal, 12)
-                    .padding(.top, 8)
-                    .padding(.bottom, 10)
 
                     if let error = activityManager.lastError {
                         Text(error)
@@ -67,17 +77,47 @@ struct ContentView: View {
                             .foregroundStyle(.red)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
-                            .padding(.bottom, 4)
+                            .padding(.bottom, 2)
                     }
                 }
 
-                // Floating feedback layer (room-centered)
-                floatingFeedback
+                floatingFeedback.allowsHitTesting(false)
+
+                if let soon = comingSoonText {
+                    VStack {
+                        Spacer()
+                        ComingSoonBanner(title: soon)
+                            .padding(.bottom, 120)
+                    }
+                    .transition(.opacity)
                     .allowsHitTesting(false)
+                }
             }
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(isPresented: $showSettings) {
                 SettingsView()
+            }
+            .sheet(isPresented: $showFood) {
+                SelectFoodSheet(store: store) { item in
+                    dropFoodAndEat(item)
+                }
+            }
+            .sheet(isPresented: $showGames) {
+                SelectGameSheet(
+                    petName: store.pet.name,
+                    onPlayBall: { startPlayBall() },
+                    onFollowWand: { showComingSoon("Follow the wand — Coming soon") },
+                    onHitIsland: { showComingSoon("Hit the Island — Coming soon") }
+                )
+            }
+            .sheet(isPresented: $showPets) {
+                PetsSheet(store: store) { syncActivity() }
+            }
+            .sheet(isPresented: $showScenes) {
+                ScenesSheet(store: store)
+            }
+            .sheet(isPresented: $showWidgets) {
+                WidgetsGallerySheet()
             }
             .sheet(isPresented: $store.showGrowCelebration) {
                 GrowCelebrationSheet(pet: store.pet) {
@@ -100,10 +140,12 @@ struct ContentView: View {
                 store.startTicking()
                 activityManager.renewIfNeeded(pet: store.pet)
                 syncActivity()
+                startIdleWalk()
             }
             .onDisappear {
                 store.stopTicking()
                 poseClearTask?.cancel()
+                walkTask?.cancel()
             }
             #if canImport(UIKit)
             .background(ShakeDetector().frame(width: 0, height: 0))
@@ -114,61 +156,47 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Layout pieces
+    // MARK: - Room
 
-    private var topBar: some View {
-        HStack {
-            Button {
-                showSettings = true
-            } label: {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Color(red: 0.35, green: 0.30, blue: 0.26))
-                    .frame(width: 40, height: 40)
-                    .background(Color.white.opacity(0.55), in: Circle())
+    private var roomViewport: some View {
+        PetRoomSceneView(
+            scene: store.selectedScene,
+            mood: store.pet.mood,
+            pose: displayPose,
+            isSleeping: store.pet.isSleeping,
+            petScale: 1.55,
+            speciesId: store.pet.petGlyph,
+            growthStage: store.pet.growthStage,
+            firefliesUnlocked: store.firefliesUnlocked,
+            showFireflies: store.showFireflies,
+            bounceOffset: playBounce,
+            petXFraction: petX,
+            facingLeft: facingLeft,
+            droppedSymbol: droppedSymbol,
+            droppedXFraction: droppedX,
+            ballVisible: ballVisible,
+            ballXFraction: ballX,
+            onBallTap: { bounceBallHit() },
+            onPetTap: { performPetTap() }
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay {
+            if roomDim {
+                Color.black.opacity(0.10)
+                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .allowsHitTesting(false)
             }
-            .accessibilityLabel("Settings")
-
-            Spacer()
-
-            Text(store.selectedScene.displayName)
-                .font(.caption.weight(.bold))
-                .foregroundStyle(Color(red: 0.35, green: 0.30, blue: 0.26).opacity(0.75))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Color.white.opacity(0.45), in: Capsule())
         }
     }
 
-    private var roomViewport: some View {
-        ZStack(alignment: .bottom) {
-            PetRoomSceneView(
-                scene: store.selectedScene,
-                mood: store.pet.mood,
-                pose: store.pet.pose,
-                isSleeping: store.pet.isSleeping,
-                petScale: 1.55,
-                speciesId: store.pet.petGlyph,
-                growthStage: store.pet.growthStage,
-                firefliesUnlocked: store.firefliesUnlocked,
-                showFireflies: store.showFireflies,
-                bounceOffset: playBounce,
-                onPetTap: { performPetTap() }
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .overlay {
-                if roomDim {
-                    Color.black.opacity(0.10)
-                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                        .allowsHitTesting(false)
-                }
-            }
-
-            StatusStripView(pet: store.pet)
-                .padding(.horizontal, 10)
-                .offset(y: 28)
+    /// Prefer care pose from store; otherwise walk when pacing.
+    private var displayPose: PetPose {
+        if store.pet.isSleeping || store.pet.pose == .sleep { return .sleep }
+        if careBusy { return store.pet.pose }
+        switch store.pet.pose {
+        case .eat, .play, .clean: return store.pet.pose
+        default: return careBusy ? store.pet.pose : .walk
         }
-        .padding(.bottom, 36) // room for overlapping pill
     }
 
     private var growChip: some View {
@@ -198,13 +226,12 @@ struct ContentView: View {
             )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Ready to grow")
     }
 
     private var floatingFeedback: some View {
         GeometryReader { geo in
-            let cx = geo.size.width * 0.52
-            let cy = geo.size.height * 0.38
+            let cx = geo.size.width * petX
+            let cy = geo.size.height * 0.32
 
             ZStack {
                 if showFloatingHeart {
@@ -246,42 +273,152 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Care actions
+    // MARK: - Continuous walk (P0 density)
 
-    private func performFeed() {
-        store.feedDefault()
-        pulseHeart(crumbs: true)
-        schedulePoseClear()
-        syncActivity()
+    private func startIdleWalk() {
+        walkTask?.cancel()
+        walkTask = Task { @MainActor in
+            while !Task.isCancelled {
+                if careBusy || store.pet.isSleeping {
+                    try? await Task.sleep(nanoseconds: 400_000_000)
+                    continue
+                }
+                // Pace L/R across ~0.28...0.72 (≥40pt on typical phone width)
+                let target: CGFloat = facingLeft ? 0.28 : 0.72
+                let start = petX
+                let distance = abs(target - start)
+                let steps = max(12, Int(distance * 40))
+                for i in 1...steps {
+                    if Task.isCancelled || careBusy || store.pet.isSleeping { break }
+                    let t = CGFloat(i) / CGFloat(steps)
+                    petX = start + (target - start) * t
+                    try? await Task.sleep(nanoseconds: 55_000_000)
+                }
+                if careBusy || store.pet.isSleeping { continue }
+                facingLeft.toggle()
+                // Brief idle pause at edge
+                try? await Task.sleep(nanoseconds: 350_000_000)
+            }
+        }
     }
 
-    private func performPlay() {
-        store.playDefault()
-        pulseHeart(crumbs: false)
+    // MARK: - Drop-to-room food
+
+    private func dropFoodAndEat(_ item: InventoryItem) {
+        careBusy = true
+        droppedX = facingLeft ? 0.32 : 0.68
+        droppedSymbol = item.symbolName
+        #if canImport(UIKit)
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        #endif
+
+        Task { @MainActor in
+            // Walk to dropped food
+            let start = petX
+            let target = droppedX
+            facingLeft = target < start
+            let steps = 16
+            for i in 1...steps {
+                let t = CGFloat(i) / CGFloat(steps)
+                petX = start + (target - start) * t
+                try? await Task.sleep(nanoseconds: 45_000_000)
+            }
+
+            store.feed(itemID: item.id)
+            droppedSymbol = nil
+            pulseHeart(crumbs: true)
+            schedulePoseClear(holdMs: 1200)
+            syncActivity()
+
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            careBusy = false
+        }
+    }
+
+    // MARK: - Play Ball (minimal)
+
+    private func startPlayBall() {
+        careBusy = true
+        ballX = facingLeft ? 0.30 : 0.75
+        ballVisible = true
+        #if canImport(UIKit)
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        #endif
+
+        Task { @MainActor in
+            let start = petX
+            let target = ballX
+            facingLeft = target < start
+            for i in 1...14 {
+                let t = CGFloat(i) / 14.0
+                petX = start + (target - start) * t
+                try? await Task.sleep(nanoseconds: 45_000_000)
+            }
+            store.playDefault()
+            bouncePet()
+            pulseHeart(crumbs: false)
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                ballX += facingLeft ? -0.08 : 0.08
+            }
+            schedulePoseClear(holdMs: 1500)
+            syncActivity()
+            try? await Task.sleep(nanoseconds: 1_600_000_000)
+            withAnimation { ballVisible = false }
+            careBusy = false
+        }
+    }
+
+    private func bounceBallHit() {
+        guard ballVisible else { return }
         bouncePet()
-        schedulePoseClear()
+        pulseHeart(crumbs: false)
+        store.playDefault()
+        schedulePoseClear(holdMs: 1000)
         syncActivity()
     }
+
+    // MARK: - Care (Clean / Sleep / tap)
 
     private func performClean() {
+        careBusy = true
         store.clean()
         pulseBubbles()
-        schedulePoseClear()
+        schedulePoseClear(holdMs: 1000)
         syncActivity()
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            careBusy = false
+        }
     }
 
     private func performSleep() {
+        careBusy = true
         store.sleep()
         pulseZzz()
         syncActivity()
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_600_000_000)
+            careBusy = false
+        }
     }
 
     private func performPetTap() {
         store.petTap()
         bouncePet()
-        schedulePoseClear()
+        pulseHeart(crumbs: false)
+        schedulePoseClear(holdMs: 900)
         syncActivity()
     }
+
+    private func showComingSoon(_ text: String) {
+        withAnimation { comingSoonText = text }
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_600_000_000)
+            withAnimation { comingSoonText = nil }
+        }
+    }
+
+    // MARK: - Feedback helpers
 
     private func bouncePet() {
         withAnimation(.spring(response: 0.25, dampingFraction: 0.55)) {
@@ -306,9 +443,7 @@ struct ContentView: View {
         withAnimation(.easeOut(duration: 0.6)) {
             heartRise = -48
         }
-        if crumbs {
-            spawnCrumbs()
-        }
+        if crumbs { spawnCrumbs() }
         Task {
             try? await Task.sleep(nanoseconds: 650_000_000)
             await MainActor.run {
@@ -323,9 +458,7 @@ struct ContentView: View {
 
     private func pulseBubbles() {
         spawnBubbles()
-        withAnimation(.easeOut(duration: 0.15)) {
-            showBubbles = true
-        }
+        withAnimation(.easeOut(duration: 0.15)) { showBubbles = true }
         Task {
             try? await Task.sleep(nanoseconds: 700_000_000)
             await MainActor.run {
@@ -395,11 +528,10 @@ struct ContentView: View {
         }
     }
 
-    /// Care pose holds ≥800ms then returns to idle (sleep excluded).
-    private func schedulePoseClear() {
+    private func schedulePoseClear(holdMs: UInt64 = 900) {
         poseClearTask?.cancel()
         poseClearTask = Task {
-            try? await Task.sleep(nanoseconds: 900_000_000)
+            try? await Task.sleep(nanoseconds: holdMs * 1_000_000)
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 store.clearTransientCarePose()
@@ -417,49 +549,25 @@ struct ContentView: View {
     private var roomBackground: some View {
         switch store.selectedScene {
         case .sunNook:
-            return AnyView(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.98, green: 0.94, blue: 0.88),
-                        Color(red: 0.90, green: 0.95, blue: 0.92)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
+            return AnyView(LinearGradient(
+                colors: [Color(red: 0.98, green: 0.94, blue: 0.88), Color(red: 0.90, green: 0.95, blue: 0.92)],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            ))
         case .moonPorch:
-            return AnyView(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0x2C / 255.0, green: 0x3A / 255.0, blue: 0x4A / 255.0),
-                        Color(red: 0.18, green: 0.22, blue: 0.30)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
+            return AnyView(LinearGradient(
+                colors: [Color(red: 0x2C / 255.0, green: 0x3A / 255.0, blue: 0x4A / 255.0), Color(red: 0.18, green: 0.22, blue: 0.30)],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            ))
         case .tideGlass:
-            return AnyView(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0x7e / 255.0, green: 0xc8 / 255.0, blue: 0xc8 / 255.0).opacity(0.55),
-                        Color(red: 0.90, green: 0.95, blue: 0.93)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
+            return AnyView(LinearGradient(
+                colors: [Color(red: 0x7e / 255.0, green: 0xc8 / 255.0, blue: 0xc8 / 255.0).opacity(0.55), Color(red: 0.90, green: 0.95, blue: 0.93)],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            ))
         case .skylineDusk:
-            return AnyView(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0xc4 / 255.0, green: 0xa0 / 255.0, blue: 0xc8 / 255.0),
-                        Color(red: 0.28, green: 0.20, blue: 0.34)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
+            return AnyView(LinearGradient(
+                colors: [Color(red: 0xc4 / 255.0, green: 0xa0 / 255.0, blue: 0xc8 / 255.0), Color(red: 0.28, green: 0.20, blue: 0.34)],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            ))
         }
     }
 }

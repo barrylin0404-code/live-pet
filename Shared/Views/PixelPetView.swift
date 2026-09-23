@@ -124,17 +124,18 @@ public struct AnimatedPixelPetView: View {
             let bobY: CGFloat = {
                 switch effective {
                 case .walk, .play, .clean:
-                    return (tick % 2 == 0) ? -4 : 2
+                    return (tick % 2 == 0) ? -6 : 3
                 case .eat:
                     return (tick % 2 == 0) ? 2 : 0
                 case .sleep:
                     return 0
                 case .idle:
-                    // ~2–3pt bob every other idle tick + blink on 3rd frame cadence
+                    // Dense bob — never frozen (15-video-density)
                     let phase = tick % 4
-                    if phase == 1 { return -3 }
-                    if phase == 3 { return 2 }
-                    return 0
+                    if phase == 0 { return -4 }
+                    if phase == 1 { return 0 }
+                    if phase == 2 { return 3 }
+                    return -1
                 }
             }()
             let blink = !isSleeping && effective == .idle && (tick % 4 == 2)

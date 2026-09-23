@@ -9,6 +9,14 @@ public struct RoomSceneView<PetContent: View>: View {
     public var mood: PetMood
     public var firefliesUnlocked: Int
     public var showFireflies: Bool
+    /// 0...1 horizontal pet placement (0.5 = center). Continuous walk drives this.
+    public var petXFraction: CGFloat
+    public var facingLeft: Bool
+    public var droppedSymbol: String?
+    public var droppedXFraction: CGFloat
+    public var ballVisible: Bool
+    public var ballXFraction: CGFloat
+    public var onBallTap: (() -> Void)?
     @ViewBuilder public var pet: () -> PetContent
 
     public init(
@@ -16,12 +24,26 @@ public struct RoomSceneView<PetContent: View>: View {
         mood: PetMood = .content,
         firefliesUnlocked: Int = 0,
         showFireflies: Bool = true,
+        petXFraction: CGFloat = 0.52,
+        facingLeft: Bool = false,
+        droppedSymbol: String? = nil,
+        droppedXFraction: CGFloat = 0.7,
+        ballVisible: Bool = false,
+        ballXFraction: CGFloat = 0.72,
+        onBallTap: (() -> Void)? = nil,
         @ViewBuilder pet: @escaping () -> PetContent
     ) {
         self.scene = scene
         self.mood = mood
         self.firefliesUnlocked = firefliesUnlocked
         self.showFireflies = showFireflies
+        self.petXFraction = petXFraction
+        self.facingLeft = facingLeft
+        self.droppedSymbol = droppedSymbol
+        self.droppedXFraction = droppedXFraction
+        self.ballVisible = ballVisible
+        self.ballXFraction = ballXFraction
+        self.onBallTap = onBallTap
         self.pet = pet
     }
 
@@ -40,8 +62,25 @@ public struct RoomSceneView<PetContent: View>: View {
                         drawSkylineDusk(context: context, size: size)
                     }
                 }
+                if let symbol = droppedSymbol {
+                    Image(systemName: symbol)
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(Color.orange)
+                        .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
+                        .position(x: geo.size.width * droppedXFraction, y: geo.size.height * 0.72)
+                        .transition(.scale.combined(with: .opacity))
+                }
+                if ballVisible {
+                    Image(systemName: "tennisball.fill")
+                        .font(.system(size: 30, weight: .bold))
+                        .foregroundStyle(Color(red: 0.85, green: 0.92, blue: 0.35))
+                        .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
+                        .position(x: geo.size.width * ballXFraction, y: geo.size.height * 0.70)
+                        .onTapGesture { onBallTap?() }
+                }
                 pet()
-                    .position(x: geo.size.width * 0.52, y: geo.size.height * 0.62)
+                    .scaleEffect(x: facingLeft ? -1 : 1, y: 1)
+                    .position(x: geo.size.width * petXFraction, y: geo.size.height * 0.62)
                 if showFireflies && firefliesUnlocked > 0 {
                     FirefliesOverlay(count: firefliesUnlocked)
                         .allowsHitTesting(false)
@@ -323,6 +362,13 @@ public struct PetRoomSceneView: View {
     public var firefliesUnlocked: Int
     public var showFireflies: Bool
     public var bounceOffset: CGFloat
+    public var petXFraction: CGFloat
+    public var facingLeft: Bool
+    public var droppedSymbol: String?
+    public var droppedXFraction: CGFloat
+    public var ballVisible: Bool
+    public var ballXFraction: CGFloat
+    public var onBallTap: (() -> Void)?
     public var onPetTap: (() -> Void)?
 
     public init(
@@ -336,6 +382,13 @@ public struct PetRoomSceneView: View {
         firefliesUnlocked: Int = 0,
         showFireflies: Bool = true,
         bounceOffset: CGFloat = 0,
+        petXFraction: CGFloat = 0.52,
+        facingLeft: Bool = false,
+        droppedSymbol: String? = nil,
+        droppedXFraction: CGFloat = 0.7,
+        ballVisible: Bool = false,
+        ballXFraction: CGFloat = 0.72,
+        onBallTap: (() -> Void)? = nil,
         onPetTap: (() -> Void)? = nil
     ) {
         self.scene = scene
@@ -348,6 +401,13 @@ public struct PetRoomSceneView: View {
         self.firefliesUnlocked = firefliesUnlocked
         self.showFireflies = showFireflies
         self.bounceOffset = bounceOffset
+        self.petXFraction = petXFraction
+        self.facingLeft = facingLeft
+        self.droppedSymbol = droppedSymbol
+        self.droppedXFraction = droppedXFraction
+        self.ballVisible = ballVisible
+        self.ballXFraction = ballXFraction
+        self.onBallTap = onBallTap
         self.onPetTap = onPetTap
     }
 
@@ -356,7 +416,14 @@ public struct PetRoomSceneView: View {
             scene: scene,
             mood: mood,
             firefliesUnlocked: firefliesUnlocked,
-            showFireflies: showFireflies
+            showFireflies: showFireflies,
+            petXFraction: petXFraction,
+            facingLeft: facingLeft,
+            droppedSymbol: droppedSymbol,
+            droppedXFraction: droppedXFraction,
+            ballVisible: ballVisible,
+            ballXFraction: ballXFraction,
+            onBallTap: onBallTap
         ) {
             TappablePetHost(onTap: onPetTap) {
                 AnimatedPixelPetView(

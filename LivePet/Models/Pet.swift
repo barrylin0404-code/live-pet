@@ -2,16 +2,21 @@ import Foundation
 
 /// In-app pet state mirrored into the Live Activity content state.
 /// Needs meters: moodScore, satiety, energy — all 0...100.
+/// Energy stays in the model for Sleep / decay; hide it in UI (Feeling + Satiety only).
 struct Pet: Identifiable, Equatable, Codable {
     let id: UUID
     var name: String
-    /// Stable glyph key for Live Activity compact regions.
+    /// Stable species / glyph key for Live Activity + widgets.
     var petGlyph: String
     var moodScore: Int
     var satiety: Int
     var energy: Int
     var lastAction: String
     var lastUpdated: Date
+    var pose: PetPose
+    var isSleeping: Bool
+    /// First create / onboarding time — drives age days chrome.
+    var createdAt: Date
 
     init(
         id: UUID = UUID(),
@@ -21,7 +26,10 @@ struct Pet: Identifiable, Equatable, Codable {
         satiety: Int = 65,
         energy: Int = 80,
         lastAction: String = "Ready to hang out",
-        lastUpdated: Date = .now
+        lastUpdated: Date = .now,
+        pose: PetPose = .idle,
+        isSleeping: Bool = false,
+        createdAt: Date = .now
     ) {
         self.id = id
         self.name = name
@@ -31,24 +39,38 @@ struct Pet: Identifiable, Equatable, Codable {
         self.energy = Self.clamp(energy)
         self.lastAction = lastAction
         self.lastUpdated = lastUpdated
+        self.pose = pose
+        self.isSleeping = isSleeping
+        self.createdAt = createdAt
     }
 
     var mood: PetMood {
-        PetMood.derived(moodScore: moodScore, satiety: satiety, energy: energy)
+        if isSleeping { return .sleepy }
+        return PetMood.derived(moodScore: moodScore, satiety: satiety, energy: energy)
     }
+
+    /// Designer lock: max(1, daysBetween(createdAt, now) + 1) using start-of-day calendar math.
+    var ageDays: Int {
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: createdAt)
+        let end = cal.startOfDay(for: .now)
+        let days = cal.dateComponents([.day], from: start, to: end).day ?? 0
+        return max(1, days + 1)
+    }
+
 
     var activityState: PetActivityAttributes.ContentState {
         .init(
-            mood: mood,
-            moodScore: moodScore,
-            satiety: satiety,
-            energy: energy,
-            lastAction: lastAction,
-            updatedAt: lastUpdated
+            speciesId: petGlyph,
+            pose: (isSleeping ? PetPose.sleep : pose).rawValue,
+            moodBand: mood.rawValue,
+            isSleeping: isSleeping
         )
     }
 
     mutating func feed(with item: InventoryItem) {
+        isSleeping = false
+        pose = .eat
         satiety = Self.clamp(satiety + item.satietyBoost)
         moodScore = Self.clamp(moodScore + item.moodBoost)
         energy = Self.clamp(energy + item.energyDelta)
@@ -57,6 +79,8 @@ struct Pet: Identifiable, Equatable, Codable {
     }
 
     mutating func play(with item: InventoryItem) {
+        isSleeping = false
+        pose = .play
         moodScore = Self.clamp(moodScore + item.moodBoost)
         energy = Self.clamp(energy + item.energyDelta)
         satiety = Self.clamp(satiety - 8)
@@ -66,6 +90,8 @@ struct Pet: Identifiable, Equatable, Codable {
 
     /// Sleep / rest — restores energy, small mood bump.
     mutating func sleep() {
+        isSleeping = true
+        pose = .sleep
         energy = Self.clamp(energy + 35)
         moodScore = Self.clamp(moodScore + 6)
         lastAction = "\(name) took a nap"
@@ -74,10 +100,29 @@ struct Pet: Identifiable, Equatable, Codable {
 
     /// Passive decay while the app is open (per tick interval).
     mutating func tick() {
-        satiety = Self.clamp(satiety - 2)
-        moodScore = Self.clamp(moodScore - 1)
-        energy = Self.clamp(energy - 1)
-        lastAction = "\(name) is hanging out"
+        if isSleeping {
+            energy = Self.clamp(energy + 2)
+            if energy >= 95 {
+                isSleeping = false
+                pose = .idle
+                lastAction = "\(name) woke up"
+            } else {
+                lastAction = "\(name) is sleeping"
+            }
+        } else {
+            satiety = Self.clamp(satiety - 2)
+            moodScore = Self.clamp(moodScore - 1)
+            energy = Self.clamp(energy - 1)
+            // Return to idle after action poses; occasional walk when playful.
+            if pose == .eat || pose == .play {
+                pose = .idle
+            } else if mood == .playful, Int.random(in: 0...4) == 0 {
+                pose = .walk
+            } else if pose == .walk {
+                pose = .idle
+            }
+            lastAction = "\(name) is hanging out"
+        }
         touch()
     }
 
@@ -91,9 +136,17 @@ struct Pet: Identifiable, Equatable, Codable {
             lastUpdated = date
             return
         }
-        satiety = Self.clamp(satiety - units * 2)
-        moodScore = Self.clamp(moodScore - units)
-        energy = Self.clamp(energy - units)
+        if isSleeping {
+            energy = Self.clamp(energy + units)
+            if energy >= 95 {
+                isSleeping = false
+                pose = .idle
+            }
+        } else {
+            satiety = Self.clamp(satiety - units * 2)
+            moodScore = Self.clamp(moodScore - units)
+            energy = Self.clamp(energy - units)
+        }
         lastAction = "\(name) waited for you"
         lastUpdated = date
     }
@@ -104,5 +157,25 @@ struct Pet: Identifiable, Equatable, Codable {
 
     private static func clamp(_ value: Int) -> Int {
         max(0, min(100, value))
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, petGlyph, moodScore, satiety, energy
+        case lastAction, lastUpdated, pose, isSleeping, createdAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        petGlyph = try c.decodeIfPresent(String.self, forKey: .petGlyph) ?? "nubby"
+        moodScore = Self.clamp(try c.decode(Int.self, forKey: .moodScore))
+        satiety = Self.clamp(try c.decode(Int.self, forKey: .satiety))
+        energy = Self.clamp(try c.decode(Int.self, forKey: .energy))
+        lastAction = try c.decode(String.self, forKey: .lastAction)
+        lastUpdated = try c.decode(Date.self, forKey: .lastUpdated)
+        pose = try c.decodeIfPresent(PetPose.self, forKey: .pose) ?? .idle
+        isSleeping = try c.decodeIfPresent(Bool.self, forKey: .isSleeping) ?? false
+        createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt) ?? lastUpdated
     }
 }

@@ -7,15 +7,22 @@ struct LivePetApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(store)
-                .environmentObject(activityManager)
-                .onAppear {
-                    activityManager.restoreIfNeeded()
-                    if activityManager.isActivityActive {
-                        activityManager.update(pet: store.pet)
-                    }
+            Group {
+                if store.hasCompletedOnboarding {
+                    ContentView()
+                } else {
+                    OnboardingView()
                 }
+            }
+            .environmentObject(store)
+            .environmentObject(activityManager)
+            .onAppear {
+                activityManager.restoreIfNeeded()
+                if activityManager.isActivityActive {
+                    activityManager.renewIfNeeded(pet: store.pet)
+                    activityManager.update(pet: store.pet)
+                }
+            }
         }
     }
 }

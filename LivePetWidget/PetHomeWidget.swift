@@ -19,7 +19,6 @@ struct PetHomeProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<PetHomeEntry>) -> Void) {
         let snap = PetSnapshot.load() ?? .placeholder
         let entry = PetHomeEntry(date: .now, snapshot: snap)
-        // Refresh periodically so Feeling/Satiety stay roughly current while away.
         let next = Calendar.current.date(byAdding: .minute, value: 15, to: .now) ?? .now.addingTimeInterval(900)
         completion(Timeline(entries: [entry], policy: .after(next)))
     }
@@ -67,17 +66,15 @@ struct PetHomeWidgetView: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
-                    if family != .accessoryCircular {
-                        HStack(spacing: 4) {
-                            Image(systemName: "heart.fill")
-                                .foregroundStyle(.pink)
-                            Text("\(snap.moodScore)")
-                            Image(systemName: "fork.knife")
-                                .foregroundStyle(.orange)
-                            Text("\(snap.satiety)")
-                        }
-                        .font(.caption2.monospacedDigit())
+                    HStack(spacing: 4) {
+                        Image(systemName: "heart.fill")
+                            .foregroundStyle(.pink)
+                        Text("\(snap.moodScore)")
+                        Image(systemName: "fork.knife")
+                            .foregroundStyle(.orange)
+                        Text("\(snap.satiety)")
                     }
+                    .font(.caption2.monospacedDigit())
                 }
                 .padding(10)
             }
@@ -85,12 +82,17 @@ struct PetHomeWidgetView: View {
     }
 
     private func petBlock(_ snap: PetSnapshot, size: CGFloat) -> some View {
-        PixelPetView(mood: snap.mood, scale: size / 64)
-            .frame(width: size, height: size)
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.white.opacity(0.55))
-            )
+        AnimatedPixelPetView(
+            mood: snap.mood,
+            pose: .idle,
+            isSleeping: snap.mood == .sleepy,
+            scale: size / 64
+        )
+        .frame(width: size, height: size)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.white.opacity(0.55))
+        )
     }
 
     private func meter(label: String, value: Int, tint: Color) -> some View {

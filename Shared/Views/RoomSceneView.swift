@@ -115,16 +115,30 @@ public struct RoomSceneView<PetContent: View>: View {
 /// Convenience when you only need the default Nubby pet.
 public struct SunNookScene: View {
     public var mood: PetMood
+    public var pose: PetPose
+    public var isSleeping: Bool
     public var petScale: CGFloat
 
-    public init(mood: PetMood = .content, petScale: CGFloat = 1.1) {
+    public init(
+        mood: PetMood = .content,
+        pose: PetPose = .idle,
+        isSleeping: Bool = false,
+        petScale: CGFloat = 1.1
+    ) {
         self.mood = mood
+        self.pose = pose
+        self.isSleeping = isSleeping
         self.petScale = petScale
     }
 
     public var body: some View {
         RoomSceneView(mood: mood) {
-            PixelPetView(mood: mood, scale: petScale)
+            AnimatedPixelPetView(
+                mood: mood,
+                pose: pose,
+                isSleeping: isSleeping,
+                scale: petScale
+            )
         }
     }
 }

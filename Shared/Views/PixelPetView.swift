@@ -1,84 +1,58 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
-/// Original geometric pixel pet "Nubby" — drawn with Canvas rectangles (no third-party art).
+/// Canvas fallback when Asset Catalog sprites are missing (previews / older builds).
 public struct PixelPetView: View {
     public var mood: PetMood
     public var scale: CGFloat
     public var blinking: Bool
+    public var bobOffset: CGFloat
 
-    public init(mood: PetMood = .content, scale: CGFloat = 1, blinking: Bool = false) {
+    public init(
+        mood: PetMood,
+        scale: CGFloat = 1,
+        blinking: Bool = false,
+        bobOffset: CGFloat = 0
+    ) {
         self.mood = mood
         self.scale = scale
         self.blinking = blinking
+        self.bobOffset = bobOffset
     }
 
     public var body: some View {
         Canvas { context, size in
-            let unit = min(size.width, size.height) / 16
-            let origin = CGPoint(
-                x: (size.width - unit * 16) / 2,
-                y: (size.height - unit * 16) / 2
-            )
-
+            let unit = size.width / 16
             func rect(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat) -> CGRect {
-                CGRect(
-                    x: origin.x + x * unit,
-                    y: origin.y + y * unit,
-                    width: w * unit,
-                    height: h * unit
-                )
+                CGRect(x: x * unit, y: (y + bobOffset) * unit, width: w * unit, height: h * unit)
             }
+            let bodyColor = Color(red: 0.98, green: 0.52, blue: 0.42)
+            let earColor = Color(red: 0.92, green: 0.38, blue: 0.32)
+            let belly = Color(red: 1.0, green: 0.82, blue: 0.72)
 
-            // Shadow
-            context.fill(Path(rect(4, 14, 8, 1.2)), with: .color(.black.opacity(0.18)))
+            context.fill(Path(rect(5, 2, 2.5, 2.8)), with: .color(earColor))
+            context.fill(Path(rect(8.5, 2, 2.5, 2.8)), with: .color(earColor))
+            context.fill(Path(rect(4, 4.5, 8, 7.5)), with: .color(bodyColor))
+            context.fill(Path(rect(5.5, 7.5, 5, 3.5)), with: .color(belly))
 
-            // Body — soft coral square with darker outline pixels
-            let body = Color(red: 0.98, green: 0.52, blue: 0.42)
-            let outline = Color(red: 0.72, green: 0.28, blue: 0.22)
-            let belly = Color(red: 1.0, green: 0.78, blue: 0.62)
-
-            context.fill(Path(rect(3, 4, 10, 9)), with: .color(outline))
-            context.fill(Path(rect(4, 5, 8, 7)), with: .color(body))
-            context.fill(Path(rect(5, 8, 6, 3)), with: .color(belly))
-
-            // Ears / nubs
-            context.fill(Path(rect(4, 3, 2, 2)), with: .color(body))
-            context.fill(Path(rect(10, 3, 2, 2)), with: .color(body))
-            context.fill(Path(rect(4.3, 3.3, 1.4, 1.4)), with: .color(outline.opacity(0.35)))
-            context.fill(Path(rect(10.3, 3.3, 1.4, 1.4)), with: .color(outline.opacity(0.35)))
-
-            // Feet
-            context.fill(Path(rect(5, 12, 2, 2)), with: .color(outline))
-            context.fill(Path(rect(9, 12, 2, 2)), with: .color(outline))
-
-            // Eyes / expression by mood
-            let eyeY: CGFloat = mood == .sleepy ? 7.2 : 6.5
             if blinking || mood == .sleepy {
-                context.fill(Path(rect(5.5, eyeY + 0.4, 2, 0.6)), with: .color(.black.opacity(0.85)))
-                context.fill(Path(rect(8.5, eyeY + 0.4, 2, 0.6)), with: .color(.black.opacity(0.85)))
+                context.stroke(
+                    Path { p in
+                        p.move(to: CGPoint(x: 6.2 * unit, y: (7 + bobOffset) * unit))
+                        p.addLine(to: CGPoint(x: 7.4 * unit, y: (7 + bobOffset) * unit))
+                        p.move(to: CGPoint(x: 8.6 * unit, y: (7 + bobOffset) * unit))
+                        p.addLine(to: CGPoint(x: 9.8 * unit, y: (7 + bobOffset) * unit))
+                    },
+                    with: .color(.black.opacity(0.75)),
+                    lineWidth: max(1, unit * 0.35)
+                )
             } else {
-                context.fill(Path(rect(5.5, eyeY, 2, 2)), with: .color(.white))
-                context.fill(Path(rect(8.5, eyeY, 2, 2)), with: .color(.white))
-                let pupilOffset: CGFloat = mood == .playful ? 0.4 : 0.2
-                context.fill(Path(rect(6 + pupilOffset, eyeY + 0.5, 1, 1.2)), with: .color(.black))
-                context.fill(Path(rect(9 + pupilOffset, eyeY + 0.5, 1, 1.2)), with: .color(.black))
+                context.fill(Path(ellipseIn: rect(6.2, 6.5, 1.2, 1.4)), with: .color(.black.opacity(0.85)))
+                context.fill(Path(ellipseIn: rect(8.6, 6.5, 1.2, 1.4)), with: .color(.black.opacity(0.85)))
             }
 
-            // Mouth
-            switch mood {
-            case .happy, .playful:
-                context.fill(Path(rect(7, 10, 2, 0.7)), with: .color(outline))
-                context.fill(Path(rect(6.5, 9.6, 0.7, 0.7)), with: .color(outline))
-                context.fill(Path(rect(8.8, 9.6, 0.7, 0.7)), with: .color(outline))
-            case .hungry, .low:
-                context.fill(Path(rect(7, 9.5, 2, 1.2)), with: .color(outline.opacity(0.7)))
-            case .sleepy:
-                context.fill(Path(rect(7.2, 10, 1.6, 0.5)), with: .color(outline.opacity(0.5)))
-            case .content:
-                context.fill(Path(rect(7, 10, 2, 0.5)), with: .color(outline))
-            }
-
-            // Cheek blush when happy / playful
             if mood == .happy || mood == .playful {
                 context.fill(Path(rect(4.5, 8.5, 1.4, 0.9)), with: .color(.pink.opacity(0.45)))
                 context.fill(Path(rect(10.1, 8.5, 1.4, 0.9)), with: .color(.pink.opacity(0.45)))
@@ -89,10 +63,107 @@ public struct PixelPetView: View {
     }
 }
 
+/// Timeline-driven sprite loops from design-pack Asset Catalog frames.
+/// Idle / walk / eat / sleep — never push Activity updates for frame animation.
+public struct AnimatedPixelPetView: View {
+    public var mood: PetMood
+    public var pose: PetPose
+    public var isSleeping: Bool
+    public var scale: CGFloat
+    /// Prefer Island crop asset when compact.
+    public var preferIslandCrop: Bool
+
+    public init(
+        mood: PetMood,
+        pose: PetPose = .idle,
+        isSleeping: Bool = false,
+        scale: CGFloat = 1,
+        preferIslandCrop: Bool = false
+    ) {
+        self.mood = mood
+        self.pose = pose
+        self.isSleeping = isSleeping
+        self.scale = scale
+        self.preferIslandCrop = preferIslandCrop
+    }
+
+    public var body: some View {
+        let effective: PetPose = (isSleeping || pose == .sleep) ? .sleep : pose
+        let interval = Self.interval(for: effective)
+        TimelineView(.animation(minimumInterval: interval, paused: false)) { context in
+            let frames = Self.frameNames(for: effective)
+            let tick = Int(context.date.timeIntervalSinceReferenceDate / interval)
+            let name: String = {
+                if preferIslandCrop, Self.assetExists("island-compact-crop") {
+                    return "island-compact-crop"
+                }
+                return frames[tick % frames.count]
+            }()
+
+            Group {
+                if Self.assetExists(name) {
+                    Image(name)
+                        .interpolation(.none)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 32 * scale * 3, height: 32 * scale * 3)
+                } else {
+                    let blink = !isSleeping && effective == .idle && (tick % 8 == 0)
+                    let bob: CGFloat = {
+                        switch effective {
+                        case .walk, .play: return (tick % 2 == 0) ? -0.35 : 0.15
+                        case .eat: return (tick % 2 == 0) ? 0.2 : 0
+                        case .sleep: return 0
+                        case .idle: return (tick % 10 == 0) ? -0.1 : 0
+                        }
+                    }()
+                    PixelPetView(
+                        mood: effective == .sleep ? .sleepy : mood,
+                        scale: scale,
+                        blinking: blink || effective == .sleep,
+                        bobOffset: bob
+                    )
+                }
+            }
+            .accessibilityLabel("Nubby the pixel pet, \(mood.label)")
+        }
+    }
+
+    private static func interval(for pose: PetPose) -> TimeInterval {
+        switch pose {
+        case .idle: return 0.33
+        case .eat: return 0.30
+        case .sleep: return 0.60
+        case .walk, .play: return 0.18
+        }
+    }
+
+    private static func frameNames(for pose: PetPose) -> [String] {
+        switch pose {
+        case .idle:
+            return ["nubby-idle-0", "nubby-idle-1", "nubby-idle-2", "nubby-idle-3"]
+        case .eat:
+            return ["nubby-eat-0", "nubby-eat-1", "nubby-eat-2"]
+        case .sleep:
+            return ["nubby-sleep-0", "nubby-sleep-1"]
+        case .walk, .play:
+            return ["nubby-walk-0", "nubby-walk-1", "nubby-walk-2", "nubby-walk-3"]
+        }
+    }
+
+    private static func assetExists(_ name: String) -> Bool {
+        #if canImport(UIKit)
+        return UIImage(named: name) != nil
+        #else
+        return false
+        #endif
+    }
+}
+
 #Preview {
     HStack {
         ForEach(PetMood.allCases, id: \.self) { mood in
-            PixelPetView(mood: mood, scale: 0.7)
+            AnimatedPixelPetView(mood: mood, scale: 0.7)
         }
     }
     .padding()

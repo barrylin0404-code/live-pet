@@ -7,6 +7,7 @@ import WidgetKit
 final class PetStore: ObservableObject {
     @Published private(set) var pet: Pet
     @Published private(set) var items: [InventoryItem]
+    @Published private(set) var hasCompletedOnboarding: Bool
 
     private let defaults: UserDefaults
     private var tickTask: Task<Void, Never>?
@@ -18,9 +19,16 @@ final class PetStore: ObservableObject {
         self.defaults = defaults
         Self.migrateFromStandardIfNeeded(into: defaults)
 
+        hasCompletedOnboarding = defaults.bool(forKey: AppGroup.onboardingKey)
+
         if let data = defaults.data(forKey: AppGroup.petKey),
            let saved = try? JSONDecoder().decode(Pet.self, from: data) {
             pet = saved
+            // Existing installs already have a pet — skip onboarding gate.
+            if !hasCompletedOnboarding {
+                hasCompletedOnboarding = true
+                defaults.set(true, forKey: AppGroup.onboardingKey)
+            }
         } else {
             pet = Pet()
         }
@@ -32,8 +40,10 @@ final class PetStore: ObservableObject {
             items = InventoryItem.catalog
         }
 
-        pet.applyOfflineDecay()
-        persist()
+        if hasCompletedOnboarding {
+            pet.applyOfflineDecay()
+            persist()
+        }
     }
 
     var foods: [InventoryItem] { items.filter(\.isFood) }
@@ -53,6 +63,26 @@ final class PetStore: ObservableObject {
     func stopTicking() {
         tickTask?.cancel()
         tickTask = nil
+    }
+
+    /// First-run: create named pet and mark onboarding done.
+    func completeOnboarding(name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let finalName = trimmed.isEmpty ? "Nubby" : String(trimmed.prefix(16))
+        pet = Pet(name: finalName, createdAt: .now)
+        items = InventoryItem.catalog
+        hasCompletedOnboarding = true
+        defaults.set(true, forKey: AppGroup.onboardingKey)
+        commit()
+    }
+
+    func rename(_ name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        pet.name = String(trimmed.prefix(16))
+        pet.lastAction = "Renamed to \(pet.name)"
+        pet.touch()
+        commit()
     }
 
     func feed(itemID: String) {
@@ -76,15 +106,37 @@ final class PetStore: ObservableObject {
         commit()
     }
 
+    func feedDefault() {
+        let id = foods.first(where: { $0.quantity > 0 })?.id
+            ?? InventoryItem.catalog.first(where: \.isFood)?.id
+        guard let id else { return }
+        feed(itemID: id)
+    }
+
+    func playDefault() {
+        let id = toys.first(where: { $0.quantity > 0 })?.id
+            ?? InventoryItem.catalog.first(where: \.isToy)?.id
+        guard let id else { return }
+        play(itemID: id)
+    }
+
     func sleep() {
         pet.sleep()
         commit()
     }
 
-    func resetToDefaults() {
+    /// Wipe pet + inventory and return to onboarding.
+    func resetAll() {
+        stopTicking()
         pet = Pet()
         items = InventoryItem.catalog
-        commit()
+        hasCompletedOnboarding = false
+        defaults.set(false, forKey: AppGroup.onboardingKey)
+        defaults.removeObject(forKey: AppGroup.petKey)
+        defaults.removeObject(forKey: AppGroup.inventoryKey)
+        defaults.removeObject(forKey: AppGroup.snapshotKey)
+        WidgetCenter.shared.reloadAllTimelines()
+        onPetChange?(pet)
     }
 
     private func applyTick() {

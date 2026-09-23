@@ -3,39 +3,50 @@ import Foundation
 
 /// Shared ActivityKit attributes for the Live Pet Dynamic Island / Lock Screen Live Activity.
 public struct PetActivityAttributes: ActivityAttributes {
+    /// Tiny ContentState — keep under ActivityKit size pressure; meters come from App Group snapshot.
     public struct ContentState: Codable, Hashable {
-        public var mood: PetMood
-        public var moodScore: Int
-        public var satiety: Int
-        public var energy: Int
-        public var lastAction: String
-        public var updatedAt: Date
+        public var speciesId: String
+        public var pose: String
+        public var moodBand: String
+        public var isSleeping: Bool
 
         public init(
-            mood: PetMood,
-            moodScore: Int,
-            satiety: Int,
-            energy: Int,
-            lastAction: String,
-            updatedAt: Date = .now
+            speciesId: String = "nubby",
+            pose: String = PetPose.idle.rawValue,
+            moodBand: String = PetMood.content.rawValue,
+            isSleeping: Bool = false
         ) {
-            self.mood = mood
-            self.moodScore = max(0, min(100, moodScore))
-            self.satiety = max(0, min(100, satiety))
-            self.energy = max(0, min(100, energy))
-            self.lastAction = lastAction
-            self.updatedAt = updatedAt
+            self.speciesId = speciesId
+            self.pose = pose
+            self.moodBand = moodBand
+            self.isSleeping = isSleeping
+        }
+
+        public var mood: PetMood {
+            PetMood(rawValue: moodBand) ?? .content
+        }
+
+        public var petPose: PetPose {
+            PetPose(rawValue: pose) ?? .idle
         }
     }
 
     public var petName: String
-    /// Short glyph shown in compact Island regions (SF Symbol name or emoji-free mark).
+    /// Short glyph / species key for compact Island regions.
     public var petGlyph: String
 
     public init(petName: String, petGlyph: String = "nubby") {
         self.petName = petName
         self.petGlyph = petGlyph
     }
+}
+
+public enum PetPose: String, Codable, Hashable, CaseIterable {
+    case idle
+    case walk
+    case eat
+    case play
+    case sleep
 }
 
 public enum PetMood: String, Codable, Hashable, CaseIterable {

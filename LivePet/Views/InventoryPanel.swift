@@ -52,23 +52,16 @@ private struct InventoryButton: View {
                     .font(.title3)
                     .foregroundStyle(tint)
                 Text(item.name)
-                    .font(.caption2.weight(.semibold))
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
-                    .minimumScaleFactor(0.8)
+                    .font(.caption2)
+                    .lineLimit(1)
                 if showQuantity {
                     Text("×\(item.quantity)")
                         .font(.caption2.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("Use")
-                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .padding(.horizontal, 4)
         }
         .buttonStyle(.bordered)
     }

@@ -11,8 +11,13 @@ struct PetLiveActivityWidget: Widget {
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    PixelPetView(mood: context.state.mood, scale: 0.55)
-                        .padding(.leading, 2)
+                    AnimatedPixelPetView(
+                        mood: context.state.mood,
+                        pose: context.state.petPose,
+                        isSleeping: context.state.isSleeping,
+                        scale: 0.55
+                    )
+                    .padding(.leading, 2)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     VStack(alignment: .trailing, spacing: 2) {
@@ -29,25 +34,48 @@ struct PetLiveActivityWidget: Widget {
                         .font(.headline)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
+                    let snap = PetSnapshot.load()
                     HStack(spacing: 10) {
-                        MetricChip(title: "Mood", value: context.state.moodScore, tint: .pink)
-                        MetricChip(title: "Satiety", value: context.state.satiety, tint: .orange)
-                        MetricChip(title: "Energy", value: context.state.energy, tint: .green)
+                        MetricChip(
+                            title: "Feeling",
+                            value: snap?.moodScore ?? bandFallback(context.state.mood),
+                            tint: .pink
+                        )
+                        MetricChip(
+                            title: "Satiety",
+                            value: snap?.satiety ?? (context.state.mood == .hungry ? 18 : 60),
+                            tint: .orange
+                        )
                     }
                     .padding(.horizontal, 8)
                     .padding(.bottom, 4)
                 }
             } compactLeading: {
-                Image(systemName: "square.fill")
-                    .foregroundStyle(Color(red: 0.98, green: 0.52, blue: 0.42))
+                AnimatedPixelPetView(
+                    mood: context.state.mood,
+                    pose: context.state.petPose,
+                    isSleeping: context.state.isSleeping,
+                    scale: 0.28,
+                    preferIslandCrop: true
+                )
             } compactTrailing: {
                 Image(systemName: context.state.mood.symbolName)
             } minimal: {
-                Image(systemName: "square.fill")
+                Image(systemName: context.state.isSleeping ? "moon.zzz" : "square.fill")
                     .foregroundStyle(Color(red: 0.98, green: 0.52, blue: 0.42))
             }
             .keylineTint(Color(red: 0.98, green: 0.52, blue: 0.42))
         }
+    }
+
+}
+
+private func bandFallback(_ mood: PetMood) -> Int {
+    switch mood {
+    case .happy, .playful: return 80
+    case .content: return 60
+    case .hungry, .low: return 22
+    case .sleepy: return 40
     }
 }
 
@@ -55,19 +83,24 @@ private struct LockScreenPetView: View {
     let context: ActivityViewContext<PetActivityAttributes>
 
     var body: some View {
+        let snap = PetSnapshot.load()
         HStack(spacing: 14) {
-            PixelPetView(mood: context.state.mood, scale: 0.7)
+            AnimatedPixelPetView(
+                mood: context.state.mood,
+                pose: context.state.petPose,
+                isSleeping: context.state.isSleeping,
+                scale: 0.7
+            )
             VStack(alignment: .leading, spacing: 4) {
                 Text(context.attributes.petName)
                     .font(.headline)
-                Text("\(context.state.mood.label) · \(context.state.lastAction)")
+                Text(context.state.mood.label + (context.state.isSleeping ? " · Sleeping" : ""))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                 HStack(spacing: 10) {
-                    Label("\(context.state.moodScore)%", systemImage: "heart.fill")
-                    Label("\(context.state.satiety)%", systemImage: "fork.knife")
-                    Label("\(context.state.energy)%", systemImage: "bolt.fill")
+                    Label("\(snap?.moodScore ?? 60)%", systemImage: "heart.fill")
+                    Label("\(snap?.satiety ?? 60)%", systemImage: "fork.knife")
                 }
                 .font(.caption2)
                 .foregroundStyle(.secondary)

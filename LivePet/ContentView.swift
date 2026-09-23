@@ -4,54 +4,79 @@ struct ContentView: View {
     @EnvironmentObject private var store: PetStore
     @EnvironmentObject private var activityManager: PetLiveActivityManager
 
+    @State private var showFloatingHeart = false
+    @State private var showSettings = false
+
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    roomCard
-                    meters
-                    quickActions
-                    InventoryPanel(store: store) {
-                        syncActivity()
+            ZStack {
+                ScrollView {
+                    VStack(spacing: 16) {
+                        roomCard
+                        StatusStripView(pet: store.pet)
+                        quickActions
+                        InventoryPanel(store: store) {
+                            syncActivity()
+                        }
+                        if let error = activityManager.lastError {
+                            Text(error)
+                                .font(.footnote)
+                                .foregroundStyle(.red)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                        }
+                        Text(store.pet.lastAction)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
                     }
-                    liveActivityControls
-                    if let error = activityManager.lastError {
-                        Text(error)
-                            .font(.footnote)
-                            .foregroundStyle(.red)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                    }
+                    .padding()
                 }
-                .padding()
+
+                if showFloatingHeart {
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: 72, weight: .bold))
+                        .foregroundStyle(Color(red: 1.0, green: 0.30, blue: 0.43))
+                        .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
+                        .transition(.scale.combined(with: .opacity))
+                        .allowsHitTesting(false)
+                }
             }
             .background(
                 LinearGradient(
                     colors: [
                         Color(red: 0.98, green: 0.94, blue: 0.88),
-                        Color(red: 0.92, green: 0.95, blue: 0.98)
+                        Color(red: 0.90, green: 0.95, blue: 0.92)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
                 .ignoresSafeArea()
             )
-            .navigationTitle("Live Pet")
+            .navigationTitle("Sun Nook")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Text(store.pet.lastAction)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                    Button {
+                        showSettings = true
+                    } label: {
+                        Image(systemName: "gearshape.fill")
+                    }
+                    .accessibilityLabel("Settings")
                 }
+            }
+            .navigationDestination(isPresented: $showSettings) {
+                SettingsView()
             }
             .onAppear {
                 store.onPetChange = { pet in
                     if activityManager.isActivityActive {
+                        activityManager.renewIfNeeded(pet: pet)
                         activityManager.update(pet: pet)
                     }
                 }
                 store.startTicking()
+                activityManager.renewIfNeeded(pet: store.pet)
                 syncActivity()
             }
             .onDisappear {
@@ -61,50 +86,53 @@ struct ContentView: View {
     }
 
     private var roomCard: some View {
-        VStack(spacing: 10) {
-            SunNookScene(mood: store.pet.mood, petScale: 1.15)
-                .frame(maxWidth: .infinity)
-                .frame(height: 220)
+        VStack(spacing: 8) {
+            SunNookScene(
+                mood: store.pet.mood,
+                pose: store.pet.pose,
+                isSleeping: store.pet.isSleeping,
+                petScale: 1.15
+            )
+            .frame(maxWidth: .infinity)
+            .frame(height: 220)
 
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(store.pet.name)
-                        .font(.title2.bold())
-                    Label(store.pet.mood.label, systemImage: store.pet.mood.symbolName)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
+                Label(store.pet.mood.label, systemImage: store.pet.mood.symbolName)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                 Spacer()
                 Text("Sun Nook")
                     .font(.caption.weight(.semibold))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(.white.opacity(0.55), in: Capsule())
+                    .background(
+                        Color(red: 0.91, green: 0.96, blue: 0.89).opacity(0.9),
+                        in: Capsule()
+                    )
             }
             .padding(.horizontal, 4)
         }
         .padding(12)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-    }
-
-    private var meters: some View {
-        VStack(spacing: 12) {
-            StatBar(title: "Feeling", value: store.pet.moodScore, tint: .pink, systemImage: "heart.fill")
-            StatBar(title: "Satiety", value: store.pet.satiety, tint: .orange, systemImage: "fork.knife")
-            StatBar(title: "Energy", value: store.pet.energy, tint: .green, systemImage: "bolt.fill")
-        }
-        .padding(14)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(
+            Color(red: 0.91, green: 0.96, blue: 0.89).opacity(0.55),
+            in: RoundedRectangle(cornerRadius: 28, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .strokeBorder(Color(red: 0.77, green: 0.85, blue: 0.75), lineWidth: 2)
+        )
     }
 
     private var quickActions: some View {
         HStack(spacing: 12) {
             ActionButton(title: "Feed", systemImage: "fork.knife", tint: .orange) {
                 store.feedDefault()
+                pulseHeart()
                 syncActivity()
             }
             ActionButton(title: "Play", systemImage: "gamecontroller", tint: .indigo) {
                 store.playDefault()
+                pulseHeart()
                 syncActivity()
             }
             ActionButton(title: "Sleep", systemImage: "moon.zzz", tint: .purple) {
@@ -114,65 +142,24 @@ struct ContentView: View {
         }
     }
 
-    private var liveActivityControls: some View {
-        VStack(spacing: 10) {
-            if activityManager.isActivityActive {
-                Button(role: .destructive) {
-                    activityManager.end()
-                } label: {
-                    Label("End Live Activity", systemImage: "xmark.circle")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-            } else {
-                Button {
-                    activityManager.start(pet: store.pet)
-                } label: {
-                    Label("Start in Dynamic Island", systemImage: "platter.filled.top.and.arrow.up.iphone")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(!activityManager.areActivitiesEnabled)
-            }
-
-            Text(
-                activityManager.areActivitiesEnabled
-                    ? "Live Activities are enabled. Feed, play, and sleep update the Island."
-                    : "Enable Live Activities in Settings → Live Pet."
-            )
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .multilineTextAlignment(.center)
+    private func pulseHeart() {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.55)) {
+            showFloatingHeart = true
         }
-        .padding(14)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        Task {
+            try? await Task.sleep(nanoseconds: 700_000_000)
+            await MainActor.run {
+                withAnimation(.easeOut(duration: 0.25)) {
+                    showFloatingHeart = false
+                }
+            }
+        }
     }
 
     private func syncActivity() {
         guard activityManager.isActivityActive else { return }
+        activityManager.renewIfNeeded(pet: store.pet)
         activityManager.update(pet: store.pet)
-    }
-}
-
-private struct StatBar: View {
-    let title: String
-    let value: Int
-    let tint: Color
-    var systemImage: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Label(title, systemImage: systemImage)
-                Spacer()
-                Text("\(value)%")
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
-            }
-            .font(.subheadline)
-            ProgressView(value: Double(value), total: 100)
-                .tint(tint)
-        }
     }
 }
 

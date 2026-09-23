@@ -12,7 +12,7 @@ Feed, play, and rest with a simple in-app pet. Start a Live Activity to keep moo
 |------|------|
 | `LivePet/` | Main SwiftUI app (entry, UI, Live Activity manager) |
 | `LivePetWidget/` | Widget Extension hosting the Live Activity / Dynamic Island UI |
-| `Shared/` | Shared `PetActivityAttributes` + `PetMood` (AppKit ActivityKit model) |
+| `Shared/` | Shared `PetActivityAttributes` + `PetMood` (ActivityKit model) |
 | `project.yml` | XcodeGen spec for App + Widget Extension targets |
 | `LivePet/Info.plist` | `NSSupportsLiveActivities` (+ frequent updates) |
 

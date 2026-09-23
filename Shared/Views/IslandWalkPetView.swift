@@ -25,8 +25,10 @@ public struct IslandWalkPetView: View {
     private static let frameInterval: TimeInterval = 0.125
     /// Full L→R→L glide cycle (~2.0s). Instant mirror at edges.
     private static let travelPeriod: TimeInterval = 2.0
-    /// Hop cycle in frames (squash → stretch → land squash).
+    /// Occasional idle hop only — App Lead bounce: constant hop rejected vs clip.
     private static let hopFrames: Int = 4
+    /// Quiet walk between hops (~4.5s at 8fps).
+    private static let hopIntervalFrames: Int = 36
 
     public init(
         mood: PetMood,
@@ -88,7 +90,7 @@ public struct IslandWalkPetView: View {
             let frames = Self.walkFrames(speciesId: speciesId, growthStage: growthStage)
             let name = frames[frameTick % max(frames.count, 1)]
 
-            // Idle hop: squash → stretch → land squash (pixel cadence).
+            // Occasional idle hop (not every walk cycle) — flat glide most of the time.
             let (squashX, squashY, hopY) = Self.hopTransform(frameTick: frameTick, side: side)
 
             Group {
@@ -128,10 +130,15 @@ public struct IslandWalkPetView: View {
         }
     }
 
-    /// Squash→stretch→land squash hop keyed to walk frames.
+    /// Squash→stretch→land squash only during a short window every `hopIntervalFrames`.
+    /// Flat walk (identity) the rest of the time — matches clip occasional idle hop.
     private static func hopTransform(frameTick: Int, side: CGFloat) -> (sx: CGFloat, sy: CGFloat, y: CGFloat) {
+        let phase = frameTick % hopIntervalFrames
+        guard phase < hopFrames else {
+            return (1, 1, 0)
+        }
         let hopAmp = max(3.5, side * 0.10)
-        switch frameTick % hopFrames {
+        switch phase {
         case 0: // crouch squash
             return (1.12, 0.88, hopAmp * 0.15)
         case 1: // stretch airborne

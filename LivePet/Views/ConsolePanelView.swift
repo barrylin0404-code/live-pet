@@ -3,10 +3,11 @@ import SwiftUI
 import UIKit
 #endif
 
-/// Beige Game Boy–style handheld console — layout tokens from 17-layout-pass.
-/// LCD + hardware + emboss only. Widgets/Settings live in BottomUtilityBar (ContentView).
+/// Beige Game Boy–style handheld console — layout 21 clip-redo (supersedes 17).
+/// LCD two-col + Island toggle + hardware + emboss. Widgets/Settings in BottomUtilityBar.
 struct ConsolePanelView: View {
     @ObservedObject var store: PetStore
+    @EnvironmentObject private var activityManager: PetLiveActivityManager
 
     var onFood: () -> Void
     var onPlay: () -> Void
@@ -24,106 +25,124 @@ struct ConsolePanelView: View {
     private let lcdBorder = Color(red: 0x9B / 255.0, green: 0xB8 / 255.0, blue: 0x96 / 255.0)
     private let fpPink = Color(red: 0xE8 / 255.0, green: 0x91 / 255.0, blue: 0xB8 / 255.0)
     private let fpBevel = Color(red: 0xC4 / 255.0, green: 0x45 / 255.0, blue: 0x7A / 255.0)
+    private let crossDeboss = Color(red: 0xB0 / 255.0, green: 0x3A / 255.0, blue: 0x6A / 255.0)
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
     private let heartFill = Color(red: 1.0, green: 0.30, blue: 0.43)
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 8) {
             lcdBlock
-            controlsRow
+            islandToggleRow
+            hardwareRow
             Text("Live Pet")
                 .font(.system(size: 11, weight: .heavy, design: .rounded))
                 .tracking(2)
-                .foregroundStyle(ink.opacity(0.35))
+                .foregroundStyle(ink.opacity(0.40))
                 .padding(.top, 2)
         }
         .padding(.horizontal, 14)
         .padding(.top, 14)
-        .padding(.bottom, 12)
+        .padding(.bottom, 10)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(shell)
-                .shadow(color: .black.opacity(0.12), radius: 8, y: -2)
+            UnevenRoundedRectangle(
+                topLeadingRadius: 28,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: 28,
+                style: .continuous
+            )
+            .fill(shell)
         )
     }
 
+    // MARK: - LCD two-column (R5 / M2)
+
     private var lcdBlock: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 10) {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
                 avatar
                     .frame(width: 48, height: 48)
                     .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
 
-                VStack(alignment: .leading, spacing: 2) {
-                    if editingName {
-                        TextField("Name", text: $draftName)
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(ink)
-                            .onSubmit { commitRename() }
-                        Button("Save") { commitRename() }
-                            .font(.caption.weight(.bold))
-                    } else {
-                        Button {
-                            draftName = store.pet.name
-                            editingName = true
-                        } label: {
-                            HStack(spacing: 4) {
-                                Text(store.pet.name)
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .foregroundStyle(ink)
-                                    .lineLimit(1)
-                                Image(systemName: "pencil")
-                                    .font(.system(size: 12, weight: .bold))
-                                    .foregroundStyle(ink.opacity(0.5))
-                            }
+                if editingName {
+                    TextField("Name", text: $draftName)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(ink)
+                        .frame(width: 72)
+                        .onSubmit { commitRename() }
+                    Button("Save") { commitRename() }
+                        .font(.caption.weight(.bold))
+                } else {
+                    Button {
+                        draftName = store.pet.name
+                        editingName = true
+                    } label: {
+                        HStack(spacing: 3) {
+                            Text(store.pet.name)
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(ink)
+                                .lineLimit(1)
+                            Image(systemName: "pencil")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(ink.opacity(0.5))
                         }
-                        .buttonStyle(.plain)
                     }
-                    Text("Age: \(store.pet.ageDays) Days")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(ink.opacity(0.7))
+                    .buttonStyle(.plain)
                 }
-                Spacer(minLength: 0)
             }
+            .frame(width: 78, alignment: .leading)
 
-            HStack(spacing: 8) {
-                Text("Feeling")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(ink)
-                    .frame(width: 52, alignment: .leading)
-                HStack(spacing: 4) {
-                    ForEach(0..<4, id: \.self) { i in
-                        Image(systemName: i < filledHearts ? "heart.fill" : "heart")
-                            .font(.system(size: 16))
-                            .foregroundStyle(i < filledHearts ? heartFill : heartFill.opacity(0.35))
-                    }
-                }
-                Spacer(minLength: 0)
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Feeling, \(store.pet.moodScore) percent")
+            Rectangle()
+                .fill(lcdBorder.opacity(0.85))
+                .frame(width: 1.25)
+                .padding(.vertical, 2)
 
-            HStack(spacing: 8) {
-                Text("Satiety")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(ink)
-                    .frame(width: 52, alignment: .leading)
-                HStack(spacing: 5) {
-                    ForEach(0..<3, id: \.self) { i in
-                        Circle()
-                            .fill(i < filledSatiety ? Color.orange : Color.orange.opacity(0.22))
-                            .frame(width: 12, height: 12)
-                            .overlay(Circle().strokeBorder(Color.orange.opacity(0.5), lineWidth: 1.2))
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Age: \(store.pet.ageDays) Days")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(ink.opacity(0.85))
+
+                HStack(spacing: 8) {
+                    Text("Feeling")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(ink)
+                        .frame(width: 52, alignment: .leading)
+                    HStack(spacing: 3) {
+                        ForEach(0..<4, id: \.self) { i in
+                            Image(systemName: i < filledHearts ? "heart.fill" : "heart")
+                                .font(.system(size: 14))
+                                .foregroundStyle(i < filledHearts ? heartFill : heartFill.opacity(0.35))
+                        }
                     }
+                    Spacer(minLength: 0)
                 }
-                Spacer(minLength: 0)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Feeling, \(store.pet.moodScore) percent")
+
+                HStack(spacing: 8) {
+                    Text("Satiety")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(ink)
+                        .frame(width: 52, alignment: .leading)
+                    HStack(spacing: 5) {
+                        ForEach(0..<3, id: \.self) { i in
+                            Circle()
+                                .fill(i < filledSatiety ? Color.orange : Color.orange.opacity(0.22))
+                                .frame(width: 11, height: 11)
+                                .overlay(Circle().strokeBorder(Color.orange.opacity(0.5), lineWidth: 1.2))
+                        }
+                    }
+                    Spacer(minLength: 0)
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Satiety, \(store.pet.satiety) percent")
             }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Satiety, \(store.pet.satiety) percent")
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(lcd, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -131,20 +150,115 @@ struct ConsolePanelView: View {
         )
     }
 
-    private var controlsRow: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(spacing: 10) {
+    // MARK: - Island toggle on console (R3 / M5)
+
+    private var islandToggleRow: some View {
+        HStack(spacing: 10) {
+            Text("Dynamic Island")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(ink.opacity(0.85))
+            Spacer(minLength: 0)
+            Toggle(
+                "",
+                isOn: Binding(
+                    get: { activityManager.isActivityActive },
+                    set: { on in
+                        lightHaptic()
+                        if on {
+                            activityManager.start(pet: store.pet)
+                        } else {
+                            activityManager.end()
+                        }
+                    }
+                )
+            )
+            .labelsHidden()
+            .tint(fpPink)
+            .disabled(!activityManager.areActivitiesEnabled && !activityManager.isActivityActive)
+            .accessibilityLabel("Dynamic Island")
+        }
+        .frame(height: 30)
+        .padding(.horizontal, 4)
+    }
+
+    // MARK: - Pets/Scenes HStack + F-cross / P diagonal (R1 / M4)
+
+    private var hardwareRow: some View {
+        HStack(alignment: .center, spacing: 8) {
+            HStack(spacing: 10) {
                 pill("Pets", action: onPets)
                 pill("Scenes", action: onScenes)
             }
             Spacer(minLength: 4)
-            HStack(spacing: 18) {
-                roundAction("F", accessibility: "Feed — select food", action: onFood, longPress: onClean)
-                roundAction("P", accessibility: "Play — select game", action: onPlay, longPress: onSleep)
-            }
+            fpCluster
         }
-        .padding(.horizontal, 4)
-        .padding(.top, 2)
+        .padding(.horizontal, 2)
+        .frame(minHeight: 96)
+    }
+
+    /// F Ø72 upper + CROSS; P Ø48 lower-left diagonal (~−21 X, +46 Y).
+    private var fpCluster: some View {
+        ZStack(alignment: .topTrailing) {
+            foodButton
+            playButton
+                .offset(x: -21, y: 46)
+        }
+        .frame(width: 100, height: 100, alignment: .topTrailing)
+        .padding(.trailing, 4)
+    }
+
+    private var foodButton: some View {
+        Button {
+            lightHaptic()
+            onFood()
+        } label: {
+            ZStack {
+                Circle().fill(fpPink)
+                Circle().strokeBorder(fpBevel, lineWidth: 3)
+                // Debossed D-pad CROSS artwork (not a directional pad)
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    .fill(crossDeboss)
+                    .frame(width: 16, height: 44)
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    .fill(crossDeboss)
+                    .frame(width: 44, height: 16)
+            }
+            .frame(width: 72, height: 72)
+            .shadow(color: fpPink.opacity(0.35), radius: 3, y: 1)
+        }
+        .buttonStyle(PressScaleButtonStyle())
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.45).onEnded { _ in
+                lightHaptic()
+                onClean()
+            }
+        )
+        .accessibilityLabel("Feed — select food")
+        .accessibilityHint("Long press to clean")
+    }
+
+    private var playButton: some View {
+        Button {
+            lightHaptic()
+            onPlay()
+        } label: {
+            Text("P")
+                .font(.system(size: 18, weight: .heavy, design: .rounded))
+                .foregroundStyle(.white)
+                .frame(width: 48, height: 48)
+                .background(fpPink, in: Circle())
+                .overlay(Circle().strokeBorder(fpBevel, lineWidth: 2.5))
+                .shadow(color: fpPink.opacity(0.3), radius: 2, y: 1)
+        }
+        .buttonStyle(PressScaleButtonStyle())
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.45).onEnded { _ in
+                lightHaptic()
+                onSleep()
+            }
+        )
+        .accessibilityLabel("Play — select game")
+        .accessibilityHint("Long press to tuck in")
     }
 
     private func pill(_ title: String, action: @escaping () -> Void) -> some View {
@@ -161,30 +275,6 @@ struct ConsolePanelView: View {
         .buttonStyle(PressScaleButtonStyle())
         .frame(minHeight: 44)
         .accessibilityLabel(title)
-    }
-
-    private func roundAction(_ letter: String, accessibility: String, action: @escaping () -> Void, longPress: @escaping () -> Void) -> some View {
-        Button {
-            lightHaptic()
-            action()
-        } label: {
-            Text(letter)
-                .font(.system(size: 22, weight: .heavy, design: .rounded))
-                .foregroundStyle(.white)
-                .frame(width: 64, height: 64)
-                .background(fpPink, in: Circle())
-                .overlay(Circle().strokeBorder(fpBevel, lineWidth: 3))
-                .shadow(color: fpPink.opacity(0.45), radius: 4, y: 2)
-        }
-        .buttonStyle(PressScaleButtonStyle())
-        .simultaneousGesture(
-            LongPressGesture(minimumDuration: 0.45).onEnded { _ in
-                lightHaptic()
-                longPress()
-            }
-        )
-        .accessibilityLabel(accessibility)
-        .accessibilityHint(letter == "F" ? "Long press to clean" : "Long press to tuck in")
     }
 
     @ViewBuilder
@@ -250,12 +340,11 @@ struct ConsolePanelView: View {
     }
 }
 
-/// Bottom 7% utility bar — Widgets | Settings only (17).
+/// Bottom 7% utility bar — Widgets | Settings only (21).
 struct BottomUtilityBar: View {
     var onWidgets: () -> Void
     var onSettings: () -> Void
 
-    private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
     private let bar = Color(red: 0x11 / 255.0, green: 0x11 / 255.0, blue: 0x11 / 255.0)
 
     var body: some View {
@@ -297,7 +386,7 @@ struct BottomUtilityBar: View {
 struct PressScaleButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.88 : 1.0)
+            .scaleEffect(configuration.isPressed ? 0.90 : 1.0)
             .brightness(configuration.isPressed ? -0.06 : 0)
             .animation(.spring(response: 0.18, dampingFraction: 0.52), value: configuration.isPressed)
     }

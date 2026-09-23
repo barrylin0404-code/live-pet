@@ -8,37 +8,57 @@ import UIKit
 struct SelectFoodSheet: View {
     @ObservedObject var store: PetStore
     var onPick: (InventoryItem) -> Void
-    @Environment(\.dismiss) private var dismiss
+    var onClose: (() -> Void)? = nil
 
-    private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
+    private let cream = Color(red: 0xF7 / 255.0, green: 0xF0 / 255.0, blue: 0xE6 / 255.0)
+    private let stroke = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
     private let cellBorder = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
     private let favoriteGold = Color(red: 0xE8 / 255.0, green: 0xC5 / 255.0, blue: 0x47 / 255.0)
-    private let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
+    private let columns = [
+        GridItem(.fixed(96), spacing: 10),
+        GridItem(.fixed(96), spacing: 10),
+        GridItem(.fixed(96), spacing: 10)
+    ]
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: 14) {
-                    ForEach(store.foods) { item in
-                        foodCell(item)
-                    }
+        VStack(spacing: 0) {
+            HStack {
+                Text("Select Food")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
+                Spacer(minLength: 0)
+                Button {
+                    PetSound.shared.play(.uiTick)
+                    onClose?()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(stroke.opacity(0.55))
                 }
-                .padding(16)
+                .buttonStyle(.plain)
             }
-            .background(cream.ignoresSafeArea())
-            .navigationTitle("Select Food")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
-                    }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
+
+            LazyVGrid(columns: columns, spacing: 10) {
+                ForEach(store.foods) { item in
+                    foodCell(item)
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(24)
+        .frame(maxWidth: 340)
+        .background(cream, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(stroke, lineWidth: 2.5)
+        )
+        .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 120) // keep console silhouette readable
     }
 
     private func foodCell(_ item: InventoryItem) -> some View {
@@ -49,7 +69,6 @@ struct SelectFoodSheet: View {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             #endif
             onPick(item)
-            dismiss()
         } label: {
             VStack(spacing: 6) {
                 ZStack(alignment: .topTrailing) {
@@ -72,8 +91,7 @@ struct SelectFoodSheet: View {
                     .font(.system(size: 11, weight: .bold).monospacedDigit())
                     .foregroundStyle(.secondary)
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 110)
+            .frame(width: 96, height: 110)
             .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -85,6 +103,7 @@ struct SelectFoodSheet: View {
     }
 }
 
+
 // MARK: - Play / games sheet
 
 struct SelectGameSheet: View {
@@ -92,47 +111,62 @@ struct SelectGameSheet: View {
     var onPlayBall: () -> Void
     var onFollowWand: () -> Void
     var onHitIsland: () -> Void
-    @Environment(\.dismiss) private var dismiss
+    var onClose: (() -> Void)? = nil
 
-    private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
+    private let cream = Color(red: 0xF7 / 255.0, green: 0xF0 / 255.0, blue: 0xE6 / 255.0)
+    private let stroke = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
     private let border = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
-    private let columns = [GridItem(.flexible()), GridItem(.flexible())]
+    private let columns = [GridItem(.fixed(148), spacing: 12), GridItem(.fixed(148), spacing: 12)]
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: 14) {
-                    gameCard(title: "Play Ball", icon: "tennisball.fill", stub: false, action: onPlayBall)
-                    gameCard(title: "Follow the wand", icon: "wand.and.stars", stub: false, action: onFollowWand)
-                    gameCard(title: "Hit the Island", icon: "sportscourt.fill", stub: false, action: onHitIsland)
+        VStack(spacing: 0) {
+            HStack {
+                Text("Play with \(petName)")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                Button {
+                    PetSound.shared.play(.uiTick)
+                    onClose?()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(stroke.opacity(0.55))
                 }
-                .padding(16)
+                .buttonStyle(.plain)
             }
-            .background(cream.ignoresSafeArea())
-            .navigationTitle("Play with \(petName)")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
-                    }
-                }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
+
+            LazyVGrid(columns: columns, spacing: 12) {
+                gameCard(title: "Play Ball", icon: "tennisball.fill", action: onPlayBall)
+                gameCard(title: "Follow the wand", icon: "wand.and.stars", action: onFollowWand)
+                gameCard(title: "Hit the Island", icon: "sportscourt.fill", action: onHitIsland)
             }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(24)
+        .frame(maxWidth: 340)
+        .background(cream, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(stroke, lineWidth: 2.5)
+        )
+        .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 120)
     }
 
-    private func gameCard(title: String, icon: String, stub: Bool, action: @escaping () -> Void) -> some View {
+    private func gameCard(title: String, icon: String, action: @escaping () -> Void) -> some View {
         Button {
             PetSound.shared.play(.uiTick)
-            
             #if canImport(UIKit)
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             #endif
             action()
-            dismiss()
         } label: {
             VStack(spacing: 10) {
                 Image(systemName: icon)
@@ -142,15 +176,8 @@ struct SelectGameSheet: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
                     .multilineTextAlignment(.center)
-                if stub {
-                    Text("Coming soon")
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(.secondary)
-                }
             }
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: 120)
-            .padding(8)
+            .frame(width: 148, height: 120)
             .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -160,6 +187,7 @@ struct SelectGameSheet: View {
         .buttonStyle(PressScaleButtonStyle())
     }
 }
+
 
 // MARK: - Pets sheet
 
@@ -455,5 +483,62 @@ struct ComingSoonBanner: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
             .background(Color.black.opacity(0.78), in: Capsule())
+    }
+}
+
+
+// MARK: - Info / how-to (room [i] — never a paywall)
+
+struct InfoHowToSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    private let cream = Color(red: 0xF7 / 255.0, green: 0xF0 / 255.0, blue: 0xE6 / 255.0)
+    private let stroke = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
+    private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Live Pet is free forever — no Upgrade, Unlock, or IAP.")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(ink)
+                    labelRow("F", "Pick food — your pet walks over and eats.")
+                    labelRow("P", "Play Ball, Follow the wand, or Hit the Island.")
+                    labelRow("Island", "Pink Dynamic Island toggle on the console starts the Live Activity.")
+                    labelRow("♥", "Feeling hearts and Satiety bowls live on the mint LCD.")
+                    Text("Long-press F to clean, long-press P to tuck in. Shake to sleep.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(20)
+            }
+            .background(cream.ignoresSafeArea())
+            .navigationTitle("How to play")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(20)
+    }
+
+    private func labelRow(_ title: String, _ body: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text(title)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color(red: 0xE8 / 255.0, green: 0x91 / 255.0, blue: 0xB8 / 255.0), in: Capsule())
+            Text(body)
+                .font(.subheadline)
+                .foregroundStyle(ink)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }

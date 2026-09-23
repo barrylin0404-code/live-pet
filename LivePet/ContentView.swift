@@ -25,6 +25,7 @@ struct ContentView: View {
     @State private var showPets = false
     @State private var showScenes = false
     @State private var showWidgets = false
+    @State private var showInfo = false
     @State private var comingSoonText: String?
 
     // Continuous walk (≥40pt across room)
@@ -51,21 +52,20 @@ struct ContentView: View {
             ZStack {
                 roomBackground.ignoresSafeArea()
 
-                // 17 layout: Room 52% / Console 41% / Bottom utility 7% of safe height
+                // 21 layout: Room 56% / Console 37% / Bottom utility 7% of safe height
                 GeometryReader { geo in
                     let h = geo.size.height
                     VStack(spacing: 0) {
                         ZStack(alignment: .top) {
                             roomViewport
-                                .padding(.horizontal, 8)
-                                .padding(.top, 4)
+                            roomHUD
                             if store.isGrowEligible {
                                 growChip
                                     .padding(.horizontal, 12)
-                                    .padding(.top, 6)
+                                    .padding(.top, 40)
                             }
                         }
-                        .frame(height: h * 0.52)
+                        .frame(height: h * 0.56)
                         .frame(maxWidth: .infinity)
 
                         ConsolePanelView(
@@ -78,7 +78,7 @@ struct ContentView: View {
                             onSleep: { performSleep() },
                             onRename: { store.rename($0) }
                         )
-                        .frame(height: h * 0.41)
+                        .frame(height: h * 0.37)
                         .frame(maxWidth: .infinity)
 
                         BottomUtilityBar(
@@ -89,6 +89,38 @@ struct ContentView: View {
                         .frame(maxWidth: .infinity)
                     }
                     .frame(width: geo.size.width, height: h)
+                }
+
+
+                // Cream food/play overlays (layout 21 R4 — prefer overlay; console stays visible)
+                if showFood {
+                    Color.black.opacity(0.45).ignoresSafeArea()
+                        .onTapGesture { showFood = false }
+                        .zIndex(19)
+                    SelectFoodSheet(store: store, onPick: { item in
+                        showFood = false
+                        dropFoodAndEat(item)
+                    }, onClose: { showFood = false })
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                    .zIndex(20)
+                }
+                if showGames {
+                    Color.black.opacity(0.45).ignoresSafeArea()
+                        .onTapGesture { showGames = false }
+                        .zIndex(19)
+                    SelectGameSheet(
+                        petName: store.pet.name,
+                        onPlayBall: { showGames = false; startPlayBall() },
+                        onFollowWand: { showGames = false; startFollowWand() },
+                        onHitIsland: {
+                            showGames = false
+                            PetSound.shared.play(.islandStart)
+                            showHitIsland = true
+                        },
+                        onClose: { showGames = false }
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                    .zIndex(20)
                 }
 
                 floatingFeedback.allowsHitTesting(false)
@@ -107,28 +139,6 @@ struct ContentView: View {
             .navigationDestination(isPresented: $showSettings) {
                 SettingsView()
             }
-            .sheet(isPresented: $showFood) {
-                SelectFoodSheet(store: store) { item in
-                    dropFoodAndEat(item)
-                }
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(24)
-            }
-            .sheet(isPresented: $showGames) {
-                SelectGameSheet(
-                    petName: store.pet.name,
-                    onPlayBall: { startPlayBall() },
-                    onFollowWand: { startFollowWand() },
-                    onHitIsland: {
-                        PetSound.shared.play(.islandStart)
-                        showHitIsland = true
-                    }
-                )
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(24)
-            }
             .fullScreenCover(isPresented: $showHitIsland) {
                 HitIslandGameView(
                     petName: store.pet.name,
@@ -144,6 +154,9 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showScenes) {
                 ScenesSheet(store: store)
+            }
+            .sheet(isPresented: $showInfo) {
+                InfoHowToSheet()
             }
             .sheet(isPresented: $showWidgets) {
                 WidgetsGallerySheet()
@@ -183,6 +196,44 @@ struct ContentView: View {
             }
             #endif
         }
+    }
+
+
+    // MARK: - Room HUD (layout 21 R10 / M10)
+
+    private var roomHUD: some View {
+        HStack {
+            HStack(spacing: 4) {
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(Color(red: 1.0, green: 0.30, blue: 0.43))
+                Text("∞")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(.white.opacity(0.82), in: Capsule())
+            .overlay(Capsule().strokeBorder(.white.opacity(0.5), lineWidth: 1))
+            .accessibilityLabel("Hearts, unlimited — free forever")
+
+            Spacer(minLength: 0)
+
+            Button {
+                PetSound.shared.play(.uiTick)
+                showInfo = true
+            } label: {
+                Image(systemName: "info.circle.fill")
+                    .font(.system(size: 22))
+                    .foregroundStyle(.white.opacity(0.92))
+                    .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Info — how to play, free forever")
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 8)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     // MARK: - Room

@@ -178,7 +178,7 @@ struct ContentView: View {
             mood: store.pet.mood,
             pose: displayPose,
             isSleeping: store.pet.isSleeping,
-            petScale: 1.55,
+            petScale: 2.1,
             speciesId: store.pet.petGlyph,
             growthStage: store.pet.growthStage,
             firefliesUnlocked: store.firefliesUnlocked,

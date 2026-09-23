@@ -53,7 +53,7 @@ struct ConsolePanelView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
                 avatar
-                    .frame(width: 40, height: 40)
+                    .frame(width: 52, height: 52)
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -254,7 +254,7 @@ struct ConsolePanelView: View {
                 isSleeping: store.pet.isSleeping,
                 speciesId: store.pet.petGlyph,
                 growthStage: store.pet.growthStage,
-                scale: 0.4
+                scale: 0.55
             )
         }
         #else
@@ -264,7 +264,7 @@ struct ConsolePanelView: View {
             isSleeping: store.pet.isSleeping,
             speciesId: store.pet.petGlyph,
             growthStage: store.pet.growthStage,
-            scale: 0.4
+            scale: 0.55
         )
         #endif
     }

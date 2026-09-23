@@ -1,18 +1,19 @@
 {
   "images": [
     {
-      "filename": "nubby-sleep-1.png",
       "idiom": "universal",
-      "scale": "1x"
-    },
-    {
-      "filename": "nubby-sleep-1@2x.png",
-      "idiom": "universal",
-      "scale": "2x"
+      "scale": "1x",
+      "filename": "nubby-sleep-1.png"
     },
     {
       "idiom": "universal",
-      "scale": "3x"
+      "scale": "2x",
+      "filename": "nubby-sleep-1@2x.png"
+    },
+    {
+      "idiom": "universal",
+      "scale": "3x",
+      "filename": "nubby-sleep-1@3x.png"
     }
   ],
   "info": {

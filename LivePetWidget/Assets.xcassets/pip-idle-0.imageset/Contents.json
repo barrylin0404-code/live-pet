@@ -1,18 +1,19 @@
 {
   "images": [
     {
-      "filename": "pip-idle-0.png",
       "idiom": "universal",
-      "scale": "1x"
-    },
-    {
-      "filename": "pip-idle-0@2x.png",
-      "idiom": "universal",
-      "scale": "2x"
+      "scale": "1x",
+      "filename": "pip-idle-0.png"
     },
     {
       "idiom": "universal",
-      "scale": "3x"
+      "scale": "2x",
+      "filename": "pip-idle-0@2x.png"
+    },
+    {
+      "idiom": "universal",
+      "scale": "3x",
+      "filename": "pip-idle-0@3x.png"
     }
   ],
   "info": {

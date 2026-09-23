@@ -5,10 +5,18 @@ enum AppGroup {
     static let identifier = "group.com.barrylin.livepet"
 
     static let petKey = "livepet.v1.pet"
+    static let petsKey = "livepet.v1.pets"
+    static let activePetIdKey = "livepet.v1.activePetId"
     static let inventoryKey = "livepet.v1.inventory"
     static let snapshotKey = "livepet.v1.snapshot"
     static let onboardingKey = "livepet.v1.onboardingDone"
     static let sceneKey = "livepet.v1.roomScene"
+    static let dailySamplesKey = "livepet.v1.dailySamples"
+    static let firefliesUnlockedKey = "livepet.v1.firefliesUnlocked"
+    static let showFirefliesKey = "livepet.v1.showFireflies"
+    static let feelingFullDayKey = "livepet.v1.feelingFullDay"
+    static let pipUnlockedKey = "livepet.v1.pipUnlocked"
+    static let meetPipShownKey = "livepet.v1.meetPipShown"
 
     static var defaults: UserDefaults {
         UserDefaults(suiteName: identifier) ?? .standard
@@ -25,9 +33,18 @@ struct PetSnapshot: Codable, Hashable, Sendable {
     var moodRaw: String
     var lastAction: String
     var lastUpdated: Date
+    var growthStage: String?
+    var isSleeping: Bool?
 
     var mood: PetMood {
         PetMood(rawValue: moodRaw) ?? .content
+    }
+
+    var resolvedGrowthStage: GrowthStage {
+        if let growthStage, let stage = GrowthStage(rawValue: growthStage) {
+            return stage
+        }
+        return .nubby
     }
 
     static func load(from defaults: UserDefaults = AppGroup.defaults) -> PetSnapshot? {
@@ -50,7 +67,9 @@ struct PetSnapshot: Codable, Hashable, Sendable {
             energy: 80,
             moodRaw: PetMood.content.rawValue,
             lastAction: "Ready to hang out",
-            lastUpdated: .now
+            lastUpdated: .now,
+            growthStage: GrowthStage.kit.rawValue,
+            isSleeping: false
         )
     }
 }

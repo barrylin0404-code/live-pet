@@ -77,7 +77,9 @@ enum PetIntentMutator {
             energy: pet.energy,
             moodRaw: pet.mood.rawValue,
             lastAction: pet.lastAction,
-            lastUpdated: pet.lastUpdated
+            lastUpdated: pet.lastUpdated,
+            growthStage: pet.growthStage.rawValue,
+            isSleeping: pet.isSleeping
         ).save()
     }
 

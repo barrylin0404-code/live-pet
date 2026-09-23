@@ -18,7 +18,7 @@ struct OnboardingView: View {
 
             VStack(spacing: 28) {
                 Spacer()
-                AnimatedPixelPetView(mood: .happy, pose: .idle, isSleeping: false, scale: 1.4)
+                AnimatedPixelPetView(mood: .happy, pose: .idle, isSleeping: false, scale: 1.4, speciesId: "nubby", growthStage: .kit)
                     .frame(height: 140)
 
                 Text("Meet your pixel pet")

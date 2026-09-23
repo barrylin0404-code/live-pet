@@ -67,8 +67,9 @@ struct StatusStripView: View {
     @ViewBuilder
     private var avatar: some View {
         #if canImport(UIKit)
-        if UIImage(named: "nubby-idle-0") != nil {
-            Image("nubby-idle-0")
+        let avatar = PetSprite.avatarName(speciesId: pet.petGlyph, growthStage: pet.growthStage)
+        if UIImage(named: avatar) != nil {
+            Image(avatar)
                 .interpolation(.none)
                 .resizable()
                 .scaledToFit()
@@ -77,6 +78,8 @@ struct StatusStripView: View {
                 mood: pet.mood,
                 pose: pet.pose,
                 isSleeping: pet.isSleeping,
+                speciesId: pet.petGlyph,
+                growthStage: pet.growthStage,
                 scale: 0.38
             )
         }
@@ -85,7 +88,9 @@ struct StatusStripView: View {
             mood: pet.mood,
             pose: pet.pose,
             isSleeping: pet.isSleeping,
-            scale: 0.38
+            speciesId: pet.petGlyph,
+                growthStage: pet.growthStage,
+                scale: 0.38
         )
         #endif
     }

@@ -1,0 +1,22 @@
+{
+  "images": [
+    {
+      "filename": "nubby-nubby_plus-sleep-0.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "nubby-nubby_plus-sleep-0@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

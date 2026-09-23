@@ -56,7 +56,7 @@ struct PetAccessoryProvider: TimelineProvider {
 
 private enum AccessoryHearts {
     static func filledCount(moodScore: Int) -> Int {
-        min(4, max(1, (moodScore + 24) / 25))
+        min(4, max(1, moodScore <= 0 ? 1 : (moodScore + 24) / 25))
     }
 }
 
@@ -68,7 +68,7 @@ struct PetAccessoryCircularView: View {
     var body: some View {
         let filled = AccessoryHearts.filledCount(moodScore: entry.snapshot.moodScore)
         ZStack {
-            AccessorySilhouette(compact: true)
+            AccessorySilhouette(compact: true, speciesId: entry.snapshot.petGlyph, growthStage: entry.snapshot.resolvedGrowthStage)
                 .frame(width: 26, height: 26)
                 .offset(y: -4)
 
@@ -93,7 +93,7 @@ struct PetAccessoryRectangularView: View {
     var body: some View {
         let filled = AccessoryHearts.filledCount(moodScore: entry.snapshot.moodScore)
         HStack(spacing: 8) {
-            AccessorySilhouette()
+            AccessorySilhouette(speciesId: entry.snapshot.petGlyph, growthStage: entry.snapshot.resolvedGrowthStage)
                 .frame(width: 28, height: 28)
 
             VStack(alignment: .leading, spacing: 3) {
@@ -120,9 +120,11 @@ struct PetAccessoryRectangularView: View {
 /// Vibrant-grayscale Nubby — Designer mono crops from `12-lock-screen-mono.md`.
 private struct AccessorySilhouette: View {
     var compact: Bool = false
+    var speciesId: String = "nubby"
+    var growthStage: GrowthStage = .nubby
 
     private var assetName: String {
-        compact ? "lock-nubby-mono-compact" : "lock-nubby-mono"
+        PetSprite.lockMonoName(speciesId: speciesId, growthStage: growthStage, compact: compact)
     }
 
     var body: some View {

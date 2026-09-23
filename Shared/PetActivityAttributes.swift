@@ -9,17 +9,21 @@ public struct PetActivityAttributes: ActivityAttributes {
         public var pose: String
         public var moodBand: String
         public var isSleeping: Bool
+        /// Optional short stage id (`kit` | `nubby` | `nubby_plus`) — keep payload tiny.
+        public var growthStage: String?
 
         public init(
             speciesId: String = "nubby",
             pose: String = PetPose.idle.rawValue,
             moodBand: String = PetMood.content.rawValue,
-            isSleeping: Bool = false
+            isSleeping: Bool = false,
+            growthStage: String? = nil
         ) {
             self.speciesId = speciesId
             self.pose = pose
             self.moodBand = moodBand
             self.isSleeping = isSleeping
+            self.growthStage = growthStage
         }
 
         public var mood: PetMood {

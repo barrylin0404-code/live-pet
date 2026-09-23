@@ -19,6 +19,47 @@ struct SettingsView: View {
                         .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
                 LabeledContent("Age", value: "\(store.pet.ageDays) DAYS")
+                Text(store.lovesSummary)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            if store.pets.count > 1 {
+                Section {
+                    Picker(
+                        "Active pet",
+                        selection: Binding(
+                            get: { store.pet.id },
+                            set: { store.setActivePet(id: $0) }
+                        )
+                    ) {
+                        ForEach(store.pets) { p in
+                            Text(p.name + (p.petGlyph == "pip" ? " (Pip)" : " (\(p.growthStage.displayName))"))
+                                .tag(p.id)
+                        }
+                    }
+                } header: {
+                    Text("Active pet")
+                } footer: {
+                    Text("Island and widgets follow the active pet.")
+                }
+            }
+
+            Section {
+                Toggle(
+                    "Show fireflies",
+                    isOn: Binding(
+                        get: { store.showFireflies },
+                        set: { store.setShowFireflies($0) }
+                    )
+                )
+                .disabled(store.firefliesUnlocked == 0)
+            } header: {
+                Text("Fireflies")
+            } footer: {
+                Text(store.firefliesUnlocked == 0
+                    ? "Keep Feeling full for a day to unlock Fireflies."
+                    : "Unlocked \(store.firefliesUnlocked) of 2. Soft room motes — cosmetic only.")
             }
 
             Section {
@@ -36,7 +77,7 @@ struct SettingsView: View {
             } header: {
                 Text("Room")
             } footer: {
-                Text("Sun Nook by day, Moon Porch for a cool evening porch. Widgets and the Island stay pet-forward.")
+                Text("Sun Nook, Moon Porch, Tide Glass, and Skyline Dusk. Widgets and the Island stay pet-forward.")
             }
 
             Section {

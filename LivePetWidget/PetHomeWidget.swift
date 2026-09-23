@@ -86,6 +86,8 @@ struct PetHomeWidgetView: View {
             mood: snap.mood,
             pose: .idle,
             isSleeping: snap.mood == .sleepy,
+            speciesId: snap.petGlyph,
+            growthStage: snap.resolvedGrowthStage,
             scale: size / 64
         )
         .frame(width: size, height: size)

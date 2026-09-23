@@ -16,6 +16,8 @@ struct PetLiveActivityWidget: Widget {
                         mood: context.state.mood,
                         pose: context.state.petPose,
                         isSleeping: context.state.isSleeping,
+                        speciesId: context.state.speciesId,
+                        growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
                         scale: 0.55
                     )
                     .padding(.leading, 2)
@@ -42,6 +44,8 @@ struct PetLiveActivityWidget: Widget {
                     mood: context.state.mood,
                     pose: context.state.petPose,
                     isSleeping: context.state.isSleeping,
+                        speciesId: context.state.speciesId,
+                        growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
                     scale: 0.28,
                     preferIslandCrop: true
                 )
@@ -139,6 +143,8 @@ private struct LockScreenPetView: View {
                 mood: context.state.mood,
                 pose: context.state.petPose,
                 isSleeping: context.state.isSleeping,
+                        speciesId: context.state.speciesId,
+                        growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
                 scale: 0.7
             )
             VStack(alignment: .leading, spacing: 4) {

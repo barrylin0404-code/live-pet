@@ -4,15 +4,21 @@ import SwiftUI
 public struct RoomSceneView<PetContent: View>: View {
     public var scene: PetRoomScene
     public var mood: PetMood
+    public var firefliesUnlocked: Int
+    public var showFireflies: Bool
     @ViewBuilder public var pet: () -> PetContent
 
     public init(
         scene: PetRoomScene = .sunNook,
         mood: PetMood = .content,
+        firefliesUnlocked: Int = 0,
+        showFireflies: Bool = true,
         @ViewBuilder pet: @escaping () -> PetContent
     ) {
         self.scene = scene
         self.mood = mood
+        self.firefliesUnlocked = firefliesUnlocked
+        self.showFireflies = showFireflies
         self.pet = pet
     }
 
@@ -25,10 +31,18 @@ public struct RoomSceneView<PetContent: View>: View {
                         drawSunNook(context: context, size: size)
                     case .moonPorch:
                         drawMoonPorch(context: context, size: size)
+                    case .tideGlass:
+                        drawTideGlass(context: context, size: size)
+                    case .skylineDusk:
+                        drawSkylineDusk(context: context, size: size)
                     }
                 }
                 pet()
                     .position(x: geo.size.width * 0.52, y: geo.size.height * 0.62)
+                if showFireflies && firefliesUnlocked > 0 {
+                    FirefliesOverlay(count: firefliesUnlocked)
+                        .allowsHitTesting(false)
+                }
             }
         }
         .aspectRatio(1.35, contentMode: .fit)
@@ -217,6 +231,81 @@ public struct RoomSceneView<PetContent: View>: View {
             with: .color(Color(red: 0.45, green: 0.35, blue: 0.30))
         )
     }
+    /// Soft teal `#7ec8c8` water window, sand floor — Tide Glass.
+    private func drawTideGlass(context: GraphicsContext, size: CGSize) {
+        let w = size.width
+        let h = size.height
+        let teal = Color(red: 0x7e/255.0, green: 0xc8/255.0, blue: 0xc8/255.0)
+        let sand = Color(red: 0.90, green: 0.82, blue: 0.62)
+        let wall = Color(red: 0.82, green: 0.90, blue: 0.88)
+        context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(wall))
+        let floorY = h * 0.62
+        context.fill(Path(CGRect(x: 0, y: floorY, width: w, height: h - floorY)), with: .color(sand))
+        for i in 0..<6 {
+            let y = floorY + CGFloat(i) * ((h - floorY) / 6)
+            var line = Path()
+            line.move(to: CGPoint(x: 0, y: y))
+            line.addLine(to: CGPoint(x: w, y: y))
+            context.stroke(line, with: .color(.black.opacity(0.06)), lineWidth: 1)
+        }
+        let win = CGRect(x: w * 0.12, y: h * 0.12, width: w * 0.40, height: h * 0.34)
+        context.fill(Path(win.insetBy(dx: -6, dy: -6)), with: .color(Color(red: 0.45, green: 0.62, blue: 0.62)))
+        context.fill(
+            Path(win),
+            with: .linearGradient(
+                Gradient(colors: [teal, Color(red: 0.55, green: 0.78, blue: 0.82)]),
+                startPoint: CGPoint(x: win.midX, y: win.minY),
+                endPoint: CGPoint(x: win.midX, y: win.maxY)
+            )
+        )
+        // Soft wave lines
+        for i in 0..<3 {
+            var wave = Path()
+            let yy = win.minY + win.height * (0.35 + CGFloat(i) * 0.18)
+            wave.move(to: CGPoint(x: win.minX + 6, y: yy))
+            wave.addQuadCurve(to: CGPoint(x: win.maxX - 6, y: yy), control: CGPoint(x: win.midX, y: yy - 6))
+            context.stroke(wave, with: .color(.white.opacity(0.35)), lineWidth: 2)
+        }
+        let rug = CGRect(x: w * 0.28, y: h * 0.72, width: w * 0.44, height: h * 0.12)
+        context.fill(Path(roundedRect: rug, cornerRadius: 8), with: .color(teal.opacity(0.45)))
+    }
+
+    /// Mauve `#c4a0c8` sky, warm windows — Skyline Dusk.
+    private func drawSkylineDusk(context: GraphicsContext, size: CGSize) {
+        let w = size.width
+        let h = size.height
+        let mauve = Color(red: 0xc4/255.0, green: 0xa0/255.0, blue: 0xc8/255.0)
+        let wall = Color(red: 0.36, green: 0.28, blue: 0.40)
+        let floor = Color(red: 0.30, green: 0.24, blue: 0.28)
+        let lamp = Color(red: 1.0, green: 0.85, blue: 0.55)
+        context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(wall))
+        let floorY = h * 0.62
+        context.fill(Path(CGRect(x: 0, y: floorY, width: w, height: h - floorY)), with: .color(floor))
+        let win = CGRect(x: w * 0.10, y: h * 0.10, width: w * 0.48, height: h * 0.36)
+        context.fill(Path(win.insetBy(dx: -5, dy: -5)), with: .color(Color(red: 0.28, green: 0.22, blue: 0.32)))
+        context.fill(
+            Path(win),
+            with: .linearGradient(
+                Gradient(colors: [mauve, Color(red: 0.45, green: 0.30, blue: 0.48)]),
+                startPoint: CGPoint(x: win.midX, y: win.minY),
+                endPoint: CGPoint(x: win.midX, y: win.maxY)
+            )
+        )
+        // Distant warm windows
+        for (x, y) in [(0.18, 0.22), (0.28, 0.30), (0.38, 0.20), (0.45, 0.28)]:
+            context.fill(
+                Path(CGRect(x: win.minX + win.width * x, y: win.minY + win.height * y, width: 5, height: 7)),
+                with: .color(lamp.opacity(0.85))
+            )
+        }
+        let rug = CGRect(x: w * 0.28, y: h * 0.72, width: w * 0.44, height: h * 0.12)
+        context.fill(Path(roundedRect: rug, cornerRadius: 8), with: .color(mauve.opacity(0.4)))
+        context.fill(
+            Path(ellipseIn: CGRect(x: w * 0.68, y: h * 0.20, width: 28, height: 22)),
+            with: .color(lamp.opacity(0.3))
+        )
+    }
+
 }
 
 /// Convenience scene host with animated Nubby.
@@ -226,28 +315,47 @@ public struct PetRoomSceneView: View {
     public var pose: PetPose
     public var isSleeping: Bool
     public var petScale: CGFloat
+    public var speciesId: String
+    public var growthStage: GrowthStage
+    public var firefliesUnlocked: Int
+    public var showFireflies: Bool
 
     public init(
         scene: PetRoomScene = .sunNook,
         mood: PetMood = .content,
         pose: PetPose = .idle,
         isSleeping: Bool = false,
-        petScale: CGFloat = 1.1
+        petScale: CGFloat = 1.1,
+        speciesId: String = "nubby",
+        growthStage: GrowthStage = .nubby,
+        firefliesUnlocked: Int = 0,
+        showFireflies: Bool = true
     ) {
         self.scene = scene
         self.mood = mood
         self.pose = pose
         self.isSleeping = isSleeping
         self.petScale = petScale
+        self.speciesId = speciesId
+        self.growthStage = growthStage
+        self.firefliesUnlocked = firefliesUnlocked
+        self.showFireflies = showFireflies
     }
 
     public var body: some View {
-        RoomSceneView(scene: scene, mood: mood) {
+        RoomSceneView(
+            scene: scene,
+            mood: mood,
+            firefliesUnlocked: firefliesUnlocked,
+            showFireflies: showFireflies
+        ) {
             AnimatedPixelPetView(
                 mood: mood,
                 pose: pose,
                 isSleeping: isSleeping,
-                scale: petScale
+                scale: petScale,
+                speciesId: speciesId,
+                growthStage: growthStage
             )
         }
     }
@@ -289,4 +397,31 @@ public struct SunNookScene: View {
         PetRoomSceneView(scene: .moonPorch, mood: .content)
     }
     .padding()
+}
+
+
+/// Cosmetic 4×4 soft-pixel motes — user copy: Fireflies (not spirits).
+struct FirefliesOverlay: View {
+    var count: Int
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 0.45, paused: false)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            GeometryReader { geo in
+                ZStack {
+                    ForEach(0..<min(count, 2), id: \.self) { i in
+                        let phase = t * (0.7 + Double(i) * 0.35) + Double(i)
+                        let x = geo.size.width * (0.78 + 0.08 * CGFloat(sin(phase)))
+                        let y = geo.size.height * (0.22 + 0.10 * CGFloat(cos(phase * 1.3)))
+                        RoundedRectangle(cornerRadius: 1)
+                            .fill(Color(red: 1.0, green: 0.92, blue: 0.55).opacity(0.75 + 0.2 * sin(phase)))
+                            .frame(width: 4, height: 4)
+                            .position(x: x, y: y)
+                    }
+                }
+            }
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
 }

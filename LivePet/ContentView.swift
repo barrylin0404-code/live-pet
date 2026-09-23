@@ -5,7 +5,9 @@ struct ContentView: View {
     @EnvironmentObject private var activityManager: PetLiveActivityManager
 
     @State private var showFloatingHeart = false
+                    showFloatingStar = false
     @State private var showFloatingSparkles = false
+    @State private var showFloatingStar = false
     @State private var showSettings = false
 
     var body: some View {
@@ -14,7 +16,34 @@ struct ContentView: View {
                 ScrollView {
                     VStack(spacing: 16) {
                         roomCard
-                        StatusStripView(pet: store.pet)
+                        if store.isGrowEligible {
+                        Button {
+                            store.confirmGrow()
+                        } label: {
+                            HStack {
+                                Image(systemName: "arrow.up.heart.fill")
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Ready to grow!")
+                                        .font(.subheadline.weight(.bold))
+                                    Text(store.growBannerTitle)
+                                        .font(.caption)
+                                }
+                                Spacer()
+                                Text("Grow")
+                                    .font(.subheadline.weight(.semibold))
+                            }
+                            .padding(12)
+                            .background(Color(red: 1.0, green: 0.97, blue: 0.90), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    Text(store.lovesSummary)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    StatusStripView(pet: store.pet)
                         quickActions
                         InventoryPanel(store: store) {
                             syncActivity()
@@ -39,6 +68,14 @@ struct ContentView: View {
                         .font(.system(size: 72, weight: .bold))
                         .foregroundStyle(Color(red: 1.0, green: 0.30, blue: 0.43))
                         .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
+                        .transition(.scale.combined(with: .opacity))
+                        .allowsHitTesting(false)
+                }
+                if showFloatingStar {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 40, weight: .bold))
+                        .foregroundStyle(Color(red: 0xE8/255.0, green: 0xC5/255.0, blue: 0x47/255.0))
+                        .offset(x: 34, y: -30)
                         .transition(.scale.combined(with: .opacity))
                         .allowsHitTesting(false)
                 }
@@ -70,6 +107,17 @@ struct ContentView: View {
             }
             .navigationDestination(isPresented: $showSettings) {
                 SettingsView()
+            }
+            .sheet(isPresented: $store.showGrowCelebration) {
+                GrowCelebrationSheet(pet: store.pet) {
+                    store.dismissGrowCelebration()
+                }
+            }
+            .sheet(isPresented: $store.showMeetPip) {
+                MeetPipSheet(
+                    onMeet: { store.meetPip(switchActive: true) },
+                    onSkip: { store.skipMeetPip() }
+                )
             }
             .onAppear {
                 store.onPetChange = { pet in
@@ -119,6 +167,28 @@ struct ContentView: View {
                     endPoint: .bottomTrailing
                 )
             )
+        case .tideGlass:
+            return AnyView(
+                LinearGradient(
+                    colors: [
+                        Color(red: 0x7e/255.0, green: 0xc8/255.0, blue: 0xc8/255.0).opacity(0.55),
+                        Color(red: 0.90, green: 0.95, blue: 0.93)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+        case .skylineDusk:
+            return AnyView(
+                LinearGradient(
+                    colors: [
+                        Color(red: 0xc4/255.0, green: 0xa0/255.0, blue: 0xc8/255.0),
+                        Color(red: 0.28, green: 0.20, blue: 0.34)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
         }
     }
 
@@ -129,7 +199,11 @@ struct ContentView: View {
                 mood: store.pet.mood,
                 pose: store.pet.pose,
                 isSleeping: store.pet.isSleeping,
-                petScale: 1.15
+                petScale: 1.15,
+                speciesId: store.pet.petGlyph,
+                growthStage: store.pet.growthStage,
+                firefliesUnlocked: store.firefliesUnlocked,
+                showFireflies: store.showFireflies
             )
             .frame(maxWidth: .infinity)
             .frame(height: 220)
@@ -164,6 +238,10 @@ struct ContentView: View {
             return Color(red: 0.91, green: 0.96, blue: 0.89).opacity(0.9)
         case .moonPorch:
             return Color(red: 0xF4 / 255.0, green: 0xD5 / 255.0, blue: 0xA0 / 255.0).opacity(0.85)
+        case .tideGlass:
+            return Color(red: 0x7e/255.0, green: 0xc8/255.0, blue: 0xc8/255.0).opacity(0.85)
+        case .skylineDusk:
+            return Color(red: 0xc4/255.0, green: 0xa0/255.0, blue: 0xc8/255.0).opacity(0.85)
         }
     }
 
@@ -173,6 +251,10 @@ struct ContentView: View {
             return Color(red: 0.91, green: 0.96, blue: 0.89)
         case .moonPorch:
             return Color(red: 0.28, green: 0.34, blue: 0.44)
+        case .tideGlass:
+            return Color(red: 0.78, green: 0.90, blue: 0.88)
+        case .skylineDusk:
+            return Color(red: 0.40, green: 0.30, blue: 0.44)
         }
     }
 
@@ -182,6 +264,10 @@ struct ContentView: View {
             return Color(red: 0.77, green: 0.85, blue: 0.75)
         case .moonPorch:
             return Color(red: 0xF4 / 255.0, green: 0xD5 / 255.0, blue: 0xA0 / 255.0).opacity(0.55)
+        case .tideGlass:
+            return Color(red: 0x7e/255.0, green: 0xc8/255.0, blue: 0xc8/255.0).opacity(0.7)
+        case .skylineDusk:
+            return Color(red: 0xc4/255.0, green: 0xa0/255.0, blue: 0xc8/255.0).opacity(0.65)
         }
     }
 
@@ -212,6 +298,7 @@ struct ContentView: View {
     private func pulseHeart() {
         withAnimation(.spring(response: 0.35, dampingFraction: 0.55)) {
             showFloatingHeart = true
+            showFloatingStar = store.lastUsedFavorite
         }
         Task {
             try? await Task.sleep(nanoseconds: 700_000_000)

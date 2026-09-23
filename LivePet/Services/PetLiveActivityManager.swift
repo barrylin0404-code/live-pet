@@ -51,7 +51,7 @@ final class PetLiveActivityManager: ObservableObject {
         guard let activity = currentActivity else { return }
 
         let stale = renewDeadline ?? Date().addingTimeInterval(Self.staleLeeway)
-        let content = ActivityContent(state: pet.activityState, staleDate: stale)
+        let content = ActivityContent(state: pet.activityState.islandContentState(), staleDate: stale)
         Task {
             await activity.update(content)
         }
@@ -98,7 +98,7 @@ final class PetLiveActivityManager: ObservableObject {
                 }
                 // Fresh → update only (never request a second Activity).
                 let stale = renewDeadline ?? Date().addingTimeInterval(Self.staleLeeway)
-                let content = ActivityContent(state: pet.activityState, staleDate: stale)
+                let content = ActivityContent(state: pet.activityState.islandContentState(), staleDate: stale)
                 Task {
                     await existing.update(content)
                 }
@@ -169,7 +169,7 @@ final class PetLiveActivityManager: ObservableObject {
 
     /// Gate: await end, then request — avoids racing a still-active Activity.
     private func endThenRequest(pet: Pet) async {
-        let finalState = currentActivity?.content.state ?? pet.activityState
+        let finalState = currentActivity?.content.state ?? pet.activityState.islandContentState()
         if let activity = currentActivity {
             let finalContent = ActivityContent(state: finalState, staleDate: nil)
             await activity.end(finalContent, dismissalPolicy: .immediate)
@@ -186,7 +186,7 @@ final class PetLiveActivityManager: ObservableObject {
             petGlyph: pet.petGlyph
         )
         let stale = Date().addingTimeInterval(Self.renewAfter + Self.staleLeeway)
-        let content = ActivityContent(state: pet.activityState, staleDate: stale)
+        let content = ActivityContent(state: pet.activityState.islandContentState(), staleDate: stale)
 
         do {
             let activity = try Activity.request(

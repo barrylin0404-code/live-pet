@@ -12,13 +12,14 @@ struct PetLiveActivityWidget: Widget {
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    AnimatedPixelPetView(
+                    IslandWalkPetView(
                         mood: context.state.mood,
                         pose: context.state.petPose,
                         isSleeping: context.state.isSleeping,
                         speciesId: context.state.speciesId,
                         growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
-                        scale: 0.55
+                        scale: 0.55,
+                        forceWalkWhenIdle: true
                     )
                     .padding(.leading, 2)
                 }
@@ -40,20 +41,28 @@ struct PetLiveActivityWidget: Widget {
                     islandBottom(context: context)
                 }
             } compactLeading: {
-                AnimatedPixelPetView(
+                // Dense walk + edge flip (TimelineView) — not a static island crop.
+                IslandWalkPetView(
                     mood: context.state.mood,
                     pose: context.state.petPose,
                     isSleeping: context.state.isSleeping,
-                        speciesId: context.state.speciesId,
-                        growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
+                    speciesId: context.state.speciesId,
+                    growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
                     scale: 0.28,
-                    preferIslandCrop: true
+                    forceWalkWhenIdle: true
                 )
             } compactTrailing: {
                 Image(systemName: context.state.mood.symbolName)
             } minimal: {
-                Image(systemName: context.state.isSleeping ? "moon.zzz" : "square.fill")
-                    .foregroundStyle(Color(red: 0.98, green: 0.52, blue: 0.42))
+                IslandWalkPetView(
+                    mood: context.state.mood,
+                    pose: context.state.petPose,
+                    isSleeping: context.state.isSleeping,
+                    speciesId: context.state.speciesId,
+                    growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
+                    scale: 0.22,
+                    forceWalkWhenIdle: true
+                )
             }
             .keylineTint(Color(red: 0.98, green: 0.52, blue: 0.42))
         }
@@ -139,13 +148,14 @@ private struct LockScreenPetView: View {
     var body: some View {
         let snap = PetSnapshot.load()
         HStack(spacing: 14) {
-            AnimatedPixelPetView(
+            IslandWalkPetView(
                 mood: context.state.mood,
                 pose: context.state.petPose,
                 isSleeping: context.state.isSleeping,
-                        speciesId: context.state.speciesId,
-                        growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
-                scale: 0.7
+                speciesId: context.state.speciesId,
+                growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
+                scale: 0.7,
+                forceWalkWhenIdle: true
             )
             VStack(alignment: .leading, spacing: 4) {
                 Text(context.attributes.petName)

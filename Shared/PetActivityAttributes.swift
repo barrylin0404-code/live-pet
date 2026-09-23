@@ -33,6 +33,24 @@ public struct PetActivityAttributes: ActivityAttributes {
         public var petPose: PetPose {
             PetPose(rawValue: pose) ?? .idle
         }
+
+        /// Island mapping: idle/clean → walk. Care oneshots + sleep pass through.
+        /// Frame / facing animation stays in widget TimelineView (no update spam).
+        public func islandContentState() -> ContentState {
+            if isSleeping || petPose == .sleep || petPose == .eat || petPose == .play {
+                return self
+            }
+            if petPose == .walk {
+                return self
+            }
+            return ContentState(
+                speciesId: speciesId,
+                pose: PetPose.walk.rawValue,
+                moodBand: moodBand,
+                isSleeping: isSleeping,
+                growthStage: growthStage
+            )
+        }
     }
 
     public var petName: String

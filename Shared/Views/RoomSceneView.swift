@@ -68,14 +68,8 @@ public struct RoomSceneView<PetContent: View>: View {
     public var body: some View {
         GeometryReader { geo in
             ZStack {
-                if scene == .sunNook {
-                    Image("sun-nook-plate")
-                        .resizable()
-                        .interpolation(.none)
-                        .frame(width: geo.size.width, height: geo.size.height)
-                        .allowsHitTesting(false)
-                } else if scene == .moonPorch {
-                    Image("moon-porch-plate")
+                if let plate = scene.plateImageName {
+                    Image(plate)
                         .resizable()
                         .interpolation(.none)
                         .frame(width: geo.size.width, height: geo.size.height)
@@ -83,16 +77,10 @@ public struct RoomSceneView<PetContent: View>: View {
                 }
                 Canvas { context, size in
                     switch scene {
-                    case .sunNook, .moonPorch:
+                    case .sunNook, .moonPorch, .tideGlass, .skylineDusk, .meadowWalk:
                         break
                     case .snowPorch, .coralShelf:
                         drawUnavailableRoom(context: context, size: size)
-                    case .tideGlass:
-                        drawTideGlass(context: context, size: size)
-                    case .skylineDusk:
-                        drawSkylineDusk(context: context, size: size)
-                    case .meadowWalk:
-                        drawMeadowWalk(context: context, size: size)
                     }
                 }
                 let feetY = CGFloat(scene.petFeetYFraction)

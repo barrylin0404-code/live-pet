@@ -50,6 +50,18 @@ public enum PetRoomScene: String, Codable, CaseIterable, Identifiable, Sendable 
         }
     }
 
+    /// Pixel plate for this room. Snow and Coral stay blank until they have their own art.
+    public var plateImageName: String? {
+        switch self {
+        case .sunNook: return "sun-nook-plate"
+        case .moonPorch: return "moon-porch-plate"
+        case .tideGlass: return "tide-glass-plate"
+        case .skylineDusk: return "skyline-dusk-plate"
+        case .meadowWalk: return "meadow-walk-plate"
+        case .snowPorch, .coralShelf: return nil
+        }
+    }
+
     /// Optional Assets.xcassets thumb (nearest-neighbor at display time).
     public var thumbImageName: String? {
         switch self {

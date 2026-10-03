@@ -661,6 +661,8 @@ public struct PetRoomSceneView: View {
     public var onRoomDrag: ((CGFloat, CGFloat) -> Void)?
     public var onPetTap: (() -> Void)?
     public var onPetDrag: (() -> Void)?
+    public var clipAnim: PetAnim?
+    public var clipFrame: Int
 
     public init(
         scene: PetRoomScene = .sunNook,
@@ -686,7 +688,9 @@ public struct PetRoomSceneView: View {
         wandYFraction: CGFloat = 0.4,
         onRoomDrag: ((CGFloat, CGFloat) -> Void)? = nil,
         onPetTap: (() -> Void)? = nil,
-        onPetDrag: (() -> Void)? = nil
+        onPetDrag: (() -> Void)? = nil,
+        clipAnim: PetAnim? = nil,
+        clipFrame: Int = 0
     ) {
         self.scene = scene
         self.mood = mood
@@ -712,6 +716,8 @@ public struct PetRoomSceneView: View {
         self.onRoomDrag = onRoomDrag
         self.onPetTap = onPetTap
         self.onPetDrag = onPetDrag
+        self.clipAnim = clipAnim
+        self.clipFrame = clipFrame
     }
 
     public var body: some View {
@@ -735,14 +741,26 @@ public struct PetRoomSceneView: View {
             onPetDrag: onPetDrag
         ) {
             TappablePetHost(onTap: onPetTap, onDrag: onPetDrag) {
-                AnimatedPixelPetView(
-                    mood: mood,
-                    pose: pose,
-                    isSleeping: isSleeping,
-                    scale: petScale,
-                    speciesId: speciesId,
-                    growthStage: growthStage
-                )
+                Group {
+                    if let clipAnim {
+                        ClipPetView(
+                            speciesId: speciesId,
+                            anim: clipAnim,
+                            frame: clipFrame,
+                            facingLeft: false,
+                            displaySize: 78 * petScale
+                        )
+                    } else {
+                        AnimatedPixelPetView(
+                            mood: mood,
+                            pose: pose,
+                            isSleeping: isSleeping,
+                            scale: petScale,
+                            speciesId: speciesId,
+                            growthStage: growthStage
+                        )
+                    }
+                }
                 .offset(y: bounceOffset)
             }
         }

@@ -46,49 +46,25 @@ struct ContentView: View {
     @State private var wandX: CGFloat = 0.55
     @State private var wandY: CGFloat = 0.38
     @State private var showHitIsland = false
+    @State private var brain = PetBrain()
+    @State private var pendingFoodId: String?
 
     var body: some View {
         NavigationStack {
             ZStack {
                 roomBackground.ignoresSafeArea()
 
-                // 21 layout: Room 56% / Console 37% / Bottom utility 7% of safe height
-                GeometryReader { geo in
-                    let h = geo.size.height
+                // Rebuild: the room is the app. No console dashboard.
+                ZStack(alignment: .bottom) {
+                    roomViewport
                     VStack(spacing: 0) {
-                        ZStack(alignment: .top) {
-                            roomViewport
-                            roomHUD
-                            if store.isGrowEligible {
-                                growChip
-                                    .padding(.horizontal, 12)
-                                    .padding(.top, 40)
-                            }
+                        roomHUD
+                        Spacer(minLength: 0)
+                        if store.isGrowEligible {
+                            growChip.padding(.bottom, 8)
                         }
-                        .frame(height: h * 0.56)
-                        .frame(maxWidth: .infinity)
-
-                        ConsolePanelView(
-                            store: store,
-                            onFood: { showFood = true },
-                            onPlay: { showGames = true },
-                            onPets: { showPets = true },
-                            onScenes: { showScenes = true },
-                            onClean: { performClean() },
-                            onSleep: { performSleep() },
-                            onRename: { store.rename($0) }
-                        )
-                        .frame(height: h * 0.37)
-                        .frame(maxWidth: .infinity)
-
-                        BottomUtilityBar(
-                            onWidgets: { showWidgets = true },
-                            onSettings: { showSettings = true }
-                        )
-                        .frame(height: h * 0.07)
-                        .frame(maxWidth: .infinity)
+                        toyDock
                     }
-                    .frame(width: geo.size.width, height: h)
                 }
 
 
@@ -182,7 +158,7 @@ struct ContentView: View {
                 store.startTicking()
                 activityManager.renewIfNeeded(pet: store.pet)
                 syncActivity()
-                startIdleWalk()
+                startBrain()
             }
             .onDisappear {
                 store.stopTicking()
@@ -250,8 +226,10 @@ struct ContentView: View {
             firefliesUnlocked: store.firefliesUnlocked,
             showFireflies: store.showFireflies,
             bounceOffset: playBounce,
-            petXFraction: petX,
-            facingLeft: facingLeft,
+            petXFraction: brain.x,
+            facingLeft: brain.player.facingLeft,
+            clipAnim: brain.player.anim,
+            clipFrame: brain.player.frame,
             droppedSymbol: droppedSymbol,
             droppedXFraction: droppedX,
             ballVisible: ballVisible,
@@ -372,6 +350,63 @@ struct ContentView: View {
 
     // MARK: - Continuous walk (P0 density)
 
+    private func startBrain() {
+        walkTask?.cancel()
+        var last = Date()
+        walkTask = Task { @MainActor in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 50_000_000)
+                let now = Date()
+                let dt = now.timeIntervalSince(last)
+                last = now
+                brain.tick(dt: dt, sleeping: store.pet.isSleeping)
+                petX = brain.x
+                facingLeft = brain.player.facingLeft
+                if brain.consumeFeedReady(), let id = pendingFoodId {
+                    pendingFoodId = nil
+                    store.feed(itemID: id)
+                    droppedSymbol = nil
+                    PetSound.shared.play(.eatCrunch)
+                    PetSound.shared.play(.meow)
+                    pulseHeart(crumbs: true)
+                    syncActivity()
+                }
+            }
+        }
+    }
+
+    private var toyDock: some View {
+        HStack(spacing: 14) {
+            dockButton("fork.knife", "Feed") { showFood = true }
+            dockButton("tennisball", "Play") { showGames = true }
+            dockButton("hand.point.up", "Pet") { performPetTap() }
+            dockButton("moon", "Sleep") { performSleep() }
+            dockButton("gearshape", "More") { showSettings = true }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(.black.opacity(0.28), in: Capsule())
+        .padding(.bottom, 12)
+    }
+
+    private func dockButton(_ icon: String, _ label: String, action: @escaping () -> Void) -> some View {
+        Button {
+            PetSound.shared.play(.uiTick)
+            action()
+        } label: {
+            VStack(spacing: 2) {
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .semibold))
+                Text(label)
+                    .font(.system(size: 9, weight: .bold))
+            }
+            .foregroundStyle(.white)
+            .frame(width: 48, height: 40)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+    }
+
     private func startIdleWalk() {
         walkTask?.cancel()
         walkTask = Task { @MainActor in
@@ -403,7 +438,9 @@ struct ContentView: View {
 
     private func dropFoodAndEat(_ item: InventoryItem) {
         careBusy = true
-        droppedX = facingLeft ? 0.32 : 0.68
+        pendingFoodId = item.id
+        droppedX = brain.player.facingLeft ? 0.32 : 0.68
+        brain.noticeFood(at: droppedX)
         droppedSymbol = item.symbolName
         PetSound.shared.play(.feed)
         #if canImport(UIKit)
@@ -411,17 +448,19 @@ struct ContentView: View {
         #endif
 
         Task { @MainActor in
-            // Drop settle beat, then walk → eat 1–1.5s
-            try? await Task.sleep(nanoseconds: 180_000_000)
-            await walkPet(to: droppedX, steps: 14, stepMs: 40)
-
-            store.feed(itemID: item.id)
-            droppedSymbol = nil
-            PetSound.shared.play(.eatCrunch)
-            pulseHeart(crumbs: true)
+            // Brain walks to the food and calls feed when the eat clip finishes.
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            if pendingFoodId != nil {
+                // Fail-safe if the clip never completes.
+                if let id = pendingFoodId {
+                    pendingFoodId = nil
+                    store.feed(itemID: id)
+                    droppedSymbol = nil
+                    syncActivity()
+                }
+            }
+            careBusy = false
             spawnPlayBurst()
-            schedulePoseClear(holdMs: 1300)
-            syncActivity()
 
             try? await Task.sleep(nanoseconds: 1_300_000_000)
             careBusy = false
@@ -431,6 +470,7 @@ struct ContentView: View {
     // MARK: - Play Ball (spawn → run → hit ≥1.5s + heart)
 
     private func startPlayBall() {
+        brain.reactPlay()
         guard !careBusy else { return }
         careBusy = true
         ballX = facingLeft ? 0.28 : 0.78
@@ -588,6 +628,7 @@ struct ContentView: View {
 
     private func performSleep() {
         careBusy = true
+        brain.reactSleep(on: true)
         store.sleep()
         PetSound.shared.play(.sleep)
         pulseZzz()
@@ -599,6 +640,7 @@ struct ContentView: View {
     }
 
     private func performPetTap() {
+        brain.reactPet()
         store.petTap()
         PetSound.shared.play(.pet)
         PetSound.shared.play(.meow)

@@ -390,33 +390,26 @@ struct ContentView: View {
     }
 
     private var toyDock: some View {
-        HStack(spacing: 14) {
-            dockButton("fork.knife", "Feed") { showFood = true }
-            dockButton("tennisball", "Play") { showGames = true }
-            dockButton("hand.point.up", "Pet") { performPetTap() }
-            dockButton("drop", "Bath") { performClean() }
-            dockButton("moon", "Sleep") { performSleep() }
-            dockButton("gearshape", "More") { showSettings = true }
+        HStack(spacing: 8) {
+            dockButton("ctrl-feed", "Feed") { showFood = true }
+            dockButton("ctrl-play", "Play") { showGames = true }
+            dockButton("ctrl-pet", "Pet") { performPetTap() }
+            dockButton("ctrl-bath", "Bath") { performClean() }
+            dockButton("ctrl-sleep", "Sleep") { performSleep() }
+            dockButton("ctrl-more", "More") { showSettings = true }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(.black.opacity(0.28), in: Capsule())
-        .padding(.bottom, 12)
+        .padding(.bottom, 10)
     }
 
-    private func dockButton(_ icon: String, _ label: String, action: @escaping () -> Void) -> some View {
+    private func dockButton(_ image: String, _ label: String, action: @escaping () -> Void) -> some View {
         Button {
             PetSound.shared.play(.uiTick)
             action()
         } label: {
-            VStack(spacing: 2) {
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .semibold))
-                Text(label)
-                    .font(.system(size: 9, weight: .bold))
-            }
-            .foregroundStyle(.white)
-            .frame(width: 48, height: 40)
+            Image(image)
+                .resizable()
+                .interpolation(.none)
+                .frame(width: 40, height: 40)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)

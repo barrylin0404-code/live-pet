@@ -110,10 +110,10 @@ struct HitIslandGameView: View {
                 .frame(maxHeight: .infinity, alignment: .top)
 
                 ForEach(orbs) { orb in
-                    Image(systemName: "basketball.fill")
-                        .font(.system(size: orb.size))
-                        .foregroundStyle(orb.color)
-                        .shadow(color: .black.opacity(0.18), radius: 2, y: 1)
+                    Image("prop-island")
+                        .resizable()
+                        .interpolation(.none)
+                        .frame(width: 48, height: 48)
                         .position(
                             x: geo.size.width * orb.x,
                             y: geo.size.height * orb.y
@@ -121,19 +121,14 @@ struct HitIslandGameView: View {
                 }
 
                 VStack(spacing: 2) {
-                    AnimatedPixelPetView(
-                        mood: mood,
-                        pose: .play,
-                        isSleeping: false,
+                    ClipPetView(
                         speciesId: speciesId,
-                        growthStage: growthStage,
-                        scale: 0.85
+                        anim: .playing,
+                        frame: Int(elapsed * 6),
+                        facingLeft: false,
+                        displaySize: 96
                     )
-                    Capsule()
-                        .fill(coral)
-                        .frame(width: paddleFlash ? 76 : 68, height: paddleFlash ? 14 : 11)
-                        .shadow(color: coral.opacity(0.45), radius: 3, y: 1)
-                        .scaleEffect(paddleFlash ? 1.08 : 1.0)
+                    .scaleEffect(paddleFlash ? 1.06 : 1.0)
                 }
                 .position(
                     x: geo.size.width * paddleX,
@@ -149,7 +144,7 @@ struct HitIslandGameView: View {
                         paddleX = min(0.88, max(0.12, value.location.x / max(geo.size.width, 1)))
                     }
             )
-            .accessibilityHint("Drag left and right to bounce balls")
+            .accessibilityHint("Drag left and right to bounce the islands")
         }
         .padding(.bottom, 8)
     }
@@ -168,7 +163,7 @@ struct HitIslandGameView: View {
                 Text("Hit the Island")
                     .font(.title2.weight(.heavy))
                     .foregroundStyle(ink)
-                Text("Drag \(petName) under falling balls.\nBounce them skyward — 15 seconds!")
+                Text("Drag \(petName) under the falling islands.\nBounce them skyward — 15 seconds!")
                     .font(.subheadline)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(ink.opacity(0.75))

@@ -11,24 +11,16 @@ struct GrowCelebrationSheet: View {
             Color(red: 1.0, green: 0.98, blue: 0.94).ignoresSafeArea()
             VStack(spacing: 22) {
                 Spacer()
-                ZStack {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 56))
-                        .foregroundStyle(Color(red: 0xE8/255.0, green: 0xC5/255.0, blue: 0x47/255.0))
-                        .offset(y: -64)
-                    AnimatedPixelPetView(
-                        mood: .happy,
-                        pose: .idle,
-                        isSleeping: false,
-                        scale: 1.3 * scale,
+                TimelineView(.animation(minimumInterval: 1.0 / 8.0)) { context in
+                    let frame = Int(context.date.timeIntervalSinceReferenceDate * 8)
+                    ClipPetView(
                         speciesId: pet.petGlyph,
-                        growthStage: pet.growthStage
+                        anim: .happy,
+                        frame: frame,
+                        facingLeft: false,
+                        displaySize: 140
                     )
-                    Image(systemName: "heart.fill")
-                        .font(.system(size: 44))
-                        .foregroundStyle(Color(red: 1.0, green: 0.30, blue: 0.43))
-                        .offset(y: 72)
-                        .scaleEffect(scale)
+                    .scaleEffect(scale)
                 }
                 .frame(height: 190)
                 Text("All grown!")

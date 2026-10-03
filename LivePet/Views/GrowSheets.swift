@@ -53,14 +53,16 @@ struct MeetPipSheet: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 18) {
-                AnimatedPixelPetView(
-                    mood: .happy,
-                    pose: .idle,
-                    isSleeping: false,
-                    scale: 1.25,
-                    speciesId: "pip",
-                    growthStage: .nubby
-                )
+                TimelineView(.animation(minimumInterval: 1.0 / 8.0)) { context in
+                    let frame = Int(context.date.timeIntervalSinceReferenceDate * 8)
+                    ClipPetView(
+                        speciesId: "pip",
+                        anim: .idle,
+                        frame: frame,
+                        facingLeft: false,
+                        displaySize: 120
+                    )
+                }
                 .frame(height: 130)
                 Text("Meet Pip")
                     .font(.title2.bold())

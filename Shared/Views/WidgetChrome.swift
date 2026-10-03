@@ -143,21 +143,23 @@ struct SatietyMiniBar: View {
     }
 }
 
-/// Idle/sleep pet crop ~40–56pt, nearest-neighbor when assets exist.
+/// Side-view idle or sleep sheet. Missing frames fall back to that species' idle.
 struct WidgetPetForeground: View {
     let snapshot: PetSnapshot
     var size: CGFloat = 48
 
     var body: some View {
         let sleeping = snapshot.isSleeping == true || snapshot.mood == .sleepy
-        AnimatedPixelPetView(
-            mood: snapshot.mood,
-            pose: sleeping ? .sleep : .idle,
-            isSleeping: sleeping,
-            speciesId: snapshot.petGlyph,
-            growthStage: snapshot.resolvedGrowthStage,
-            scale: size / 64
-        )
+        TimelineView(.animation(minimumInterval: 1.0 / 6.0, paused: false)) { context in
+            let tick = Int(context.date.timeIntervalSinceReferenceDate * 6)
+            ClipPetView(
+                speciesId: snapshot.petGlyph == "pip" ? "pip" : "nubby",
+                anim: sleeping ? .sleeping : .idle,
+                frame: tick,
+                facingLeft: false,
+                displaySize: size
+            )
+        }
         .frame(width: size, height: size)
         .accessibilityHidden(true)
     }

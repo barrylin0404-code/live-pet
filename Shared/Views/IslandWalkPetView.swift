@@ -67,15 +67,7 @@ public struct IslandWalkPetView: View {
         let display = effectivePose
         Group {
             if display != .walk {
-                AnimatedPixelPetView(
-                    mood: mood,
-                    pose: display,
-                    isSleeping: display == .sleep,
-                    scale: min(scale, slotHeight / 104),
-                    preferIslandCrop: false,
-                    speciesId: speciesId,
-                    growthStage: growthStage
-                )
+                careBody(display)
             } else {
                 walkBody
             }
@@ -83,7 +75,31 @@ public struct IslandWalkPetView: View {
         .frame(height: slotHeight)
     }
 
+    /// Eat, play, bath, and sleep use the same side-view sheets as the room.
+    private func careBody(_ pose: PetPose) -> some View {
+        let height = slotHeight
+        let anim: PetAnim = switch pose {
+        case .sleep: .sleeping
+        case .eat: .eating
+        case .play: .playing
+        case .clean: .bathing
+        case .idle, .walk: .idle
+        }
+        return TimelineView(.animation(minimumInterval: 1.0 / 6.0, paused: false)) { context in
+            let tick = Int(context.date.timeIntervalSinceReferenceDate * 6)
+            ClipPetView(
+                speciesId: speciesId,
+                anim: anim,
+                frame: tick,
+                facingLeft: false,
+                displaySize: height
+            )
+        }
+        .frame(height: height)
+    }
+
     private var walkBody: some View {
+
         let height = slotHeight
         // Side-view sheets are wider than tall. A wider frame lets height fill the pill.
         let petWidth = height * 1.35

@@ -37,6 +37,21 @@ struct InventoryPanel: View {
     }
 
     @ViewBuilder
+    private func inventoryGlyph(_ item: InventoryItem, tint: Color) -> some View {
+        if let sprite = item.pixelSpriteName {
+            Image(sprite)
+                .resizable()
+                .interpolation(.none)
+                .scaledToFit()
+                .frame(width: 28, height: 28)
+        } else {
+            Image(systemName: item.symbolName)
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(tint)
+        }
+    }
+
+    @ViewBuilder
     private func ribbonCell(_ item: InventoryItem) -> some View {
         let isFavorite = item.isFood
             ? store.pet.isFavoriteFood(item.id)
@@ -60,9 +75,7 @@ struct InventoryPanel: View {
         } label: {
             ZStack(alignment: .topTrailing) {
                 VStack(spacing: 2) {
-                    Image(systemName: item.symbolName)
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundStyle(tint)
+                    inventoryGlyph(item, tint: tint)
                     if item.isFood || item.isCare {
                         Text("×\(item.quantity)")
                             .font(.system(size: 9, weight: .bold).monospacedDigit())

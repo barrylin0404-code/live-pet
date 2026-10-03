@@ -22,6 +22,15 @@ struct InventoryItem: Identifiable, Codable, Equatable, Hashable {
     var isToy: Bool { category == .toy }
     var isCare: Bool { category == .care }
 
+    /// Original pixel prop, when one exists. Other items keep their symbol.
+    var pixelSpriteName: String? {
+        switch id {
+        case "fish": return "prop-fish"
+        case "berry": return "prop-berry"
+        default: return nil
+        }
+    }
+
     /// Free forever — food auto-refills; toys are reusable; no IAP / rate-gate.
     static let catalog: [InventoryItem] = [
         // Food set from 14-video-parity-chrome (auto-refill)

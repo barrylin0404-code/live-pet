@@ -61,6 +61,21 @@ struct SelectFoodSheet: View {
         .padding(.bottom, 120) // keep console silhouette readable
     }
 
+    @ViewBuilder
+    private func foodGlyph(_ item: InventoryItem) -> some View {
+        if let sprite = item.pixelSpriteName {
+            Image(sprite)
+                .resizable()
+                .interpolation(.none)
+                .scaledToFit()
+                .frame(width: 40, height: 40)
+        } else {
+            Image(systemName: item.symbolName)
+                .font(.system(size: 34, weight: .semibold))
+                .foregroundStyle(Color.orange)
+        }
+    }
+
     private func foodCell(_ item: InventoryItem) -> some View {
         let isFavorite = store.pet.isFavoriteFood(item.id)
         return Button {
@@ -72,9 +87,7 @@ struct SelectFoodSheet: View {
         } label: {
             VStack(spacing: 6) {
                 ZStack(alignment: .topTrailing) {
-                    Image(systemName: item.symbolName)
-                        .font(.system(size: 34, weight: .semibold))
-                        .foregroundStyle(Color.orange)
+                    foodGlyph(item)
                         .frame(height: 44)
                     if isFavorite {
                         Image(systemName: "star.fill")
@@ -141,8 +154,8 @@ struct SelectGameSheet: View {
             .padding(.bottom, 10)
 
             LazyVGrid(columns: columns, spacing: 12) {
-                gameCard(title: "Play Ball", icon: "tennisball.fill", action: onPlayBall)
-                gameCard(title: "Follow the wand", icon: "wand.and.stars", action: onFollowWand)
+                gameCard(title: "Play Ball", pixel: "prop-ball", action: onPlayBall)
+                gameCard(title: "Follow the wand", pixel: "prop-wand", action: onFollowWand)
                 gameCard(title: "Hit the Island", icon: "sportscourt.fill", action: onHitIsland)
             }
             .padding(.horizontal, 16)
@@ -160,7 +173,22 @@ struct SelectGameSheet: View {
         .padding(.bottom, 120)
     }
 
-    private func gameCard(title: String, icon: String, action: @escaping () -> Void) -> some View {
+    @ViewBuilder
+    private func gameGlyph(icon: String?, pixel: String?) -> some View {
+        if let pixel {
+            Image(pixel)
+                .resizable()
+                .interpolation(.none)
+                .scaledToFit()
+                .frame(width: 40, height: 40)
+        } else if let icon {
+            Image(systemName: icon)
+                .font(.system(size: 40, weight: .semibold))
+                .foregroundStyle(Color(red: 0x7E / 255.0, green: 0xC8 / 255.0, blue: 0xE3 / 255.0))
+        }
+    }
+
+    private func gameCard(title: String, icon: String? = nil, pixel: String? = nil, action: @escaping () -> Void) -> some View {
         Button {
             PetSound.shared.play(.uiTick)
             #if canImport(UIKit)
@@ -169,9 +197,7 @@ struct SelectGameSheet: View {
             action()
         } label: {
             VStack(spacing: 10) {
-                Image(systemName: icon)
-                    .font(.system(size: 40, weight: .semibold))
-                    .foregroundStyle(Color(red: 0x7E / 255.0, green: 0xC8 / 255.0, blue: 0xE3 / 255.0))
+                gameGlyph(icon: icon, pixel: pixel)
                 Text(title)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))

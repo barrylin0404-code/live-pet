@@ -138,43 +138,76 @@ public struct RoomSceneView<PetContent: View>: View {
     }
 
 
-    /// Layout 21 R6 — sofa / curtains / TV / plant / wall art on margins only (mid-band 0.22–0.78 clear).
+    /// Indoor living room. Pieces sit on the floor line; the pet is drawn after this canvas, so it walks in front.
     private func drawIndoorFurnitureDensity(context: GraphicsContext, size: CGSize, floorY: CGFloat, win: CGRect, night: Bool) {
         let w = size.width
         let h = size.height
-        let wood = night ? Color(red: 0.35, green: 0.28, blue: 0.24) : Color(red: 0.55, green: 0.40, blue: 0.28)
-        let fabric = night ? Color(red: 0.40, green: 0.34, blue: 0.52) : Color(red: 0xF5 / 255.0, green: 0xC6 / 255.0, blue: 0xA8 / 255.0)
-        let screen = night ? Color(red: 0.35, green: 0.55, blue: 0.70) : Color(red: 0.45, green: 0.65, blue: 0.85)
+        let wood = night ? Color(red: 0.42, green: 0.32, blue: 0.26) : Color(red: 0.48, green: 0.34, blue: 0.22)
+        let fabric = night ? Color(red: 0.42, green: 0.36, blue: 0.58) : Color(red: 0xE8 / 255.0, green: 0x9A / 255.0, blue: 0x78 / 255.0)
+        let fabricDeep = night ? Color(red: 0.32, green: 0.28, blue: 0.48) : Color(red: 0xC4 / 255.0, green: 0x72 / 255.0, blue: 0x58 / 255.0)
+        let screen = night ? Color(red: 0.35, green: 0.62, blue: 0.78) : Color(red: 0.55, green: 0.78, blue: 0.95)
+        let leaf = Color(red: 0.28, green: 0.58, blue: 0.36)
+        let leafDark = Color(red: 0.18, green: 0.42, blue: 0.28)
 
-        // Curtains — flush to window sides (wall band)
-        let curtainW = max(8, win.width * 0.12)
-        context.fill(Path(CGRect(x: win.minX - curtainW - 2, y: win.minY - 4, width: curtainW, height: win.height + 10)), with: .color(fabric.opacity(0.9)))
-        context.fill(Path(CGRect(x: win.maxX + 2, y: win.minY - 4, width: curtainW, height: win.height + 10)), with: .color(fabric.opacity(0.85)))
-        // Curtain rod
-        context.fill(Path(CGRect(x: win.minX - curtainW - 4, y: win.minY - 6, width: win.width + curtainW * 2 + 8, height: 3)), with: .color(wood))
+        // Curtains — thick drapes on a rod, long enough to read as cloth.
+        let curtainW = max(w * 0.07, win.width * 0.28)
+        let rodY = win.minY - h * 0.018
+        let drapeBottom = min(floorY - h * 0.02, win.maxY + h * 0.04)
+        context.fill(
+            Path(CGRect(x: win.minX - curtainW * 0.55, y: rodY - 3, width: win.width + curtainW * 1.1, height: max(5, h * 0.012))),
+            with: .color(wood)
+        )
+        let leftCurtain = CGRect(x: win.minX - curtainW * 0.35, y: rodY, width: curtainW, height: drapeBottom - rodY)
+        let rightCurtain = CGRect(x: win.maxX - curtainW * 0.65, y: rodY, width: curtainW, height: drapeBottom - rodY)
+        context.fill(Path(roundedRect: leftCurtain, cornerRadius: 4), with: .color(fabric.opacity(0.95)))
+        context.fill(Path(roundedRect: rightCurtain, cornerRadius: 4), with: .color(fabric.opacity(0.95)))
+        context.fill(Path(CGRect(x: leftCurtain.minX + curtainW * 0.38, y: leftCurtain.minY, width: max(3, curtainW * 0.12), height: leftCurtain.height)), with: .color(fabricDeep.opacity(0.55)))
+        context.fill(Path(CGRect(x: rightCurtain.minX + curtainW * 0.42, y: rightCurtain.minY, width: max(3, curtainW * 0.12), height: rightCurtain.height)), with: .color(fabricDeep.opacity(0.55)))
 
-        // Sofa — left margin only (≤0.20), seat on floor
-        let sofaX = w * 0.02
-        let sofaW = w * 0.16
-        let sofaH = h * 0.10
-        context.fill(Path(roundedRect: CGRect(x: sofaX, y: floorY - sofaH, width: sofaW, height: sofaH), cornerRadius: 6), with: .color(fabric))
-        context.fill(Path(roundedRect: CGRect(x: sofaX, y: floorY - sofaH - 10, width: sofaW * 0.22, height: 14), cornerRadius: 3), with: .color(fabric.opacity(0.9)))
-        context.fill(Path(roundedRect: CGRect(x: sofaX + sofaW * 0.78, y: floorY - sofaH - 10, width: sofaW * 0.22, height: 14), cornerRadius: 3), with: .color(fabric.opacity(0.9)))
-        // Pillows
-        context.fill(Path(ellipseIn: CGRect(x: sofaX + 6, y: floorY - sofaH + 4, width: 12, height: 10)), with: .color(Color(red: 0xFA / 255.0, green: 0x85 / 255.0, blue: 0x6B / 255.0).opacity(0.85)))
-        context.fill(Path(ellipseIn: CGRect(x: sofaX + sofaW - 20, y: floorY - sofaH + 5, width: 11, height: 9)), with: .color(Color(red: 0.55, green: 0.70, blue: 0.55).opacity(0.9)))
+        // Sofa — about two fifths of the room, off the left edge, seat on the floor line.
+        let sofaW = w * 0.42
+        let sofaH = h * 0.20
+        let sofaX = w * 0.18
+        let sofaY = floorY - sofaH
+        let armW = sofaW * 0.14
+        context.fill(Path(roundedRect: CGRect(x: sofaX, y: sofaY + sofaH * 0.28, width: sofaW, height: sofaH * 0.72), cornerRadius: 8), with: .color(fabric))
+        context.fill(Path(roundedRect: CGRect(x: sofaX + armW * 0.4, y: sofaY + sofaH * 0.08, width: sofaW - armW * 0.8, height: sofaH * 0.42), cornerRadius: 6), with: .color(fabricDeep))
+        context.fill(Path(roundedRect: CGRect(x: sofaX, y: sofaY + sofaH * 0.18, width: armW, height: sofaH * 0.82), cornerRadius: 6), with: .color(fabricDeep))
+        context.fill(Path(roundedRect: CGRect(x: sofaX + sofaW - armW, y: sofaY + sofaH * 0.18, width: armW, height: sofaH * 0.82), cornerRadius: 6), with: .color(fabricDeep))
+        context.fill(Path(ellipseIn: CGRect(x: sofaX + armW + 4, y: sofaY + sofaH * 0.34, width: sofaW * 0.22, height: sofaH * 0.28)), with: .color(Color(red: 0xFA / 255.0, green: 0x85 / 255.0, blue: 0x6B / 255.0)))
+        context.fill(Path(ellipseIn: CGRect(x: sofaX + sofaW * 0.48, y: sofaY + sofaH * 0.36, width: sofaW * 0.20, height: sofaH * 0.26)), with: .color(Color(red: 0.95, green: 0.90, blue: 0.82)))
+        context.fill(Path(CGRect(x: sofaX + sofaW * 0.12, y: floorY - h * 0.012, width: sofaW * 0.08, height: h * 0.018)), with: .color(wood))
+        context.fill(Path(CGRect(x: sofaX + sofaW * 0.80, y: floorY - h * 0.012, width: sofaW * 0.08, height: h * 0.018)), with: .color(wood))
 
-        // TV + stand — right margin (≥0.82)
-        let tvX = w * 0.84
-        let tvY = floorY - h * 0.22
-        context.fill(Path(CGRect(x: tvX, y: floorY - 8, width: w * 0.12, height: 6)), with: .color(wood)) // stand
-        context.fill(Path(roundedRect: CGRect(x: tvX + 2, y: tvY, width: w * 0.11, height: h * 0.12), cornerRadius: 3), with: .color(Color(red: 0.18, green: 0.18, blue: 0.20)))
-        context.fill(Path(roundedRect: CGRect(x: tvX + 5, y: tvY + 4, width: w * 0.11 - 6, height: h * 0.12 - 10), cornerRadius: 2), with: .color(screen.opacity(0.85)))
+        // TV — right of the sofa, screen big enough to read as a set.
+        let tvW = w * 0.20
+        let tvH = h * 0.18
+        let tvX = w * 0.66
+        let tvY = floorY - tvH - h * 0.045
+        context.fill(Path(roundedRect: CGRect(x: tvX, y: tvY, width: tvW, height: tvH), cornerRadius: 4), with: .color(Color(red: 0.12, green: 0.12, blue: 0.14)))
+        context.fill(Path(roundedRect: CGRect(x: tvX + tvW * 0.06, y: tvY + tvH * 0.08, width: tvW * 0.88, height: tvH * 0.78), cornerRadius: 2), with: .color(screen))
+        context.fill(Path(CGRect(x: tvX + tvW * 0.42, y: tvY + tvH, width: tvW * 0.16, height: h * 0.028)), with: .color(Color(red: 0.16, green: 0.16, blue: 0.18)))
+        context.fill(Path(roundedRect: CGRect(x: tvX + tvW * 0.12, y: floorY - h * 0.02, width: tvW * 0.76, height: h * 0.022), cornerRadius: 2), with: .color(wood))
 
-        // Extra wall art — upper right wall (outside mid-band)
-        let art = CGRect(x: w * 0.78, y: h * 0.12, width: 18, height: 16)
-        context.fill(Path(art.insetBy(dx: -2, dy: -2)), with: .color(wood))
-        context.fill(Path(art), with: .color(night ? Color(red: 0.55, green: 0.45, blue: 0.70) : Color(red: 0.70, green: 0.80, blue: 0.95)))
+        // Plant — tall enough to see the pot and leaves.
+        let potW = w * 0.09
+        let potX = w * 0.88
+        let potH = h * 0.07
+        let potY = floorY - potH
+        context.fill(Path(roundedRect: CGRect(x: potX, y: potY, width: potW, height: potH), cornerRadius: 3), with: .color(Color(red: 0.62, green: 0.38, blue: 0.28)))
+        context.fill(Path(ellipseIn: CGRect(x: potX - potW * 0.35, y: potY - h * 0.09, width: potW * 0.9, height: h * 0.08)), with: .color(leafDark))
+        context.fill(Path(ellipseIn: CGRect(x: potX + potW * 0.25, y: potY - h * 0.11, width: potW * 0.95, height: h * 0.09)), with: .color(leaf))
+        context.fill(Path(ellipseIn: CGRect(x: potX - potW * 0.05, y: potY - h * 0.14, width: potW * 0.85, height: h * 0.08)), with: .color(leaf))
+
+        // Wall art — a framed picture, not a postage stamp.
+        let art = CGRect(x: w * 0.70, y: h * 0.06, width: w * 0.16, height: h * 0.13)
+        context.fill(Path(art.insetBy(dx: -w * 0.008, dy: -h * 0.008)), with: .color(wood))
+        context.fill(Path(art), with: .color(night ? Color(red: 0.35, green: 0.32, blue: 0.55) : Color(red: 0.62, green: 0.82, blue: 0.95)))
+        context.fill(Path(ellipseIn: CGRect(x: art.minX + art.width * 0.55, y: art.minY + art.height * 0.15, width: art.width * 0.22, height: art.height * 0.28)), with: .color(Color(red: 1.0, green: 0.86, blue: 0.40)))
+        var hill = Path()
+        hill.move(to: CGPoint(x: art.minX, y: art.maxY))
+        hill.addQuadCurve(to: CGPoint(x: art.maxX, y: art.maxY), control: CGPoint(x: art.midX, y: art.minY + art.height * 0.45))
+        context.fill(hill, with: .color(Color(red: 0.35, green: 0.62, blue: 0.40)))
     }
 
     private func drawSunNook(context: GraphicsContext, size: CGSize) {
@@ -203,7 +236,7 @@ public struct RoomSceneView<PetContent: View>: View {
         }
 
         // Window frame
-        let win = CGRect(x: w * 0.12, y: h * 0.12, width: w * 0.36, height: h * 0.32)
+        let win = CGRect(x: w * 0.06, y: h * 0.05, width: w * 0.40, height: h * 0.36)
         context.fill(Path(win.insetBy(dx: -6, dy: -6)), with: .color(Color(red: 0.55, green: 0.40, blue: 0.28)))
         // Sky
         context.fill(
@@ -237,45 +270,6 @@ public struct RoomSceneView<PetContent: View>: View {
         context.fill(Path(roundedRect: rug, cornerRadius: 8), with: .color(Color(red: 0.35, green: 0.55, blue: 0.48)))
         context.stroke(Path(roundedRect: rug, cornerRadius: 8), with: .color(.white.opacity(0.25)), lineWidth: 2)
 
-        // Plant pot — right margin (keep mid-band clear)
-        let potX = w * 0.82
-        let potY = floorY - 8
-        context.fill(
-            Path(CGRect(x: potX, y: potY - 28, width: 18, height: 22)),
-            with: .color(Color(red: 0.25, green: 0.55, blue: 0.35))
-        )
-        context.fill(
-            Path(CGRect(x: potX + 2, y: potY - 8, width: 14, height: 14)),
-            with: .color(Color(red: 0.70, green: 0.42, blue: 0.32))
-        )
-
-        // Shelf
-        context.fill(
-            Path(CGRect(x: w * 0.58, y: h * 0.28, width: w * 0.28, height: 6)),
-            with: .color(Color(red: 0.55, green: 0.40, blue: 0.28))
-        )
-        // Tiny blocks on shelf (decor)
-        context.fill(Path(CGRect(x: w * 0.62, y: h * 0.22, width: 12, height: 12)), with: .color(Color(red: 0.95, green: 0.55, blue: 0.35)))
-        context.fill(Path(CGRect(x: w * 0.72, y: h * 0.20, width: 10, height: 14)), with: .color(Color(red: 0.45, green: 0.60, blue: 0.90)))
-
-        // Pass 18 props — margins / wall only (mid-band 0.22–0.78 clear)
-        // Window seat cushion (behind pet Y / against wall under window)
-        let cushion = CGRect(x: win.minX + 4, y: win.maxY - 2, width: win.width - 8, height: 10)
-        context.fill(Path(roundedRect: cushion, cornerRadius: 4), with: .color(Color(red: 0xF5 / 255.0, green: 0xC6 / 255.0, blue: 0xA8 / 255.0)))
-        // Picture frame — wall right of shelf
-        let frame = CGRect(x: w * 0.88, y: h * 0.18, width: 16, height: 14)
-        context.fill(Path(frame.insetBy(dx: -2, dy: -2)), with: .color(Color(red: 0.55, green: 0.40, blue: 0.28)))
-        context.fill(Path(frame), with: .color(Color(red: 0.55, green: 0.75, blue: 0.55)))
-        // Yarn basket — right margin (outside plant)
-        let basketX = w * 0.90
-        let basketY = floorY - 4
-        context.fill(Path(ellipseIn: CGRect(x: basketX, y: basketY - 14, width: 22, height: 16)), with: .color(Color(red: 0.72, green: 0.55, blue: 0.38)))
-        context.fill(Path(ellipseIn: CGRect(x: basketX + 5, y: basketY - 18, width: 10, height: 10)), with: .color(Color(red: 0xFA / 255.0, green: 0x85 / 255.0, blue: 0x6B / 255.0)))
-        // Floor pouf — left margin
-        context.fill(Path(ellipseIn: CGRect(x: w * 0.06, y: floorY - 6, width: 28, height: 14)), with: .color(Color(red: 0xF5 / 255.0, green: 0xC6 / 255.0, blue: 0xA8 / 255.0).opacity(0.95)))
-        context.fill(Path(ellipseIn: CGRect(x: w * 0.08, y: floorY - 10, width: 22, height: 10)), with: .color(Color(red: 0.93, green: 0.70, blue: 0.55)))
-
-        // R6 indoor density
         drawIndoorFurnitureDensity(context: context, size: size, floorY: floorY, win: win, night: false)
     }
 
@@ -304,7 +298,7 @@ public struct RoomSceneView<PetContent: View>: View {
         }
 
         // Night sky window
-        let win = CGRect(x: w * 0.12, y: h * 0.12, width: w * 0.36, height: h * 0.32)
+        let win = CGRect(x: w * 0.06, y: h * 0.05, width: w * 0.40, height: h * 0.36)
         context.fill(Path(win.insetBy(dx: -6, dy: -6)), with: .color(Color(red: 0.35, green: 0.32, blue: 0.40)))
         context.fill(
             Path(win),
@@ -360,22 +354,6 @@ public struct RoomSceneView<PetContent: View>: View {
         context.fill(
             Path(CGRect(x: lampX + 2, y: lampY + 12, width: 4, height: 10)),
             with: .color(Color(red: 0.45, green: 0.38, blue: 0.30))
-        )
-
-        // Night bloom pot — right margin (upgrade plant)
-        let potX = w * 0.86
-        let potY = floorY - 8
-        context.fill(
-            Path(CGRect(x: potX, y: potY - 30, width: 16, height: 20)),
-            with: .color(Color(red: 0.28, green: 0.48, blue: 0.42))
-        )
-        context.fill(
-            Path(ellipseIn: CGRect(x: potX + 3, y: potY - 36, width: 10, height: 10)),
-            with: .color(Color(red: 0.85, green: 0.88, blue: 0.95))
-        )
-        context.fill(
-            Path(CGRect(x: potX + 1, y: potY - 10, width: 14, height: 12)),
-            with: .color(Color(red: 0.45, green: 0.35, blue: 0.30))
         )
 
         // Pass 18 props — margins / wall / sky only
@@ -459,7 +437,6 @@ public struct RoomSceneView<PetContent: View>: View {
         context.fill(Path(roundedRect: CGRect(x: w * 0.84, y: floorY - 16, width: 28, height: 16), cornerRadius: 4), with: .color(Color(red: 0.55, green: 0.42, blue: 0.30)))
         context.fill(Path(CGRect(x: w * 0.88, y: floorY - 22, width: 10, height: 8)), with: .color(Color(red: 0.48, green: 0.36, blue: 0.26)))
 
-        drawIndoorFurnitureDensity(context: context, size: size, floorY: floorY, win: win, night: false)
     }
 
     /// Mauve `#c4a0c8` sky, warm windows — Skyline Dusk.
@@ -518,7 +495,6 @@ public struct RoomSceneView<PetContent: View>: View {
         context.fill(Path(CGRect(x: w * 0.16, y: floorY - 16, width: 3, height: 16)), with: .color(Color(red: 0.38, green: 0.28, blue: 0.24)))
         context.fill(Path(roundedRect: CGRect(x: w * 0.135, y: floorY - 28, width: 8, height: 7), cornerRadius: 2), with: .color(Color(red: 0.92, green: 0.88, blue: 0.82)))
 
-        drawIndoorFurnitureDensity(context: context, size: size, floorY: floorY, win: win, night: true)
     }
 
     /// Soft day meadow with dirt path — outdoor horizon (pass 18).

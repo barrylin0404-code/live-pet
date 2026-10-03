@@ -727,7 +727,7 @@ public struct PetRoomSceneView: View {
             firefliesUnlocked: firefliesUnlocked,
             showFireflies: showFireflies,
             petXFraction: petXFraction,
-            facingLeft: facingLeft,
+            facingLeft: clipAnim == nil ? facingLeft : false,
             droppedSymbol: droppedSymbol,
             droppedXFraction: droppedXFraction,
             ballVisible: ballVisible,
@@ -747,7 +747,7 @@ public struct PetRoomSceneView: View {
                             speciesId: speciesId,
                             anim: clipAnim,
                             frame: clipFrame,
-                            facingLeft: false,
+                            facingLeft: facingLeft,
                             displaySize: 78 * petScale
                         )
                     } else {

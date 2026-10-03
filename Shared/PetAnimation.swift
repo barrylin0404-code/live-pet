@@ -51,7 +51,8 @@ public enum PetAnimCatalog {
     public static func clip(for anim: PetAnim) -> PetAnimClip {
         switch anim {
         case .idle, .idleBreathing:
-            return PetAnimClip(anim: anim, frameCount: 4, fps: 4, mode: .pingPong, priority: 0, interruptible: true)
+            // Designer P0 idle is 6 frames, blink on 3–4. Loop, don't ping-pong.
+            return PetAnimClip(anim: anim, frameCount: 6, fps: 6, mode: .loop, priority: 0, interruptible: true)
         case .idleBlink:
             return PetAnimClip(anim: anim, frameCount: 3, fps: 10, mode: .once, priority: 1, interruptible: true)
         case .idleLookLeft, .idleLookRight, .idleLookUp, .idleLookDown,
@@ -67,7 +68,11 @@ public enum PetAnimCatalog {
             return PetAnimClip(anim: anim, frameCount: 4, fps: 12, mode: .once, priority: 3, interruptible: false)
         case .jump:
             return PetAnimClip(anim: anim, frameCount: 5, fps: 12, mode: .once, priority: 3, interruptible: false)
-        case .eating, .playing, .bathing, .sleeping, .sleepBreathing, .held:
+        case .eating:
+            return PetAnimClip(anim: anim, frameCount: 5, fps: 8, mode: .once, priority: 5, interruptible: false)
+        case .happy, .petHappy, .excited, .veryHappy, .loveReaction, .playExcited:
+            return PetAnimClip(anim: anim, frameCount: 4, fps: 10, mode: .once, priority: 5, interruptible: false)
+        case .playing, .bathing, .sleeping, .sleepBreathing, .held:
             return PetAnimClip(anim: anim, frameCount: 4, fps: 6, mode: .loop, priority: 4, interruptible: true)
         default:
             // One-shot reactions and care beats.
@@ -75,9 +80,43 @@ public enum PetAnimCatalog {
         }
     }
 
+    /// Sheet name token. Eat frames are `nubby-eat-*`, not `nubby-eating-*`.
+    public static func assetToken(for anim: PetAnim) -> String {
+        switch anim {
+        case .eating, .eatStart, .eatFinish, .eatNotice, .favoriteFoodReaction:
+            return "eat"
+        default:
+            return anim.rawValue
+        }
+    }
+
+    /// Which sheet to draw. Idle variants share the idle cycle until they have their own frames.
+    /// Walk-to-food uses the directional walk sheets.
+    public static func playbackAnim(_ anim: PetAnim, facingLeft: Bool) -> PetAnim {
+        switch anim {
+        case .walkToFood, .walkSlow, .walkFast, .sleepyWalk, .walkToBed:
+            return facingLeft ? .walkLeft : .walkRight
+        case .runLeft:
+            return .walkLeft
+        case .runRight:
+            return .walkRight
+        case .eating, .eatStart, .eatFinish, .eatNotice, .favoriteFoodReaction:
+            return .eating
+        case .happy, .petHappy, .excited, .veryHappy, .loveReaction, .playExcited, .petReaction:
+            return .happy
+        case .idleBlink, .idleLookLeft, .idleLookRight, .idleLookUp, .idleLookDown,
+             .idleEarMovement, .idleTailMovement, .idleBreathing,
+             .idleSit, .idleLay, .idleStretch, .idleYawn, .idleScratch, .idleGroom, .idleCurious,
+             .idleRare1, .idleRare2, .idleRare3:
+            return .idle
+        default:
+            return anim
+        }
+    }
+
     public static func assetName(speciesId: String, anim: PetAnim, frame: Int) -> String {
         let species = speciesId == "pip" ? "pip" : "nubby"
-        return "\(species)-\(anim.rawValue)-\(frame)"
+        return "\(species)-\(assetToken(for: anim))-\(frame)"
     }
 
     public static func fallbackIdleName(speciesId: String) -> String {

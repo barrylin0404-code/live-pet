@@ -92,16 +92,12 @@ public struct PetBrain: Equatable {
                 return
             }
             x = food
-            if player.anim != .eating && player.anim != .eatFinish && player.anim != .happy {
+            if player.anim != .eating && player.anim != .happy {
                 player.request(.eating, force: true)
-            } else if player.finishedOneShot {
-                if player.anim == .eating {
-                    player.request(.eatFinish, force: true)
-                } else if player.anim == .eatFinish {
-                    feedReady = true
-                    player.request(.happy, force: true)
-                    commandedUntil = clock + 0.9
-                }
+            } else if player.finishedOneShot && player.anim == .eating {
+                feedReady = true
+                player.request(.happy, force: true)
+                commandedUntil = clock + 0.9
             }
             return
         }

@@ -12,6 +12,7 @@ public struct PetBrain: Equatable {
     private var commandedUntil: Double
     private var clock: Double
     private var moodHint: PetMood
+    private var wasSleeping: Bool
 
     public init(x: CGFloat = 0.48) {
         self.x = x
@@ -23,6 +24,20 @@ public struct PetBrain: Equatable {
         self.commandedUntil = 0
         self.clock = 0
         self.moodHint = .content
+        self.wasSleeping = false
+    }
+
+    /// Drag: pickup, then held while the stroke continues, then drop.
+    public mutating func reactGrab() {
+        wanderTarget = nil
+        if player.anim == .held {
+            commandedUntil = max(commandedUntil, clock + 0.5)
+            return
+        }
+        if player.anim != .pickup && player.anim != .drop {
+            player.request(.pickup, force: true)
+        }
+        commandedUntil = max(commandedUntil, clock + 0.85)
     }
 
     public mutating func noticeFood(at fraction: CGFloat) {
@@ -77,10 +92,17 @@ public struct PetBrain: Equatable {
         player.advance(dt: dt)
 
         if sleeping {
+            wasSleeping = true
             if player.anim != .sleeping && player.anim != .sleepBreathing {
                 player.request(.sleeping, force: true)
             }
             return
+        }
+        if wasSleeping {
+            wasSleeping = false
+            player.request(.wakeUp, force: true)
+            commandedUntil = clock + 0.9
+            wanderTarget = nil
         }
 
         if let food = foodX {
@@ -106,7 +128,16 @@ public struct PetBrain: Equatable {
         }
 
         if clock < commandedUntil {
-            if player.finishedOneShot { player.request(.idle, force: true) }
+            if player.finishedOneShot && player.anim == .pickup {
+                player.request(.held, force: true)
+            } else if player.finishedOneShot && player.anim != .held {
+                player.request(.idle, force: true)
+            }
+            return
+        }
+        if player.anim == .held {
+            player.request(.drop, force: true)
+            commandedUntil = clock + 0.7
             return
         }
 

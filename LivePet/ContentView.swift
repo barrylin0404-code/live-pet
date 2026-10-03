@@ -658,6 +658,7 @@ struct ContentView: View {
 
     /// Drag/stroke petting — denser bob + hearts, longer reaction ≥0.8–1.2s
     private func performPetStroke() {
+        brain.reactGrab()
         store.petTap()
         PetSound.shared.play(.pet)
         PetSound.shared.play(.meow)

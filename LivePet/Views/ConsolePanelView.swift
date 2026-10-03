@@ -78,15 +78,10 @@ struct ConsolePanelView: View {
                         draftName = store.pet.name
                         editingName = true
                     } label: {
-                        HStack(spacing: 3) {
-                            Text(store.pet.name)
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(ink)
-                                .lineLimit(1)
-                            Image(systemName: "pencil")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundStyle(ink.opacity(0.5))
-                        }
+                        Text(store.pet.name)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(ink)
+                            .lineLimit(1)
                     }
                     .buttonStyle(.plain)
                 }
@@ -277,35 +272,17 @@ struct ConsolePanelView: View {
         .accessibilityLabel(title)
     }
 
-    @ViewBuilder
     private var avatar: some View {
-        #if canImport(UIKit)
-        let name = PetSprite.avatarName(speciesId: store.pet.petGlyph, growthStage: store.pet.growthStage)
-        if UIImage(named: name) != nil {
-            Image(name)
-                .interpolation(.none)
-                .resizable()
-                .scaledToFit()
-        } else {
-            AnimatedPixelPetView(
-                mood: store.pet.mood,
-                pose: store.pet.pose,
-                isSleeping: store.pet.isSleeping,
+        TimelineView(.animation(minimumInterval: 1.0 / 6.0)) { context in
+            let frame = Int(context.date.timeIntervalSinceReferenceDate * 6)
+            ClipPetView(
                 speciesId: store.pet.petGlyph,
-                growthStage: store.pet.growthStage,
-                scale: 0.50
+                anim: store.pet.isSleeping ? .sleeping : .idle,
+                frame: frame,
+                facingLeft: false,
+                displaySize: 48
             )
         }
-        #else
-        AnimatedPixelPetView(
-            mood: store.pet.mood,
-            pose: store.pet.pose,
-            isSleeping: store.pet.isSleeping,
-            speciesId: store.pet.petGlyph,
-            growthStage: store.pet.growthStage,
-            scale: 0.50
-        )
-        #endif
     }
 
     private var filledHearts: Int {

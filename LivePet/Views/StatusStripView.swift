@@ -1,8 +1,4 @@
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
-
 /// Floating Feeling / Satiety / age pill — 13-playable-home + 08-premium-chrome values.
 struct StatusStripView: View {
     let pet: Pet
@@ -65,35 +61,17 @@ struct StatusStripView: View {
         .shadow(color: .black.opacity(0.08), radius: 8, y: 3)
     }
 
-    @ViewBuilder
     private var avatar: some View {
-        #if canImport(UIKit)
-        let avatar = PetSprite.avatarName(speciesId: pet.petGlyph, growthStage: pet.growthStage)
-        if UIImage(named: avatar) != nil {
-            Image(avatar)
-                .interpolation(.none)
-                .resizable()
-                .scaledToFit()
-        } else {
-            AnimatedPixelPetView(
-                mood: pet.mood,
-                pose: pet.pose,
-                isSleeping: pet.isSleeping,
+        TimelineView(.animation(minimumInterval: 1.0 / 6.0)) { context in
+            let frame = Int(context.date.timeIntervalSinceReferenceDate * 6)
+            ClipPetView(
                 speciesId: pet.petGlyph,
-                growthStage: pet.growthStage,
-                scale: 0.38
+                anim: pet.isSleeping ? .sleeping : .idle,
+                frame: frame,
+                facingLeft: false,
+                displaySize: 36
             )
         }
-        #else
-        AnimatedPixelPetView(
-            mood: pet.mood,
-            pose: pet.pose,
-            isSleeping: pet.isSleeping,
-            speciesId: pet.petGlyph,
-            growthStage: pet.growthStage,
-            scale: 0.38
-        )
-        #endif
     }
 
     private var filledHearts: Int {

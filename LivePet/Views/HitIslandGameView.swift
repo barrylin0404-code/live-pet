@@ -16,7 +16,6 @@ struct HitIslandGameView: View {
     private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
     private let coral = Color(red: 0xFA / 255.0, green: 0x85 / 255.0, blue: 0x6B / 255.0)
-    private let mint = Color(red: 0xC8 / 255.0, green: 0xDC / 255.0, blue: 0xC4 / 255.0)
 
     @State private var paddleX: CGFloat = 0.5
     @State private var orbs: [FallingOrb] = []
@@ -31,22 +30,15 @@ struct HitIslandGameView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.55, green: 0.78, blue: 0.95),
-                    Color(red: 0.90, green: 0.95, blue: 0.92)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            playfield
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             VStack(spacing: 0) {
                 header
-                playfield
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                Spacer(minLength: 0)
                 footerHint
             }
+            .allowsHitTesting(false)
 
             if showIntro { introOverlay }
             if finished { resultOverlay }
@@ -75,13 +67,10 @@ struct HitIslandGameView: View {
     private var playfield: some View {
         GeometryReader { geo in
             ZStack {
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(mint.opacity(0.55))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .strokeBorder(Color.white.opacity(0.5), lineWidth: 2)
-                    )
-                    .padding(.horizontal, 12)
+                Image("hit-island-plate")
+                    .resizable()
+                    .interpolation(.none)
+                    .frame(width: geo.size.width, height: geo.size.height)
 
                 HStack {
                     HStack(spacing: 4) {
@@ -100,7 +89,7 @@ struct HitIslandGameView: View {
                         .foregroundStyle(ink.opacity(0.45))
                 }
                 .padding(.horizontal, 28)
-                .padding(.top, 18)
+                .padding(.top, 64)
                 .frame(maxHeight: .infinity, alignment: .top)
 
                 ForEach(orbs) { orb in
@@ -140,7 +129,7 @@ struct HitIslandGameView: View {
             )
             .accessibilityHint("Drag left and right to bounce the islands")
         }
-        .padding(.bottom, 8)
+        .ignoresSafeArea()
     }
 
     private var footerHint: some View {

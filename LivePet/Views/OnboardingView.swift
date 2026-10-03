@@ -18,8 +18,17 @@ struct OnboardingView: View {
 
             VStack(spacing: 28) {
                 Spacer()
-                AnimatedPixelPetView(mood: .happy, pose: .idle, isSleeping: false, scale: 1.4, speciesId: "nubby", growthStage: .kit)
-                    .frame(height: 140)
+                TimelineView(.animation(minimumInterval: 1.0 / 8.0)) { context in
+                    let frame = Int(context.date.timeIntervalSinceReferenceDate * 8)
+                    ClipPetView(
+                        speciesId: "nubby",
+                        anim: .happy,
+                        frame: frame,
+                        facingLeft: false,
+                        displaySize: 140
+                    )
+                }
+                .frame(height: 140)
 
                 Text("Meet your pixel pet")
                     .font(.title2.bold())

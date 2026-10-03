@@ -58,7 +58,6 @@ struct ContentView: View {
                 ZStack(alignment: .bottom) {
                     roomViewport
                     VStack(spacing: 0) {
-                        roomHUD
                         Spacer(minLength: 0)
                         if store.isGrowEligible {
                             growChip.padding(.bottom, 8)
@@ -174,43 +173,6 @@ struct ContentView: View {
         }
     }
 
-
-    // MARK: - Room HUD (layout 21 R10 / M10)
-
-    private var roomHUD: some View {
-        HStack {
-            HStack(spacing: 4) {
-                Image(systemName: "heart.fill")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Color(red: 1.0, green: 0.30, blue: 0.43))
-                Text("∞")
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
-                    .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(.white.opacity(0.82), in: Capsule())
-            .overlay(Capsule().strokeBorder(.white.opacity(0.5), lineWidth: 1))
-            .accessibilityLabel("Hearts, unlimited — free forever")
-
-            Spacer(minLength: 0)
-
-            Button {
-                PetSound.shared.play(.uiTick)
-                showInfo = true
-            } label: {
-                Image(systemName: "info.circle.fill")
-                    .font(.system(size: 22))
-                    .foregroundStyle(.white.opacity(0.92))
-                    .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Info — how to play, free forever")
-        }
-        .padding(.horizontal, 12)
-        .padding(.top, 8)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    }
 
     // MARK: - Room
 

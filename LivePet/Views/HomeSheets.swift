@@ -323,9 +323,7 @@ struct PetsSheet: View {
 
     private var lockedPipCard: some View {
         VStack(spacing: 8) {
-            Image(systemName: "lock.fill")
-                .font(.system(size: 28))
-                .foregroundStyle(.secondary)
+            ClipPetView(speciesId: "pip", anim: .idle, frame: 0, facingLeft: false, displaySize: 72)
             Text("Pip")
                 .font(.subheadline.weight(.bold))
             Text("Grows with Nubby")
@@ -340,7 +338,7 @@ struct PetsSheet: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .strokeBorder(Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0), lineWidth: 2)
         )
-        .accessibilityLabel("Pip locked — unlock after first Grow")
+        .accessibilityLabel("Pip, grows with Nubby")
     }
 }
 
@@ -348,6 +346,7 @@ struct PetsSheet: View {
 
 struct ScenesSheet: View {
     @ObservedObject var store: PetStore
+    var onPets: (() -> Void)? = nil
     var onSettings: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
 
@@ -395,6 +394,22 @@ struct ScenesSheet: View {
                     }
                 }
                 .padding(16)
+
+                if let onPets {
+                    Button {
+                        PetSound.shared.play(.uiTick)
+                        onPets()
+                    } label: {
+                        Text("Pets")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 16)
+                }
 
                 if let onSettings {
                     Button {

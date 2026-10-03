@@ -128,7 +128,10 @@ struct ContentView: View {
                 PetsSheet(store: store) { syncActivity() }
             }
             .sheet(isPresented: $showScenes) {
-                ScenesSheet(store: store, onSettings: {
+                ScenesSheet(store: store, onPets: {
+                    showScenes = false
+                    showPets = true
+                }, onSettings: {
                     showScenes = false
                     showSettings = true
                 })

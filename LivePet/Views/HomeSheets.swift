@@ -417,7 +417,7 @@ struct WidgetsGallerySheet: View {
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
     private let widgets: [(String, String, String)] = [
-        ("Pet Feeling", "heart.fill", "Mood hearts on Home Screen"),
+        ("Live Pet", "pawprint.fill", "Your pet at home"),
         ("Pet Clock", "clock.fill", "Time with your pet"),
         ("Pet Weather", "cloud.sun.fill", "Local weather peek"),
         ("Pet Day", "calendar", "Date + care streak"),

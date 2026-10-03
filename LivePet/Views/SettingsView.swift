@@ -224,7 +224,7 @@ struct SettingsView: View {
         .alert("Add Live Pet widgets", isPresented: $showWidgetTip) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Long-press the Home Screen → tap + → search “Live Pet” or “Pet” → add Pet Feeling, Pet Clock, Pet Weather, Pet Day, Pet Note, or Pet Photo.")
+            Text("Long-press the Home Screen → tap + → search “Live Pet” or “Pet” → add Live Pet, Pet Clock, Pet Weather, Pet Day, Pet Note, or Pet Photo.")
         }
     }
 

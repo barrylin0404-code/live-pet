@@ -39,16 +39,6 @@ struct PetCalendarWidgetView: View {
     var entry: PetCalendarEntry
     @Environment(\.widgetFamily) private var family
 
-    private var careTip: String {
-        if entry.snapshot.satiety < 34 {
-            return "Feed if Satiety low"
-        }
-        if entry.snapshot.moodScore < 34 {
-            return "A little care goes far"
-        }
-        return "Today · care when free"
-    }
-
     var body: some View {
         let snap = entry.snapshot
         Group {
@@ -68,9 +58,6 @@ struct PetCalendarWidgetView: View {
                                 .foregroundStyle(WidgetChrome.ink)
                                 .lineLimit(1)
                         }
-                        Text(careTip)
-                            .font(.caption)
-                            .foregroundStyle(WidgetChrome.secondaryInk)
                         Text("Day \(entry.ageDays)")
                             .font(.caption2.monospacedDigit())
                             .foregroundStyle(WidgetChrome.secondaryInk)

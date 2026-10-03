@@ -6,29 +6,27 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.98, green: 0.94, blue: 0.88),
-                    Color(red: 0.90, green: 0.95, blue: 0.92)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-
-            VStack(spacing: 28) {
-                Spacer()
-                TimelineView(.animation(minimumInterval: 1.0 / 8.0)) { context in
-                    let frame = Int(context.date.timeIntervalSinceReferenceDate * 8)
+            GeometryReader { geo in
+                Image("sun-nook-plate")
+                    .resizable()
+                    .interpolation(.none)
+                    .frame(width: geo.size.width, height: geo.size.height)
+                TimelineView(.animation(minimumInterval: 1.0 / 6.0)) { context in
+                    let frame = Int(context.date.timeIntervalSinceReferenceDate * 6)
                     ClipPetView(
                         speciesId: "nubby",
-                        anim: .happy,
+                        anim: .idle,
                         frame: frame,
                         facingLeft: false,
                         displaySize: 140
                     )
                 }
-                .frame(height: 140)
+                .position(x: geo.size.width * 0.52, y: geo.size.height * 0.62)
+            }
+            .ignoresSafeArea()
+
+            VStack(spacing: 28) {
+                Spacer()
 
                 Text("Meet your pixel pet")
                     .font(.title2.bold())
@@ -57,12 +55,7 @@ struct OnboardingView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(Color(red: 0.98, green: 0.52, blue: 0.42))
                 .padding(.horizontal, 40)
-
-                Text("You can rename later in Settings")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Spacer()
+                .padding(.bottom, 28)
             }
         }
     }

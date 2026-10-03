@@ -13,6 +13,7 @@ public struct PetBrain: Equatable {
     private var clock: Double
     private var moodHint: PetMood
     private var wasSleeping: Bool
+    private var sleepPhase: Double
 
     public init(x: CGFloat = 0.48) {
         self.x = x
@@ -25,6 +26,7 @@ public struct PetBrain: Equatable {
         self.clock = 0
         self.moodHint = .content
         self.wasSleeping = false
+        self.sleepPhase = 0
     }
 
     /// Drag: pickup, then held while the stroke continues, then drop.
@@ -93,8 +95,15 @@ public struct PetBrain: Equatable {
 
         if sleeping {
             wasSleeping = true
+            sleepPhase += dt
             if player.anim != .sleeping && player.anim != .sleepBreathing {
                 player.request(.sleeping, force: true)
+                sleepPhase = 0
+            } else if player.anim == .sleeping && sleepPhase > 2.4 {
+                player.request(.sleepBreathing, force: true)
+            } else if player.anim == .sleepBreathing && sleepPhase > 5 {
+                player.request(.sleeping, force: true)
+                sleepPhase = 0
             }
             return
         }
@@ -130,6 +139,9 @@ public struct PetBrain: Equatable {
         if clock < commandedUntil {
             if player.finishedOneShot && player.anim == .pickup {
                 player.request(.held, force: true)
+            } else if player.finishedOneShot && player.anim == .wet {
+                player.request(.shakeWater, force: true)
+                commandedUntil = clock + 0.8
             } else if player.finishedOneShot && player.anim != .held {
                 player.request(.idle, force: true)
             }
@@ -140,8 +152,14 @@ public struct PetBrain: Equatable {
             commandedUntil = clock + 0.7
             return
         }
+        if player.anim == .bathing {
+            player.request(.wet, force: true)
+            commandedUntil = clock + 0.8
+            return
+        }
 
-        let moving = player.anim == .walkRight || player.anim == .walkLeft || player.anim == .walkSlow
+        let running = player.anim == .runLeft || player.anim == .runRight
+        let moving = running || player.anim == .walkRight || player.anim == .walkLeft || player.anim == .walkSlow
         if let target = wanderTarget, moving {
             let dx = target - x
             if abs(dx) < 0.025 {
@@ -151,8 +169,13 @@ public struct PetBrain: Equatable {
                 return
             }
             let left = dx < 0
-            player.request(left ? .walkLeft : .walkRight, facingLeft: left)
-            x += (left ? -1 : 1) * CGFloat(dt) * 0.11
+            if running {
+                player.request(left ? .runLeft : .runRight, facingLeft: left)
+                x += (left ? -1 : 1) * CGFloat(dt) * 0.22
+            } else {
+                player.request(left ? .walkLeft : .walkRight, facingLeft: left)
+                x += (left ? -1 : 1) * CGFloat(dt) * 0.11
+            }
             x = min(0.80, max(0.20, x))
             return
         }
@@ -191,15 +214,28 @@ public struct PetBrain: Equatable {
             let target = CGFloat.random(in: 0.24...0.76)
             wanderTarget = target
             let left = target < x
-            player.request(left ? .walkLeft : .walkRight, facingLeft: left, force: true)
+            if Int.random(in: 0..<3) == 0 {
+                player.request(left ? .runLeft : .runRight, facingLeft: left, force: true)
+            } else {
+                player.request(left ? .walkLeft : .walkRight, facingLeft: left, force: true)
+            }
         } else if roll < 6 {
             player.request(.idleBlink, force: true)
             idleHold = 0.4
         } else if roll == 6 {
-            player.request(Bool.random() ? .idleLookLeft : .idleLookRight, force: true)
+            let looks: [PetAnim] = [.idleLookLeft, .idleLookRight, .idleLookUp, .idleLookDown]
+            player.request(looks.randomElement() ?? .idleLookLeft, force: true)
             idleHold = 0.5
         } else if roll == 7 {
-            player.request(.hop, force: true)
+            switch Int.random(in: 0..<3) {
+            case 0:
+                player.request(.hop, force: true)
+            case 1:
+                player.request(.jump, force: true)
+            default:
+                let left = Bool.random()
+                player.request(left ? .turnLeft : .turnRight, facingLeft: left, force: true)
+            }
             idleHold = 0.15
         } else if roll == 8 {
             player.request(.idleYawn, force: true)

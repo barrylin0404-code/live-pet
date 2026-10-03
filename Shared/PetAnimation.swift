@@ -96,20 +96,18 @@ public enum PetAnimCatalog {
         switch anim {
         case .walkToFood, .walkSlow, .walkFast, .sleepyWalk, .walkToBed:
             return facingLeft ? .walkLeft : .walkRight
-        case .runLeft:
-            return .walkLeft
-        case .runRight:
-            return .walkRight
         case .eating, .eatStart, .eatFinish, .eatNotice, .favoriteFoodReaction:
             return .eating
         case .happy, .petHappy, .excited, .veryHappy, .loveReaction, .playExcited, .petReaction:
             return .happy
-        case .idleBlink, .idleLookLeft, .idleLookRight, .idleLookUp, .idleLookDown,
-             .idleEarMovement, .idleTailMovement, .idleBreathing,
+        case .idleBlink, .idleEarMovement, .idleTailMovement, .idleBreathing,
              .idleLay, .idleStretch, .idleScratch, .idleCurious,
              .idleRare1, .idleRare2, .idleRare3:
             return .idle
-        case .idleSit, .idleGroom, .idleYawn, .sleeping, .bathing:
+        case .idleLookLeft, .idleLookRight, .idleLookUp, .idleLookDown,
+             .runLeft, .runRight, .turnLeft, .turnRight, .jump,
+             .wet, .shakeWater, .sleepBreathing,
+             .idleSit, .idleGroom, .idleYawn, .sleeping, .bathing:
             return anim
         default:
             return anim

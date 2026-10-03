@@ -29,7 +29,8 @@ public struct ClipPetView: View {
             : ((frame % count) + count) % count
         let name = PetAnimCatalog.assetName(speciesId: speciesId, anim: shown, frame: index)
         // walkLeft sheets already face left. Flipping them again turns the cat around.
-        let bakedLeft = shown == .walkLeft || shown == .runLeft
+        let bakedLeft = shown == .walkLeft || shown == .runLeft || shown == .turnLeft
+            || shown == .idleLookLeft || shown == .idleLookRight
         Group {
             #if canImport(UIKit)
             if UIImage(named: name) != nil {

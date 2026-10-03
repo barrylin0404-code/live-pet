@@ -14,192 +14,173 @@ struct SettingsView: View {
     @State private var photoStatus: String = ""
     @State private var weatherStatus: String = ""
 
+    private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
+    private let border = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
+    private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
+
     var body: some View {
-        Form {
-            Section("Pet") {
-                HStack {
-                    TextField("Name", text: $draftName)
-                        .onSubmit { applyRename() }
-                    Button("Save") { applyRename() }
-                        .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-                LabeledContent("Age", value: "\(store.pet.ageDays) DAYS")
-                Text(store.lovesSummary)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-
-            if store.pets.count > 1 {
-                Section {
-                    Picker(
-                        "Active pet",
-                        selection: Binding(
-                            get: { store.pet.id },
-                            set: { store.setActivePet(id: $0) }
-                        )
-                    ) {
-                        ForEach(store.pets) { p in
-                            Text(p.name + (p.petGlyph == "pip" ? " (Pip)" : " (\(p.growthStage.displayName))"))
-                                .tag(p.id)
-                        }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                block("Pet") {
+                    HStack {
+                        TextField("Name", text: $draftName)
+                            .onSubmit { applyRename() }
+                        Button("Save") { applyRename() }
+                            .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
-                } header: {
-                    Text("Active pet")
-                } footer: {
-                    Text("Island and widgets follow the active pet.")
+                    Text("Age  \(store.pet.ageDays) DAYS")
+                    Text(store.lovesSummary)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
-            }
 
-            Section {
-                Toggle(
-                    "Sound effects",
-                    isOn: Binding(
-                        get: { PetSound.shared.isEnabled },
-                        set: { PetSound.shared.isEnabled = $0 }
-                    )
-                )
-            } header: {
-                Text("Sound")
-            } footer: {
-                Text("Care, ball, and Island cues. Mixes with Music (ambient). Mute anytime.")
-            }
-
-            Section {
-                Toggle(
-                    "Show fireflies",
-                    isOn: Binding(
-                        get: { store.showFireflies },
-                        set: { store.setShowFireflies($0) }
-                    )
-                )
-                .disabled(store.firefliesUnlocked == 0)
-            } header: {
-                Text("Fireflies")
-            } footer: {
-                Text(store.firefliesUnlocked == 0
-                    ? "Keep Feeling full for a day to unlock Fireflies."
-                    : "Unlocked \(store.firefliesUnlocked) of 2. Soft room motes — cosmetic only.")
-            }
-
-            Section {
-                Picker(
-                    "Room",
-                    selection: Binding(
-                        get: { store.selectedScene },
-                        set: { store.setScene($0) }
-                    )
-                ) {
-                    ForEach(PetRoomScene.availableInDisplayOrder) { scene in
-                        Text(scene.displayName).tag(scene)
-                    }
-                }
-            } header: {
-                Text("Room")
-            } footer: {
-                Text("Sun Nook, Moon Porch, Meadow Walk, Tide Glass, Skyline Dusk, Snow Porch, and Coral Shelf — all free. Widgets and the Island stay pet-forward.")
-            }
-
-            Section {
-                Toggle(
-                    "Show on Dynamic Island",
-                    isOn: Binding(
-                        get: { activityManager.isActivityActive },
-                        set: { on in
-                            if on {
-                                activityManager.start(pet: store.pet)
-                            } else {
-                                activityManager.end()
+                if store.pets.count > 1 {
+                    block("Active pet", footer: "Island and widgets follow the active pet.") {
+                        Picker(
+                            "Active pet",
+                            selection: Binding(
+                                get: { store.pet.id },
+                                set: { store.setActivePet(id: $0) }
+                            )
+                        ) {
+                            ForEach(store.pets) { p in
+                                Text(p.name + (p.petGlyph == "pip" ? " (Pip)" : " (\(p.growthStage.displayName))"))
+                                    .tag(p.id)
                             }
                         }
+                        .pickerStyle(.menu)
+                    }
+                }
+
+                block("Sound", footer: "Care, ball, and Island cues. Mixes with Music (ambient). Mute anytime.") {
+                    Toggle(
+                        "Sound effects",
+                        isOn: Binding(
+                            get: { PetSound.shared.isEnabled },
+                            set: { PetSound.shared.isEnabled = $0 }
+                        )
                     )
-                )
-                .disabled(!activityManager.areActivitiesEnabled && !activityManager.isActivityActive)
+                }
 
-                if !activityManager.areActivitiesEnabled {
-                    Text("Turn on Live Activities in iOS Settings → Live Pet to use the Island.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                block(
+                    "Fireflies",
+                    footer: store.firefliesUnlocked == 0
+                        ? "Keep Feeling full for a day to unlock Fireflies."
+                        : "Unlocked \(store.firefliesUnlocked) of 2. Soft room motes — cosmetic only."
+                ) {
+                    Toggle(
+                        "Show fireflies",
+                        isOn: Binding(
+                            get: { store.showFireflies },
+                            set: { store.setShowFireflies($0) }
+                        )
+                    )
+                    .disabled(store.firefliesUnlocked == 0)
                 }
-                if let error = activityManager.lastError {
-                    Text(error)
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                }
-            } header: {
-                Text("Dynamic Island")
-            } footer: {
-                Text("Live Activity renews before the ~8h Island limit (≥7h end→request). Care actions update the Island when it’s on.")
-            }
 
-            Section {
-                PhotosPicker(selection: $photoItem, matching: .images, photoLibrary: .shared()) {
-                    Label("Choose pet frame photo", systemImage: "photo.on.rectangle")
+                block("Room", footer: "Sun Nook, Moon Porch, Meadow Walk, Tide Glass, Skyline Dusk, Snow Porch, and Coral Shelf — all free. Widgets and the Island stay pet-forward.") {
+                    Picker(
+                        "Room",
+                        selection: Binding(
+                            get: { store.selectedScene },
+                            set: { store.setScene($0) }
+                        )
+                    ) {
+                        ForEach(PetRoomScene.availableInDisplayOrder) { scene in
+                            Text(scene.displayName).tag(scene)
+                        }
+                    }
+                    .pickerStyle(.menu)
                 }
-                if hasPetFrame {
-                    Button("Remove frame photo", role: .destructive) {
-                        removePetFrame()
+
+                block("Dynamic Island", footer: "Live Activity renews before the ~8h Island limit (≥7h end→request). Care actions update the Island when it’s on.") {
+                    Toggle(
+                        "Show on Dynamic Island",
+                        isOn: Binding(
+                            get: { activityManager.isActivityActive },
+                            set: { on in
+                                if on {
+                                    activityManager.start(pet: store.pet)
+                                } else {
+                                    activityManager.end()
+                                }
+                            }
+                        )
+                    )
+                    .disabled(!activityManager.areActivitiesEnabled && !activityManager.isActivityActive)
+
+                    if !activityManager.areActivitiesEnabled {
+                        Text("Turn on Live Activities in iOS Settings → Live Pet to use the Island.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    if let error = activityManager.lastError {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(.red)
                     }
                 }
-                if !photoStatus.isEmpty {
-                    Text(photoStatus)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            } header: {
-                Text("Pet Photo widget")
-            } footer: {
-                Text("Saved on-device in the App Group as pet-frame.jpg. The widget never uploads your photo.")
-            }
 
-            Section {
-                Button {
-                    Task {
-                        await WeatherFetchService.shared.refresh()
-                        weatherStatus = WeatherFetchService.shared.statusMessage
+                block("Pet Photo widget", footer: "Saved on-device in the App Group as pet-frame.jpg. The widget never uploads your photo.") {
+                    PhotosPicker(selection: $photoItem, matching: .images, photoLibrary: .shared()) {
+                        Text("Choose pet frame photo")
+                            .foregroundStyle(ink)
                     }
-                } label: {
-                    Label("Update weather for widget", systemImage: "cloud.sun")
+                    if hasPetFrame {
+                        Button("Remove frame photo", role: .destructive) {
+                            removePetFrame()
+                        }
+                    }
+                    if !photoStatus.isEmpty {
+                        Text(photoStatus)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-                if let cache = WeatherCache.load(), cache.hasObservation, let temp = cache.displayTemperature {
-                    Text("Cached: \(temp) \(cache.conditionLabel)")
-                        .font(.caption)
+
+                block("Pet Weather", footer: "Location is requested in the app only (When In Use). The weather widget reads the App Group cache and never prompts. Enable WeatherKit on the App ID on a Mac — see README.") {
+                    Button {
+                        Task {
+                            await WeatherFetchService.shared.refresh()
+                            weatherStatus = WeatherFetchService.shared.statusMessage
+                        }
+                    } label: {
+                        Text("Update weather for widget")
+                            .foregroundStyle(ink)
+                    }
+                    if let cache = WeatherCache.load(), cache.hasObservation, let temp = cache.displayTemperature {
+                        Text("Cached: \(temp) \(cache.conditionLabel)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    if !weatherStatus.isEmpty {
+                        Text(weatherStatus)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                block("Home Screen widgets") {
+                    Button("How to add widgets") {
+                        showWidgetTip = true
+                    }
+                }
+
+                block("Help", footer: "Shake to sleep. The sleep tile does the same thing.") {
+                    Text("Shake your phone to tuck them in.")
+                        .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
-                if !weatherStatus.isEmpty {
-                    Text(weatherStatus)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            } header: {
-                Text("Pet Weather")
-            } footer: {
-                Text("Location is requested in the app only (When In Use). The weather widget reads the App Group cache and never prompts. Enable WeatherKit on the App ID on a Mac — see README.")
-            }
 
-            Section("Home Screen widgets") {
-                Button("How to add widgets") {
-                    showWidgetTip = true
+                block("Reset", footer: "Clears name, meters, and inventory, then returns to onboarding.") {
+                    Button("Reset pet…", role: .destructive) {
+                        showResetConfirm = true
+                    }
                 }
             }
-
-            Section {
-                Text("Shake your phone to tuck them in.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            } header: {
-                Text("Help")
-            } footer: {
-                Text("Shake to sleep. The sleep tile does the same thing.")
-            }
-
-            Section {
-                Button("Reset pet…", role: .destructive) {
-                    showResetConfirm = true
-                }
-            } footer: {
-                Text("Clears name, meters, and inventory, then returns to onboarding.")
-            }
+            .padding(16)
         }
+        .background(cream.ignoresSafeArea())
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
@@ -224,6 +205,29 @@ struct SettingsView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("Long-press the Home Screen → tap + → search “Live Pet” or “Pet” → add Live Pet, Pet Clock, Pet Weather, Pet Day, Pet Note, or Pet Photo.")
+        }
+    }
+
+    private func block<Content: View>(_ title: String, footer: String? = nil, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(ink.opacity(0.55))
+            VStack(alignment: .leading, spacing: 10) {
+                content()
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(border, lineWidth: 2)
+            )
+            if let footer {
+                Text(footer)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 

@@ -74,21 +74,7 @@ struct PetWeatherWidgetView: View {
                 }
 
                 Spacer(minLength: 0)
-                if family != .systemSmall {
-                    WidgetPetForeground(snapshot: snap, size: 48)
-                }
-            }
-
-            HStack(spacing: 6) {
-                FeelingMiniHearts(moodScore: snap.moodScore, size: 9)
-                Text(WidgetChrome.feelingPhrase(mood: snap.mood))
-                    .font(.caption2)
-                    .foregroundStyle(WidgetChrome.secondaryInk)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
-                if family == .systemSmall {
-                    WidgetPetForeground(snapshot: snap, size: 36)
-                }
+                WidgetPetForeground(snapshot: snap, size: family == .systemSmall ? 36 : 48)
             }
 
             // Apple Weather attribution (~12pt footer)

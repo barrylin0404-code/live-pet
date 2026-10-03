@@ -71,16 +71,9 @@ struct PetCalendarWidgetView: View {
                         Text(careTip)
                             .font(.caption)
                             .foregroundStyle(WidgetChrome.secondaryInk)
-                        HStack(spacing: 8) {
-                            Text("Feeling")
-                                .font(.caption2)
-                                .foregroundStyle(WidgetChrome.secondaryInk)
-                            FeelingMiniHearts(moodScore: snap.moodScore, size: 9)
-                            Text("·  Day \(entry.ageDays)")
-                                .font(.caption2.monospacedDigit())
-                                .foregroundStyle(WidgetChrome.secondaryInk)
-                        }
-                        SatietyMiniBar(satiety: snap.satiety)
+                        Text("Day \(entry.ageDays)")
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(WidgetChrome.secondaryInk)
                     }
                     Spacer(minLength: 0)
                     WidgetPetForeground(snapshot: snap, size: 52)
@@ -96,7 +89,6 @@ struct PetCalendarWidgetView: View {
                         .foregroundStyle(WidgetChrome.secondaryInk)
                     Spacer(minLength: 0)
                     HStack {
-                        FeelingMiniHearts(moodScore: snap.moodScore, size: 8)
                         Spacer(minLength: 0)
                         WidgetPetForeground(snapshot: snap, size: 40)
                     }

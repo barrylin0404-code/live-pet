@@ -44,14 +44,6 @@ struct PetClockWidgetView: View {
                         Text(entry.date, format: .dateTime.weekday(.abbreviated).month(.abbreviated).day())
                             .font(.caption)
                             .foregroundStyle(WidgetChrome.secondaryInk)
-                        HStack(spacing: 6) {
-                            FeelingMiniHearts(moodScore: snap.moodScore)
-                            Text(WidgetChrome.feelingPhrase(mood: snap.mood))
-                                .font(.caption2)
-                                .foregroundStyle(WidgetChrome.secondaryInk)
-                                .lineLimit(1)
-                        }
-                        SatietyMiniBar(satiety: snap.satiety)
                     }
                     Spacer(minLength: 0)
                     WidgetPetForeground(snapshot: snap, size: 56)

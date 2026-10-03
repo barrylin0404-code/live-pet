@@ -77,9 +77,9 @@ public struct RoomSceneView<PetContent: View>: View {
                 }
                 Canvas { context, size in
                     switch scene {
-                    case .sunNook, .moonPorch, .tideGlass, .skylineDusk, .meadowWalk:
+                    case .sunNook, .moonPorch, .tideGlass, .skylineDusk, .meadowWalk, .snowPorch:
                         break
-                    case .snowPorch, .coralShelf:
+                    case .coralShelf:
                         drawUnavailableRoom(context: context, size: size)
                     }
                 }

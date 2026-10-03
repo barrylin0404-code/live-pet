@@ -96,7 +96,7 @@ struct SettingsView: View {
             } header: {
                 Text("Room")
             } footer: {
-                Text("Sun Nook, Moon Porch, Meadow Walk, Tide Glass, and Skyline Dusk — all free. Widgets and the Island stay pet-forward.")
+                Text("Sun Nook, Moon Porch, Meadow Walk, Tide Glass, Skyline Dusk, and Snow Porch — all free. Coral Shelf stays blank. Widgets and the Island stay pet-forward.")
             }
 
             Section {

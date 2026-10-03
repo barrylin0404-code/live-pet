@@ -240,8 +240,13 @@ struct ContentView: View {
             syncActivity()
         } label: {
             HStack(spacing: 8) {
-                Image(systemName: "arrow.up.heart.fill")
-                    .foregroundStyle(Color(red: 1.0, green: 0.30, blue: 0.43))
+                ClipPetView(
+                    speciesId: store.pet.petGlyph,
+                    anim: .idle,
+                    frame: 0,
+                    facingLeft: false,
+                    displaySize: 36
+                )
                 Text(store.growBannerTitle)
                     .font(.caption.weight(.bold))
                     .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
@@ -269,21 +274,6 @@ struct ContentView: View {
             let cy = geo.size.height * 0.32
 
             ZStack {
-                if showFloatingHeart {
-                    Image(systemName: "heart.fill")
-                        .font(.system(size: 36, weight: .bold))
-                        .foregroundStyle(Color(red: 1.0, green: 0.30, blue: 0.43))
-                        .shadow(color: .black.opacity(0.18), radius: 3, y: 1)
-                        .position(x: cx, y: cy + heartRise)
-                        .transition(.opacity)
-                }
-                if showFloatingStar {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(Color(red: 0xE8 / 255.0, green: 0xC5 / 255.0, blue: 0x47 / 255.0))
-                        .position(x: cx + 28, y: cy - 18 + heartRise * 0.6)
-                        .transition(.scale.combined(with: .opacity))
-                }
                 if showZzz {
                     Text("Zzz")
                         .font(.system(size: 28, weight: .heavy, design: .rounded))
@@ -303,14 +293,6 @@ struct ContentView: View {
                         .background(Circle().fill(Color.cyan.opacity(0.15)))
                         .frame(width: p.size, height: p.size)
                         .position(x: cx + p.x, y: cy + p.y)
-                }
-                ForEach(playParticles) { p in
-                    Image(systemName: p.size > 8 ? "heart.fill" : "star.fill")
-                        .font(.system(size: p.size, weight: .bold))
-                        .foregroundStyle(p.size > 8
-                            ? Color(red: 1.0, green: 0.30, blue: 0.43).opacity(p.opacity)
-                            : Color(red: 0xE8 / 255.0, green: 0xC5 / 255.0, blue: 0x47 / 255.0).opacity(p.opacity))
-                        .position(x: cx + p.x, y: cy + p.y + heartRise * 0.35)
                 }
             }
         }
@@ -806,9 +788,14 @@ struct ContentView: View {
                 colors: [Color(red: 0xA8 / 255.0, green: 0xD4 / 255.0, blue: 0xF0 / 255.0), Color(red: 0xD6 / 255.0, green: 0xEA / 255.0, blue: 0xF8 / 255.0)],
                 startPoint: .topLeading, endPoint: .bottomTrailing
             ))
-        case .snowPorch, .coralShelf:
+        case .snowPorch:
             return AnyView(LinearGradient(
-                colors: [Color(red: 0.98, green: 0.94, blue: 0.88), Color(red: 0.90, green: 0.95, blue: 0.92)],
+                colors: [Color(red: 0.86, green: 0.90, blue: 0.94), Color(red: 0.74, green: 0.80, blue: 0.86)],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            ))
+        case .coralShelf:
+            return AnyView(LinearGradient(
+                colors: [Color(red: 0.86, green: 0.86, blue: 0.88), Color(red: 0.70, green: 0.70, blue: 0.72)],
                 startPoint: .topLeading, endPoint: .bottomTrailing
             ))
         }

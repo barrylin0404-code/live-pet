@@ -11,7 +11,6 @@ struct ContentView: View {
     @State private var showFloatingStar = false
     @State private var showBubbles = false
     @State private var showZzz = false
-    @State private var crumbDots: [CareParticle] = []
     @State private var bubbleParticles: [CareParticle] = []
     @State private var roomDim = false
     @State private var playBounce: CGFloat = 0
@@ -97,8 +96,6 @@ struct ContentView: View {
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
                     .zIndex(20)
                 }
-
-                floatingFeedback.allowsHitTesting(false)
 
                 if let soon = comingSoonText {
                     VStack {
@@ -266,22 +263,6 @@ struct ContentView: View {
             )
         }
         .buttonStyle(.plain)
-    }
-
-    private var floatingFeedback: some View {
-        GeometryReader { geo in
-            let cx = geo.size.width * petX
-            let cy = geo.size.height * 0.32
-
-            ZStack {
-                ForEach(crumbDots) { p in
-                    Circle()
-                        .fill(Color(red: 0.85, green: 0.55, blue: 0.30).opacity(p.opacity))
-                        .frame(width: p.size, height: p.size)
-                        .position(x: cx + p.x, y: cy + 18 + p.y)
-                }
-            }
-        }
     }
 
     // MARK: - Continuous walk (P0 density)
@@ -644,14 +625,12 @@ struct ContentView: View {
         withAnimation(.easeOut(duration: 0.6)) {
             heartRise = -48
         }
-        if crumbs { spawnCrumbs() }
         Task {
             try? await Task.sleep(nanoseconds: 650_000_000)
             await MainActor.run {
                 withAnimation(.easeOut(duration: 0.2)) {
                     showFloatingHeart = false
                     showFloatingStar = false
-                    crumbDots = []
                 }
             }
         }
@@ -683,23 +662,6 @@ struct ContentView: View {
                     showZzz = false
                     roomDim = false
                 }
-            }
-        }
-    }
-
-    private func spawnCrumbs() {
-        crumbDots = (0..<4).map { i in
-            CareParticle(
-                id: UUID(),
-                x: CGFloat([-18, -6, 8, 16][i]),
-                y: CGFloat([6, 12, 4, 10][i]),
-                size: CGFloat([5, 4, 6, 3][i]),
-                opacity: 0.85
-            )
-        }
-        withAnimation(.easeOut(duration: 0.55)) {
-            crumbDots = crumbDots.map {
-                CareParticle(id: $0.id, x: $0.x * 1.2, y: $0.y + 16, size: $0.size, opacity: 0.15)
             }
         }
     }

@@ -238,7 +238,7 @@ public struct PetBrain: Equatable {
             }
             idleHold = 0.15
         } else if roll == 8 {
-            player.request(.idleYawn, force: true)
+            player.request(Bool.random() ? .idleYawn : .idleStretch, force: true)
             idleHold = 0.2
         } else if roll == 9 {
             player.request(.idleGroom, force: true)

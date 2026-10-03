@@ -100,11 +100,12 @@ public enum PetAnimCatalog {
             return .eating
         case .happy, .petHappy, .excited, .veryHappy, .loveReaction, .playExcited, .petReaction:
             return .happy
-        case .idleBlink, .idleEarMovement, .idleTailMovement, .idleBreathing,
-             .idleLay, .idleStretch, .idleScratch, .idleCurious,
+        case .idleEarMovement, .idleTailMovement, .idleBreathing,
+             .idleLay, .idleScratch, .idleCurious,
              .idleRare1, .idleRare2, .idleRare3:
             return .idle
-        case .idleLookLeft, .idleLookRight, .idleLookUp, .idleLookDown,
+        case .idleBlink, .idleStretch,
+             .idleLookLeft, .idleLookRight, .idleLookUp, .idleLookDown,
              .runLeft, .runRight, .turnLeft, .turnRight, .jump,
              .wet, .shakeWater, .sleepBreathing,
              .idleSit, .idleGroom, .idleYawn, .sleeping, .bathing:

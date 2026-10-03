@@ -23,11 +23,9 @@ public struct ClipPetView: View {
     public var body: some View {
         let shown = PetAnimCatalog.playbackAnim(anim, facingLeft: facingLeft)
         let count = max(1, PetAnimCatalog.clip(for: shown).frameCount)
-        // Blink lives on idle frames 3–4 in the P0 sheet.
-        let index = anim == .idleBlink
-            ? (frame % 2 == 0 ? 3 : 4)
-            : ((frame % count) + count) % count
+        let index = ((frame % count) + count) % count
         let name = PetAnimCatalog.assetName(speciesId: speciesId, anim: shown, frame: index)
+        let idleFallback = PetAnimCatalog.assetName(speciesId: speciesId, anim: .idle, frame: index % 6)
         // walkLeft sheets already face left. Flipping them again turns the cat around.
         let bakedLeft = shown == .walkLeft || shown == .runLeft || shown == .turnLeft
             || shown == .idleLookLeft || shown == .idleLookRight
@@ -40,6 +38,11 @@ public struct ClipPetView: View {
                     .scaledToFit()
             } else if UIImage(named: PetAnimCatalog.assetName(speciesId: speciesId, anim: shown, frame: 0)) != nil {
                 Image(PetAnimCatalog.assetName(speciesId: speciesId, anim: shown, frame: 0))
+                    .interpolation(.none)
+                    .resizable()
+                    .scaledToFit()
+            } else if UIImage(named: idleFallback) != nil {
+                Image(idleFallback)
                     .interpolation(.none)
                     .resizable()
                     .scaledToFit()

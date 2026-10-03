@@ -97,9 +97,16 @@ struct HitIslandGameView: View {
                     .padding(.horizontal, 12)
 
                 HStack {
-                    Label("\(catches)", systemImage: "star.fill")
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(Color(red: 0xE8 / 255.0, green: 0xC5 / 255.0, blue: 0x47 / 255.0))
+                    HStack(spacing: 4) {
+                        Image("prop-star")
+                            .resizable()
+                            .interpolation(.none)
+                            .scaledToFit()
+                            .frame(width: 16, height: 16)
+                        Text("\(catches)")
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(ink)
+                    }
                     Spacer()
                     Text("Drag to bounce")
                         .font(.caption.weight(.bold))

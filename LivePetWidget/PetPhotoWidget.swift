@@ -56,7 +56,6 @@ struct PetPhotoWidgetView: View {
                         .font(.headline.weight(.bold))
                         .foregroundStyle(WidgetChrome.ink)
                         .lineLimit(1)
-                    FeelingMiniHearts(moodScore: snap.moodScore)
                     if !entry.hasPhoto {
                         Text("Add a photo in Settings")
                             .font(.caption2)
@@ -88,20 +87,10 @@ struct PetPhotoWidgetView: View {
                         .resizable()
                         .scaledToFill()
                 } else {
-                    LinearGradient(
-                        colors: [
-                            WidgetChrome.mint,
-                            WidgetChrome.creamDeep,
-                            Color(red: 0.85, green: 0.90, blue: 0.95)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    .overlay(
-                        Image(systemName: "photo")
-                            .font(.title2)
-                            .foregroundStyle(WidgetChrome.secondaryInk.opacity(0.7))
-                    )
+                    Image("home-widget-plate")
+                        .interpolation(.none)
+                        .resizable()
+                        .scaledToFill()
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous))
@@ -127,8 +116,12 @@ struct PetPhotoWidget: Widget {
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: PetPhotoProvider()) { entry in
-            PetPhotoWidgetView(entry: entry)
-                .livePetWidgetBackground()
+            if #available(iOSApplicationExtension 17.0, *) {
+                PetPhotoWidgetView(entry: entry)
+                    .containerBackground(.fill.tertiary, for: .widget)
+            } else {
+                PetPhotoWidgetView(entry: entry)
+            }
         }
         .configurationDisplayName("Pet Photo")
         .description("Your photo + pet")

@@ -25,14 +25,10 @@ struct PetLiveActivityWidget: Widget {
                     )
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Image(systemName: context.state.mood.symbolName)
-                            .font(.title3)
-                        Text(context.state.mood.label)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.trailing, 4)
+                    Text(context.state.mood.label)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .padding(.trailing, 4)
                 }
                 DynamicIslandExpandedRegion(.center) {
                     Text(context.attributes.petName)
@@ -132,7 +128,6 @@ private struct LockScreenPetView: View {
     let context: ActivityViewContext<PetActivityAttributes>
 
     var body: some View {
-        let snap = PetSnapshot.load()
         HStack(spacing: 14) {
             IslandWalkPetView(
                 mood: context.state.mood,
@@ -152,12 +147,6 @@ private struct LockScreenPetView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
-                HStack(spacing: 10) {
-                    Label("\(snap?.moodScore ?? 60)%", systemImage: "heart.fill")
-                    Label("\(snap?.satiety ?? 60)%", systemImage: "fork.knife")
-                }
-                .font(.caption2)
-                .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
         }

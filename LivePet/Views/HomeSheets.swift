@@ -42,7 +42,7 @@ struct SelectFoodSheet: View {
             .padding(.bottom, 10)
 
             LazyVGrid(columns: columns, spacing: 10) {
-                ForEach(store.foods) { item in
+                ForEach(store.foods.filter { $0.pixelSpriteName != nil }) { item in
                     foodCell(item)
                 }
             }

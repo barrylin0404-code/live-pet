@@ -11,6 +11,7 @@ public struct PetBrain: Equatable {
     private var idleHold: Double
     private var commandedUntil: Double
     private var clock: Double
+    private var moodHint: PetMood
 
     public init(x: CGFloat = 0.48) {
         self.x = x
@@ -21,6 +22,7 @@ public struct PetBrain: Equatable {
         self.idleHold = 0.6
         self.commandedUntil = 0
         self.clock = 0
+        self.moodHint = .content
     }
 
     public mutating func noticeFood(at fraction: CGFloat) {
@@ -37,8 +39,8 @@ public struct PetBrain: Equatable {
     }
 
     public mutating func reactPlay() {
-        player.request(.playExcited, force: true)
-        commandedUntil = clock + 1.4
+        player.request(.playing, force: true)
+        commandedUntil = clock + 2.0
         wanderTarget = nil
     }
 
@@ -68,7 +70,8 @@ public struct PetBrain: Equatable {
         return false
     }
 
-    public mutating func tick(dt: Double, sleeping: Bool) {
+    public mutating func tick(dt: Double, sleeping: Bool, mood: PetMood = .content) {
+        moodHint = mood
         let dt = min(0.05, max(0, dt))
         clock += dt
         player.advance(dt: dt)
@@ -135,6 +138,23 @@ public struct PetBrain: Equatable {
     }
 
     private mutating func chooseNext() {
+        switch moodHint {
+        case .hungry:
+            player.request(.hungry, force: true)
+            idleHold = 0.3
+            return
+        case .low:
+            player.request(.sad, force: true)
+            idleHold = 0.3
+            return
+        case .playful where Int.random(in: 0..<3) == 0:
+            player.request(.playing, force: true)
+            commandedUntil = clock + 1.6
+            wanderTarget = nil
+            return
+        default:
+            break
+        }
         let roll = Int.random(in: 0..<12)
         if roll < 4 {
             let target = CGFloat.random(in: 0.24...0.76)
@@ -144,9 +164,12 @@ public struct PetBrain: Equatable {
         } else if roll < 6 {
             player.request(.idleBlink, force: true)
             idleHold = 0.4
-        } else if roll < 8 {
+        } else if roll == 6 {
             player.request(Bool.random() ? .idleLookLeft : .idleLookRight, force: true)
             idleHold = 0.5
+        } else if roll == 7 {
+            player.request(.hop, force: true)
+            idleHold = 0.15
         } else if roll == 8 {
             player.request(.idleYawn, force: true)
             idleHold = 0.2

@@ -359,7 +359,7 @@ struct ContentView: View {
                 let now = Date()
                 let dt = now.timeIntervalSince(last)
                 last = now
-                brain.tick(dt: dt, sleeping: store.pet.isSleeping)
+                brain.tick(dt: dt, sleeping: store.pet.isSleeping, mood: store.pet.mood)
                 petX = brain.x
                 facingLeft = brain.player.facingLeft
                 if brain.consumeFeedReady(), let id = pendingFoodId {

@@ -202,15 +202,16 @@ struct HitIslandGameView: View {
         ZStack {
             Color.black.opacity(0.4).ignoresSafeArea()
             VStack(spacing: 12) {
-                Image(systemName: "heart.fill")
-                    .font(.system(size: 36))
-                    .foregroundStyle(Color(red: 1.0, green: 0.30, blue: 0.43))
-                Text(catches > 0 ? "Nice bounce!" : "Good try!")
+                ClipPetView(
+                    speciesId: speciesId,
+                    anim: .playing,
+                    frame: 0,
+                    facingLeft: false,
+                    displaySize: 96
+                )
+                Text("\(catches) catch\(catches == 1 ? "" : "es")")
                     .font(.title3.weight(.heavy))
                     .foregroundStyle(ink)
-                Text("\(catches) catch\(catches == 1 ? "" : "es") · Feeling up")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(ink.opacity(0.7))
                 Button {
                     PetSound.shared.play(.heartPop)
                     #if canImport(UIKit)

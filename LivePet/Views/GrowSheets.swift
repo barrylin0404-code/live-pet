@@ -72,7 +72,7 @@ struct MeetPipSheet: View {
                 .frame(height: 130)
                 Text("Meet Pip")
                     .font(.title2.bold())
-                Text("A soft blue bird unlocked after Nubby’s first Grow. Switch the active pet anytime in Settings.")
+                Text("Pip is the mint duck. Switch pets from the rooms list.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

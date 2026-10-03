@@ -68,7 +68,7 @@ public struct RoomSceneView<PetContent: View>: View {
     public var body: some View {
         GeometryReader { geo in
             ZStack {
-                if scene == .sunNook || scene == .snowPorch || scene == .coralShelf {
+                if scene == .sunNook {
                     Image("sun-nook-plate")
                         .resizable()
                         .interpolation(.none)
@@ -77,8 +77,10 @@ public struct RoomSceneView<PetContent: View>: View {
                 }
                 Canvas { context, size in
                     switch scene {
-                    case .sunNook, .snowPorch, .coralShelf:
+                    case .sunNook:
                         break
+                    case .snowPorch, .coralShelf:
+                        drawUnavailableRoom(context: context, size: size)
                     case .moonPorch:
                         drawMoonPorch(context: context, size: size)
                     case .tideGlass:
@@ -143,6 +145,17 @@ public struct RoomSceneView<PetContent: View>: View {
 
 
     /// Indoor living room. Pieces sit on the floor line; the pet is drawn after this canvas, so it walks in front.
+
+    /// Stubs only. Not the Sun Nook plate, and not a furnished room.
+    private func drawUnavailableRoom(context: GraphicsContext, size: CGSize) {
+        let floorY = size.height * 0.62
+        context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(red: 0.86, green: 0.86, blue: 0.88)))
+        context.fill(
+            Path(CGRect(x: 0, y: floorY, width: size.width, height: size.height - floorY)),
+            with: .color(Color(red: 0.62, green: 0.60, blue: 0.58))
+        )
+    }
+
     private func drawIndoorFurnitureDensity(context: GraphicsContext, size: CGSize, floorY: CGFloat, win: CGRect, night: Bool) {
         let w = size.width
         let h = size.height

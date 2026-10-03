@@ -74,15 +74,19 @@ public struct RoomSceneView<PetContent: View>: View {
                         .interpolation(.none)
                         .frame(width: geo.size.width, height: geo.size.height)
                         .allowsHitTesting(false)
+                } else if scene == .moonPorch {
+                    Image("moon-porch-plate")
+                        .resizable()
+                        .interpolation(.none)
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .allowsHitTesting(false)
                 }
                 Canvas { context, size in
                     switch scene {
-                    case .sunNook:
+                    case .sunNook, .moonPorch:
                         break
                     case .snowPorch, .coralShelf:
                         drawUnavailableRoom(context: context, size: size)
-                    case .moonPorch:
-                        drawMoonPorch(context: context, size: size)
                     case .tideGlass:
                         drawTideGlass(context: context, size: size)
                     case .skylineDusk:
@@ -93,26 +97,26 @@ public struct RoomSceneView<PetContent: View>: View {
                 }
                 let feetY = CGFloat(scene.petFeetYFraction)
                 if let symbol = droppedSymbol {
-                    Image(systemName: symbol)
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundStyle(Color.orange)
-                        .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
-                        .position(x: geo.size.width * droppedXFraction, y: geo.size.height * (feetY + 0.10))
+                    Image(symbol)
+                        .resizable()
+                        .interpolation(.none)
+                        .frame(width: 48, height: 48)
+                        .position(x: geo.size.width * droppedXFraction, y: geo.size.height * (feetY + 0.06))
                         .transition(.scale.combined(with: .opacity))
                 }
                 if ballVisible {
-                    Image(systemName: "tennisball.fill")
-                        .font(.system(size: 30, weight: .bold))
-                        .foregroundStyle(Color(red: 0.85, green: 0.92, blue: 0.35))
-                        .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
+                    Image("prop-ball")
+                        .resizable()
+                        .interpolation(.none)
+                        .frame(width: 48, height: 48)
                         .position(x: geo.size.width * ballXFraction, y: geo.size.height * ballYFraction)
                         .onTapGesture { onBallTap?() }
                 }
                 if wandVisible {
-                    Image(systemName: "wand.and.stars")
-                        .font(.system(size: 34, weight: .bold))
-                        .foregroundStyle(Color(red: 0.75, green: 0.45, blue: 0.95))
-                        .shadow(color: Color(red: 0.75, green: 0.45, blue: 0.95).opacity(0.45), radius: 6, y: 1)
+                    Image("prop-wand")
+                        .resizable()
+                        .interpolation(.none)
+                        .frame(width: 32, height: 64)
                         .position(x: geo.size.width * wandXFraction, y: geo.size.height * wandYFraction)
                         .transition(.scale.combined(with: .opacity))
                 }

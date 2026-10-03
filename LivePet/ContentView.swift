@@ -456,7 +456,7 @@ struct ContentView: View {
         pendingFoodId = item.id
         droppedX = brain.player.facingLeft ? 0.32 : 0.68
         brain.noticeFood(at: droppedX)
-        droppedSymbol = item.symbolName
+        droppedSymbol = store.pet.petGlyph == "pip" ? "prop-berry" : "prop-fish"
         PetSound.shared.play(.feed)
         #if canImport(UIKit)
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()

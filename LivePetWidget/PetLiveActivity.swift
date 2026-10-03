@@ -18,9 +18,10 @@ struct PetLiveActivityWidget: Widget {
                         isSleeping: context.state.isSleeping,
                         speciesId: context.state.speciesId,
                         growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
-                        scale: 0.95,
+                        scale: 0.6,
                         forceWalkWhenIdle: true,
-                        travelAmplitude: 22
+                        travelAmplitude: 12,
+                        slotHeight: 64
                     )
                 }
                 DynamicIslandExpandedRegion(.trailing) {
@@ -48,9 +49,10 @@ struct PetLiveActivityWidget: Widget {
                     isSleeping: context.state.isSleeping,
                     speciesId: context.state.speciesId,
                     growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
-                    scale: 0.52,
+                    scale: 0.34,
                     forceWalkWhenIdle: true,
-                    travelAmplitude: 10
+                    travelAmplitude: 0,
+                    slotHeight: 36
                 )
             } compactTrailing: {
                 Image(systemName: context.state.mood.symbolName)
@@ -61,9 +63,10 @@ struct PetLiveActivityWidget: Widget {
                     isSleeping: context.state.isSleeping,
                     speciesId: context.state.speciesId,
                     growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
-                    scale: 0.58,
+                    scale: 0.28,
                     forceWalkWhenIdle: true,
-                    travelAmplitude: 8
+                    travelAmplitude: 0,
+                    slotHeight: 30
                 )
             }
             .keylineTint(Color(red: 0.98, green: 0.52, blue: 0.42))
@@ -156,9 +159,10 @@ private struct LockScreenPetView: View {
                 isSleeping: context.state.isSleeping,
                 speciesId: context.state.speciesId,
                 growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
-                scale: 1.05,
+                scale: 0.7,
                 forceWalkWhenIdle: true,
-                travelAmplitude: 24
+                travelAmplitude: 14,
+                slotHeight: 72
             )
             VStack(alignment: .leading, spacing: 4) {
                 Text(context.attributes.petName)

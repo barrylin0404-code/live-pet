@@ -6,6 +6,9 @@ public struct PetBrain: Equatable {
     public var player: PetAnimPlayer
     public private(set) var foodX: CGFloat?
     public private(set) var feedReady: Bool
+    public private(set) var napReady: Bool
+    public private(set) var toyX: CGFloat?
+    public private(set) var playReady: Bool
 
     private var wanderTarget: CGFloat?
     private var idleHold: Double
@@ -14,12 +17,16 @@ public struct PetBrain: Equatable {
     private var moodHint: PetMood
     private var wasSleeping: Bool
     private var sleepPhase: Double
+    private var toyPlayLeft: Double
 
     public init(x: CGFloat = 0.48) {
         self.x = x
         self.player = PetAnimPlayer(anim: .idle)
         self.foodX = nil
         self.feedReady = false
+        self.napReady = false
+        self.toyX = nil
+        self.playReady = false
         self.wanderTarget = nil
         self.idleHold = 0.6
         self.commandedUntil = 0
@@ -27,6 +34,7 @@ public struct PetBrain: Equatable {
         self.moodHint = .content
         self.wasSleeping = false
         self.sleepPhase = 0
+        self.toyPlayLeft = 0
     }
 
     /// Drag: pickup, then held while the stroke continues, then drop.
@@ -45,8 +53,38 @@ public struct PetBrain: Equatable {
     public mutating func noticeFood(at fraction: CGFloat) {
         foodX = min(0.78, max(0.22, fraction))
         feedReady = false
+        napReady = false
+        toyX = nil
+        playReady = false
         wanderTarget = nil
         player.request(.walkToFood, facingLeft: foodX! < x, force: true)
+    }
+
+    /// A toy on the floor. The pet walks to it, then plays, same as food.
+    public mutating func noticeToy(at fraction: CGFloat) {
+        toyX = min(0.78, max(0.22, fraction))
+        playReady = false
+        toyPlayLeft = 1.6
+        napReady = false
+        foodX = nil
+        feedReady = false
+        wanderTarget = nil
+        let left = toyX! < x
+        player.request(left ? .walkLeft : .walkRight, facingLeft: left, force: true)
+    }
+
+    /// Games and the wand set position. Tick will not wander while a hold is active.
+    public mutating func hold(_ seconds: Double) {
+        commandedUntil = max(commandedUntil, clock + seconds)
+        wanderTarget = nil
+    }
+
+    /// Move to a point and walk there. Does not restart the walk clip if it is already playing.
+    public mutating func place(at fraction: CGFloat, facingLeft: Bool) {
+        x = min(0.88, max(0.12, fraction))
+        wanderTarget = nil
+        let walk: PetAnim = facingLeft ? .walkLeft : .walkRight
+        player.request(walk, facingLeft: facingLeft, force: player.anim != walk)
     }
 
     public mutating func reactPet() {
@@ -82,6 +120,25 @@ public struct PetBrain: Equatable {
         if feedReady {
             feedReady = false
             foodX = nil
+            return true
+        }
+        return false
+    }
+
+    /// True once, when a tired pet has reached the sofa and should be tucked in.
+    public mutating func consumeNapReady() -> Bool {
+        if napReady {
+            napReady = false
+            return true
+        }
+        return false
+    }
+
+    /// True once, after the pet has reached a dropped toy and finished playing with it.
+    public mutating func consumePlayReady() -> Bool {
+        if playReady {
+            playReady = false
+            toyX = nil
             return true
         }
         return false
@@ -136,6 +193,32 @@ public struct PetBrain: Equatable {
             return
         }
 
+        if let toy = toyX {
+            let dx = toy - x
+            if abs(dx) > 0.03 {
+                let left = dx < 0
+                let walk: PetAnim = left ? .walkLeft : .walkRight
+                if player.anim != walk {
+                    player.request(walk, facingLeft: left, force: true)
+                }
+                x += (left ? -1 : 1) * CGFloat(dt) * 0.16
+                x = min(0.82, max(0.18, x))
+                return
+            }
+            x = toy
+            if player.anim != .playing {
+                player.request(.playing, force: true)
+            }
+            toyPlayLeft -= dt
+            if toyPlayLeft <= 0 {
+                playReady = true
+                toyX = nil
+                player.request(.happy, force: true)
+                commandedUntil = clock + 0.8
+            }
+            return
+        }
+
         if clock < commandedUntil {
             if player.finishedOneShot && player.anim == .pickup {
                 player.request(.held, force: true)
@@ -155,6 +238,25 @@ public struct PetBrain: Equatable {
         if player.anim == .bathing {
             player.request(.wet, force: true)
             commandedUntil = clock + 0.8
+            return
+        }
+
+        // Tired: walk to the sofa, then ask the app to tuck in. Food and care holds win.
+        if moodHint == .sleepy, foodX == nil {
+            let sofa: CGFloat = 0.39
+            let dx = sofa - x
+            if abs(dx) > 0.03 {
+                let left = dx < 0
+                player.request(left ? .walkLeft : .walkRight, facingLeft: left)
+                x += (left ? -1 : 1) * CGFloat(dt) * 0.09
+                x = min(0.80, max(0.20, x))
+                return
+            }
+            x = sofa
+            if !napReady {
+                napReady = true
+                player.request(.idleYawn, force: true)
+            }
             return
         }
 
@@ -201,7 +303,7 @@ public struct PetBrain: Equatable {
             player.request(.sad, force: true)
             idleHold = 0.3
             return
-        case .playful where Int.random(in: 0..<3) == 0:
+        case .playful:
             player.request(.playing, force: true)
             commandedUntil = clock + 1.6
             wanderTarget = nil

@@ -371,6 +371,20 @@ struct ContentView: View {
                     pulseHeart(crumbs: true)
                     syncActivity()
                 }
+                if brain.consumeNapReady(), !store.pet.isSleeping, !careBusy, pendingFoodId == nil {
+                    store.sleep()
+                    PetSound.shared.play(.sleep)
+                    pulseZzz()
+                    syncActivity()
+                }
+                if brain.consumePlayReady() {
+                    ballVisible = false
+                    store.playDefault()
+                    pulseHeart(crumbs: false)
+                    spawnPlayBurst()
+                    careBusy = false
+                    syncActivity()
+                }
             }
         }
     }
@@ -471,62 +485,29 @@ struct ContentView: View {
     // MARK: - Play Ball (spawn → run → hit ≥1.5s + heart)
 
     private func startPlayBall() {
-        brain.reactPlay()
         guard !careBusy else { return }
         careBusy = true
-        ballX = facingLeft ? 0.28 : 0.78
-        ballY = 0.18
+        let dropX: CGFloat = brain.x < 0.5 ? 0.70 : 0.30
+        ballX = dropX
+        ballY = 0.22
         ballVisible = true
+        brain.noticeToy(at: dropX)
         PetSound.shared.play(.play)
         #if canImport(UIKit)
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         #endif
 
         Task { @MainActor in
-            // Toss / drop into room with bounce settle
-            withAnimation(.easeIn(duration: 0.28)) { ballY = 0.72 }
+            withAnimation(.easeIn(duration: 0.28)) { ballY = 0.70 }
             try? await Task.sleep(nanoseconds: 280_000_000)
             PetSound.shared.play(.ballBounce)
-            withAnimation(.spring(response: 0.32, dampingFraction: 0.38)) { ballY = 0.62 }
-            try? await Task.sleep(nanoseconds: 160_000_000)
-            withAnimation(.spring(response: 0.28, dampingFraction: 0.55)) { ballY = 0.70 }
-            try? await Task.sleep(nanoseconds: 120_000_000)
-            PetSound.shared.play(.ballBounce)
-
-            // Pathfind to ball
-            await walkPet(to: ballX, steps: 16, stepMs: 38)
-
-            // Multi-hit chase ≥2s + clearer play pose
-            store.playDefault()
-            let hits: [(CGFloat, UInt64)] = [
-                (facingLeft ? -0.20 : 0.20, 320),
-                (facingLeft ? 0.16 : -0.16, 300),
-                (facingLeft ? -0.14 : 0.14, 280),
-                (facingLeft ? 0.10 : -0.10, 260)
-            ]
-            for (dx, waitMs) in hits {
-                bouncePetPlay()
-                PetSound.shared.play(.ballHit)
-                #if canImport(UIKit)
-                UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
-                #endif
-                withAnimation(.spring(response: 0.26, dampingFraction: 0.42)) {
-                    ballX = min(0.88, max(0.12, ballX + dx))
-                    ballY = 0.58
-                }
-                try? await Task.sleep(nanoseconds: 90_000_000)
-                withAnimation(.spring(response: 0.30, dampingFraction: 0.5)) { ballY = 0.70 }
-                PetSound.shared.play(.ballBounce)
-                await walkPet(to: ballX, steps: 10, stepMs: 32)
-                try? await Task.sleep(nanoseconds: waitMs * 1_000_000)
+            // The brain walks to the ball. This only covers a clip that never finishes.
+            try? await Task.sleep(nanoseconds: 6_000_000_000)
+            if ballVisible {
+                ballVisible = false
+                store.playDefault()
+                syncActivity()
             }
-
-            pulseHeart(crumbs: false)
-            spawnPlayBurst()
-            schedulePoseClear(holdMs: 1800)
-            syncActivity()
-            try? await Task.sleep(nanoseconds: 500_000_000)
-            withAnimation(.easeOut(duration: 0.25)) { ballVisible = false }
             careBusy = false
         }
     }
@@ -547,6 +528,7 @@ struct ContentView: View {
     private func startFollowWand() {
         guard !careBusy else { return }
         careBusy = true
+        brain.hold(3.2)
         wandX = 0.50
         wandY = 0.36
         wandVisible = true
@@ -563,10 +545,9 @@ struct ContentView: View {
             var elapsed: Double = 0
             while elapsed < duration {
                 if Task.isCancelled { break }
-                facingLeft = wandX < petX
-                let dx = wandX - petX
-                petX += dx * 0.22
-                petX = min(0.88, max(0.12, petX))
+                let dx = wandX - brain.x
+                let next = min(0.88, max(0.12, brain.x + dx * 0.22))
+                brain.place(at: next, facingLeft: wandX < brain.x)
                 // Soft hop while tracking
                 if Int(elapsed * 10) % 4 == 0 {
                     bouncePet()
@@ -599,17 +580,6 @@ struct ContentView: View {
         }
         schedulePoseClear(holdMs: 1400)
         syncActivity()
-    }
-
-    private func walkPet(to target: CGFloat, steps: Int, stepMs: UInt64) async {
-        let start = petX
-        facingLeft = target < start
-        for i in 1...steps {
-            if Task.isCancelled { return }
-            let t = CGFloat(i) / CGFloat(steps)
-            petX = start + (target - start) * t
-            try? await Task.sleep(nanoseconds: stepMs * 1_000_000)
-        }
     }
 
     // MARK: - Care (Clean / Sleep / tap)

@@ -68,10 +68,17 @@ public struct RoomSceneView<PetContent: View>: View {
     public var body: some View {
         GeometryReader { geo in
             ZStack {
+                if scene == .sunNook || scene == .snowPorch || scene == .coralShelf {
+                    Image("sun-nook-plate")
+                        .resizable()
+                        .interpolation(.none)
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .allowsHitTesting(false)
+                }
                 Canvas { context, size in
                     switch scene {
-                    case .sunNook:
-                        drawSunNook(context: context, size: size)
+                    case .sunNook, .snowPorch, .coralShelf:
+                        break
                     case .moonPorch:
                         drawMoonPorch(context: context, size: size)
                     case .tideGlass:
@@ -80,9 +87,6 @@ public struct RoomSceneView<PetContent: View>: View {
                         drawSkylineDusk(context: context, size: size)
                     case .meadowWalk:
                         drawMeadowWalk(context: context, size: size)
-                    case .snowPorch, .coralShelf:
-                        // Stubs: not selectable; fall back to Sun Nook art if decoded.
-                        drawSunNook(context: context, size: size)
                     }
                 }
                 let feetY = CGFloat(scene.petFeetYFraction)
@@ -210,70 +214,6 @@ public struct RoomSceneView<PetContent: View>: View {
         context.fill(hill, with: .color(Color(red: 0.35, green: 0.62, blue: 0.40)))
     }
 
-    private func drawSunNook(context: GraphicsContext, size: CGSize) {
-        let w = size.width
-        let h = size.height
-
-        // Back wall
-        context.fill(
-            Path(CGRect(origin: .zero, size: size)),
-            with: .color(Color(red: 0.93, green: 0.90, blue: 0.84))
-        )
-
-        // Floor
-        let floorY = h * 0.62
-        context.fill(
-            Path(CGRect(x: 0, y: floorY, width: w, height: h - floorY)),
-            with: .color(Color(red: 0.72, green: 0.55, blue: 0.38))
-        )
-        // Floorboards
-        for i in 0..<8 {
-            let y = floorY + CGFloat(i) * ((h - floorY) / 8)
-            var line = Path()
-            line.move(to: CGPoint(x: 0, y: y))
-            line.addLine(to: CGPoint(x: w, y: y))
-            context.stroke(line, with: .color(.black.opacity(0.08)), lineWidth: 1)
-        }
-
-        // Window frame
-        let win = CGRect(x: w * 0.06, y: h * 0.05, width: w * 0.40, height: h * 0.36)
-        context.fill(Path(win.insetBy(dx: -6, dy: -6)), with: .color(Color(red: 0.55, green: 0.40, blue: 0.28)))
-        // Sky
-        context.fill(
-            Path(win),
-            with: .linearGradient(
-                Gradient(colors: [
-                    Color(red: 0.55, green: 0.75, blue: 0.95),
-                    Color(red: 0.85, green: 0.92, blue: 1.0)
-                ]),
-                startPoint: CGPoint(x: win.midX, y: win.minY),
-                endPoint: CGPoint(x: win.midX, y: win.maxY)
-            )
-        )
-        // Sun
-        context.fill(
-            Path(ellipseIn: CGRect(x: win.maxX - win.width * 0.35, y: win.minY + 8, width: 22, height: 22)),
-            with: .color(Color(red: 1.0, green: 0.85, blue: 0.35))
-        )
-        // Window mullion
-        var v = Path()
-        v.move(to: CGPoint(x: win.midX, y: win.minY))
-        v.addLine(to: CGPoint(x: win.midX, y: win.maxY))
-        context.stroke(v, with: .color(Color(red: 0.55, green: 0.40, blue: 0.28)), lineWidth: 4)
-        var hz = Path()
-        hz.move(to: CGPoint(x: win.minX, y: win.midY))
-        hz.addLine(to: CGPoint(x: win.maxX, y: win.midY))
-        context.stroke(hz, with: .color(Color(red: 0.55, green: 0.40, blue: 0.28)), lineWidth: 4)
-
-        // Rug
-        let rug = CGRect(x: w * 0.28, y: h * 0.72, width: w * 0.44, height: h * 0.12)
-        context.fill(Path(roundedRect: rug, cornerRadius: 8), with: .color(Color(red: 0.35, green: 0.55, blue: 0.48)))
-        context.stroke(Path(roundedRect: rug, cornerRadius: 8), with: .color(.white.opacity(0.25)), lineWidth: 2)
-
-        drawIndoorFurnitureDensity(context: context, size: size, floorY: floorY, win: win, night: false)
-    }
-
-    /// Cool evening pastel — soft indigo sky `#2C3A4A`, warm lamp `#F4D5A0`.
     private func drawMoonPorch(context: GraphicsContext, size: CGSize) {
         let w = size.width
         let h = size.height

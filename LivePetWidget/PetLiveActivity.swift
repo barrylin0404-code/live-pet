@@ -51,11 +51,22 @@ struct PetLiveActivityWidget: Widget {
                     growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
                     scale: 0.34,
                     forceWalkWhenIdle: true,
-                    travelAmplitude: 0,
+                    travelAmplitude: 4,
                     slotHeight: 36
                 )
             } compactTrailing: {
-                Image(systemName: context.state.mood.symbolName)
+                // Same side-view pet, paced inside this slot. It does not cross the camera.
+                IslandWalkPetView(
+                    mood: context.state.mood,
+                    pose: context.state.petPose,
+                    isSleeping: context.state.isSleeping,
+                    speciesId: context.state.speciesId,
+                    growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
+                    scale: 0.34,
+                    forceWalkWhenIdle: true,
+                    travelAmplitude: 4,
+                    slotHeight: 36
+                )
             } minimal: {
                 IslandWalkPetView(
                     mood: context.state.mood,

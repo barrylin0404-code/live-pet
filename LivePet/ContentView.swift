@@ -25,6 +25,7 @@ struct ContentView: View {
     @State private var showPets = false
     @State private var showScenes = false
     @State private var showWidgets = false
+    @State private var showMore = false
     @State private var showInfo = false
     @State private var comingSoonText: String?
 
@@ -93,6 +94,29 @@ struct ContentView: View {
                             showHitIsland = true
                         },
                         onClose: { showGames = false }
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                    .zIndex(20)
+                }
+
+                if showMore {
+                    Color.black.opacity(0.45).ignoresSafeArea()
+                        .onTapGesture { showMore = false }
+                        .zIndex(19)
+                    MoreHomeSheet(
+                        onPets: {
+                            showMore = false
+                            showPets = true
+                        },
+                        onRooms: {
+                            showMore = false
+                            showScenes = true
+                        },
+                        onSettings: {
+                            showMore = false
+                            showSettings = true
+                        },
+                        onClose: { showMore = false }
                     )
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
                     .zIndex(20)
@@ -358,7 +382,7 @@ struct ContentView: View {
             dockButton("ctrl-pet", "Pet") { performPetTap() }
             dockButton("ctrl-bath", "Bath") { performClean() }
             dockButton("ctrl-sleep", "Sleep") { performSleep() }
-            dockButton("ctrl-more", "More") { showSettings = true }
+            dockButton("ctrl-more", "More") { showMore = true }
         }
         .padding(.bottom, 10)
     }

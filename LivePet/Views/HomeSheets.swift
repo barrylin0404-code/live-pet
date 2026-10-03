@@ -431,6 +431,72 @@ struct SceneThumbView: View {
     }
 }
 
+// MARK: - More (pets, rooms, settings)
+
+struct MoreHomeSheet: View {
+    var onPets: () -> Void
+    var onRooms: () -> Void
+    var onSettings: () -> Void
+    var onClose: () -> Void
+
+    private let cream = Color(red: 0xF7 / 255.0, green: 0xF0 / 255.0, blue: 0xE6 / 255.0)
+    private let stroke = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
+    private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("More")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(ink)
+                Spacer(minLength: 0)
+                Button {
+                    PetSound.shared.play(.uiTick)
+                    onClose()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(stroke.opacity(0.55))
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
+
+            moreRow("Pets", action: onPets)
+            moreRow("Rooms", action: onRooms)
+            moreRow("Settings", action: onSettings)
+                .padding(.bottom, 8)
+        }
+        .frame(maxWidth: 340)
+        .background(cream, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(stroke, lineWidth: 2.5)
+        )
+        .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 120)
+    }
+
+    private func moreRow(_ title: String, action: @escaping () -> Void) -> some View {
+        Button {
+            PetSound.shared.play(.uiTick)
+            action()
+        } label: {
+            Text(title)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(ink)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 // MARK: - Widgets gallery tip
 
 struct WidgetsGallerySheet: View {

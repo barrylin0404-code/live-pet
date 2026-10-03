@@ -56,14 +56,9 @@ struct HitIslandGameView: View {
 
     private var header: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Hit the Island")
-                    .font(.headline.weight(.bold))
-                    .foregroundStyle(ink)
-                Text("Live Pet · bounce for \(petName)")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(ink.opacity(0.55))
-            }
+            Text("Hit the Island")
+                .font(.headline.weight(.bold))
+                .foregroundStyle(ink)
             Spacer()
             Text("\(max(0, Int(ceil(gameDuration - elapsed))))s")
                 .font(.title3.weight(.heavy).monospacedDigit())
@@ -71,14 +66,6 @@ struct HitIslandGameView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(cream, in: Capsule())
-            Button {
-                endGame(early: true)
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(.secondary)
-            }
-            .accessibilityLabel("Close")
         }
         .padding(.horizontal, 16)
         .padding(.top, 12)

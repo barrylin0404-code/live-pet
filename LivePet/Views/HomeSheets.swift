@@ -345,6 +345,7 @@ struct ScenesSheet: View {
     @ObservedObject var store: PetStore
     var onPets: (() -> Void)? = nil
     var onWidgets: (() -> Void)? = nil
+    var onShop: (() -> Void)? = nil
     var onSettings: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
 
@@ -425,6 +426,22 @@ struct ScenesSheet: View {
                     .padding(.horizontal, 16)
                 }
 
+                if let onShop {
+                    Button {
+                        PetSound.shared.play(.uiTick)
+                        onShop()
+                    } label: {
+                        Text("Shop")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 16)
+                }
+
                 if let onSettings {
                     Button {
                         PetSound.shared.play(.uiTick)
@@ -476,6 +493,80 @@ struct SceneThumbView: View {
             }
         }
         .allowsHitTesting(false)
+    }
+}
+
+// MARK: - Shop (free pixel goods only)
+
+struct ShopSheet: View {
+    @ObservedObject var store: PetStore
+    var onFood: (InventoryItem) -> Void
+    var onPlayBall: () -> Void
+    var onFollowWand: () -> Void
+    var onHitIsland: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
+    private let border = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
+    private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 10) {
+                    ForEach(store.foods.filter { $0.pixelSpriteName != nil }) { item in
+                        row(title: item.name, sprite: item.pixelSpriteName ?? "prop-fish") {
+                            onFood(item)
+                        }
+                    }
+                    row(title: "Play Ball", sprite: "prop-ball", action: onPlayBall)
+                    row(title: "Follow the wand", sprite: "prop-wand", action: onFollowWand)
+                    row(title: "Hit the Island", sprite: "prop-island", action: onHitIsland)
+                }
+                .padding(16)
+                Text("Free. No upgrade.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .padding(.bottom, 12)
+            }
+            .background(cream.ignoresSafeArea())
+            .navigationTitle("Shop")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(24)
+    }
+
+    private func row(title: String, sprite: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(sprite)
+                    .resizable()
+                    .interpolation(.none)
+                    .scaledToFit()
+                    .frame(width: 36, height: 36)
+                Text(title)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(ink)
+                Spacer()
+                Text("Free")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(ink.opacity(0.55))
+            }
+            .padding(12)
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(border, lineWidth: 2)
+            )
+        }
+        .buttonStyle(PressScaleButtonStyle())
     }
 }
 

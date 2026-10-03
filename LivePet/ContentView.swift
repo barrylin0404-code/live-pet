@@ -128,6 +128,9 @@ struct ContentView: View {
                 ScenesSheet(store: store, onPets: {
                     showScenes = false
                     showPets = true
+                }, onWidgets: {
+                    showScenes = false
+                    showWidgets = true
                 }, onSettings: {
                     showScenes = false
                     showSettings = true

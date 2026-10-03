@@ -294,13 +294,12 @@ struct PetsSheet: View {
             #endif
         } label: {
             VStack(spacing: 8) {
-                AnimatedPixelPetView(
-                    mood: p.mood,
-                    pose: .idle,
-                    isSleeping: false,
+                ClipPetView(
                     speciesId: p.petGlyph,
-                    growthStage: p.growthStage,
-                    scale: 0.7
+                    anim: .idle,
+                    frame: 0,
+                    facingLeft: false,
+                    displaySize: 72
                 )
                 Text(p.name)
                     .font(.subheadline.weight(.bold))
@@ -345,6 +344,7 @@ struct PetsSheet: View {
 struct ScenesSheet: View {
     @ObservedObject var store: PetStore
     var onPets: (() -> Void)? = nil
+    var onWidgets: (() -> Void)? = nil
     var onSettings: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
 
@@ -399,6 +399,22 @@ struct ScenesSheet: View {
                         onPets()
                     } label: {
                         Text("Pets")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 16)
+                }
+
+                if let onWidgets {
+                    Button {
+                        PetSound.shared.play(.uiTick)
+                        onWidgets()
+                    } label: {
+                        Text("Widgets")
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -467,30 +483,35 @@ struct SceneThumbView: View {
 
 struct WidgetsGallerySheet: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var store: PetStore
 
     private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
     private let border = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
-    private let widgets: [(String, String, String)] = [
-        ("Live Pet", "pawprint.fill", "Your pet at home"),
-        ("Pet Clock", "clock.fill", "Time with your pet"),
-        ("Pet Weather", "cloud.sun.fill", "Local weather peek"),
-        ("Pet Day", "calendar", "Date + care streak"),
-        ("Pet Note", "text.bubble.fill", "Daily message"),
-        ("Pet Photo", "photo.fill", "Portrait widget")
+    private let widgets: [(String, String)] = [
+        ("Live Pet", "Your pet at home"),
+        ("Pet Clock", "Time with your pet"),
+        ("Pet Weather", "Local weather peek"),
+        ("Pet Day", "Date + care streak"),
+        ("Pet Note", "Daily message"),
+        ("Pet Photo", "Portrait widget")
     ]
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 12) {
-                    ForEach(widgets, id: \.0) { title, icon, blurb in
+                    ForEach(widgets, id: \.0) { title, blurb in
                         VStack(alignment: .leading, spacing: 8) {
-                            Image(systemName: icon)
-                                .font(.system(size: 28, weight: .semibold))
-                                .foregroundStyle(Color(red: 0xE8 / 255.0, green: 0x91 / 255.0, blue: 0xB8 / 255.0))
+                            ClipPetView(
+                                speciesId: store.pet.petGlyph,
+                                anim: .idle,
+                                frame: 0,
+                                facingLeft: false,
+                                displaySize: 48
+                            )
                             Text(title)
                                 .font(.subheadline.weight(.bold))
                                 .foregroundStyle(ink)

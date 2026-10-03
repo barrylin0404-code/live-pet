@@ -30,16 +30,14 @@ public enum PetRoomScene: String, Codable, CaseIterable, Identifiable, Sendable 
     /// Free day-1 scenes shown in the Scenes sheet. Stubs stay false until designed.
     public var isAvailable: Bool {
         switch self {
-        case .sunNook, .moonPorch, .tideGlass, .skylineDusk, .meadowWalk, .snowPorch:
+        case .sunNook, .moonPorch, .tideGlass, .skylineDusk, .meadowWalk, .snowPorch, .coralShelf:
             return true
-        case .coralShelf:
-            return false
         }
     }
 
     /// Scenes sheet 2×3 order: Sun | Moon | Meadow / Tide | Skyline | (empty).
     public static var availableInDisplayOrder: [PetRoomScene] {
-        [.sunNook, .moonPorch, .meadowWalk, .tideGlass, .skylineDusk, .snowPorch]
+        [.sunNook, .moonPorch, .meadowWalk, .tideGlass, .skylineDusk, .snowPorch, .coralShelf]
     }
 
     /// Pet feet Y as fraction of room height. Meadow sits slightly higher (outdoor path).
@@ -50,7 +48,7 @@ public enum PetRoomScene: String, Codable, CaseIterable, Identifiable, Sendable 
         }
     }
 
-    /// Pixel plate for this room. Coral stays blank until it has its own art.
+    /// Pixel plate for this room. Each room uses its own plate.
     public var plateImageName: String? {
         switch self {
         case .sunNook: return "sun-nook-plate"
@@ -59,7 +57,7 @@ public enum PetRoomScene: String, Codable, CaseIterable, Identifiable, Sendable 
         case .skylineDusk: return "skyline-dusk-plate"
         case .meadowWalk: return "meadow-walk-plate"
         case .snowPorch: return "snow-porch-plate"
-        case .coralShelf: return nil
+        case .coralShelf: return "coral-shelf-plate"
         }
     }
 

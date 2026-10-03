@@ -274,25 +274,11 @@ struct ContentView: View {
             let cy = geo.size.height * 0.32
 
             ZStack {
-                if showZzz {
-                    Text("Zzz")
-                        .font(.system(size: 28, weight: .heavy, design: .rounded))
-                        .foregroundStyle(Color(red: 0x7B / 255.0, green: 0x6B / 255.0, blue: 0x9E / 255.0))
-                        .position(x: cx + 40, y: cy - 36)
-                        .transition(.opacity)
-                }
                 ForEach(crumbDots) { p in
                     Circle()
                         .fill(Color(red: 0.85, green: 0.55, blue: 0.30).opacity(p.opacity))
                         .frame(width: p.size, height: p.size)
                         .position(x: cx + p.x, y: cy + 18 + p.y)
-                }
-                ForEach(bubbleParticles) { p in
-                    Circle()
-                        .strokeBorder(Color.cyan.opacity(p.opacity), lineWidth: 1.5)
-                        .background(Circle().fill(Color.cyan.opacity(0.15)))
-                        .frame(width: p.size, height: p.size)
-                        .position(x: cx + p.x, y: cy + p.y)
                 }
             }
         }

@@ -106,9 +106,11 @@ public enum PetAnimCatalog {
             return .happy
         case .idleBlink, .idleLookLeft, .idleLookRight, .idleLookUp, .idleLookDown,
              .idleEarMovement, .idleTailMovement, .idleBreathing,
-             .idleSit, .idleLay, .idleStretch, .idleYawn, .idleScratch, .idleGroom, .idleCurious,
+             .idleLay, .idleStretch, .idleScratch, .idleCurious,
              .idleRare1, .idleRare2, .idleRare3:
             return .idle
+        case .idleSit, .idleGroom, .idleYawn, .sleeping, .bathing:
+            return anim
         default:
             return anim
         }

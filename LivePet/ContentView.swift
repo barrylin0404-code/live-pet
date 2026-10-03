@@ -380,6 +380,7 @@ struct ContentView: View {
             dockButton("fork.knife", "Feed") { showFood = true }
             dockButton("tennisball", "Play") { showGames = true }
             dockButton("hand.point.up", "Pet") { performPetTap() }
+            dockButton("drop", "Bath") { performClean() }
             dockButton("moon", "Sleep") { performSleep() }
             dockButton("gearshape", "More") { showSettings = true }
         }
@@ -615,6 +616,7 @@ struct ContentView: View {
 
     private func performClean() {
         careBusy = true
+        brain.reactBath()
         store.clean()
         PetSound.shared.play(.clean)
         pulseBubbles()

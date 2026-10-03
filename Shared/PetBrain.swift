@@ -44,7 +44,7 @@ public struct PetBrain: Equatable {
 
     public mutating func reactBath() {
         player.request(.bathing, force: true)
-        commandedUntil = clock + 1.2
+        commandedUntil = clock + 2.2
     }
 
     public mutating func reactSleep(on: Bool) {
@@ -135,7 +135,7 @@ public struct PetBrain: Equatable {
     }
 
     private mutating func chooseNext() {
-        let roll = Int.random(in: 0..<10)
+        let roll = Int.random(in: 0..<12)
         if roll < 4 {
             let target = CGFloat.random(in: 0.24...0.76)
             wanderTarget = target
@@ -149,10 +149,13 @@ public struct PetBrain: Equatable {
             idleHold = 0.5
         } else if roll == 8 {
             player.request(.idleYawn, force: true)
-            idleHold = 0.4
-        } else {
+            idleHold = 0.2
+        } else if roll == 9 {
             player.request(.idleGroom, force: true)
-            idleHold = 0.4
+            idleHold = 0.2
+        } else {
+            player.request(.idleSit, force: true)
+            idleHold = 0.2
         }
     }
 }

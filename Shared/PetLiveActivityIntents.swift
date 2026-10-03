@@ -118,7 +118,7 @@ struct PetPetIntent: LiveActivityIntent {
 
 @available(iOS 17.0, iOSApplicationExtension 17.0, *)
 struct LullPetIntent: LiveActivityIntent {
-    static var title: LocalizedStringResource = "Lull"
+    static var title: LocalizedStringResource = "Sleep"
     static var description = IntentDescription("Tuck your pet in from the Dynamic Island.")
 
     func perform() async throws -> some IntentResult {

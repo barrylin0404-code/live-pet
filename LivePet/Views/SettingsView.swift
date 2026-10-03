@@ -183,14 +183,13 @@ struct SettingsView: View {
             }
 
             Section {
-                Label("Shake your phone to tuck them in.", systemImage: "iphone.gen3.radiowaves.left.and.right")
+                Text("Shake your phone to tuck them in.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                    .labelStyle(.titleAndIcon)
             } header: {
                 Text("Help")
             } footer: {
-                Text("Shake → sleep. Fallback: Sleep / Tuck in on Pet Home, or Lull from the Dynamic Island (iOS 17+).")
+                Text("Shake to sleep. The sleep tile does the same thing.")
             }
 
             Section {

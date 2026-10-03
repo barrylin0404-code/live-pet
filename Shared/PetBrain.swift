@@ -346,7 +346,7 @@ public struct PetBrain: Equatable {
             player.request(.idleGroom, force: true)
             idleHold = 0.2
         } else {
-            let rests: [PetAnim] = [.idleSit, .idleEarMovement, .idleTailMovement, .idleScratch]
+            let rests: [PetAnim] = [.idleSit, .idleEarMovement, .idleTailMovement, .idleScratch, .idleLay, .idleCurious, .idleBreathing]
             player.request(rests.randomElement() ?? .idleSit, force: true)
             idleHold = 0.2
         }

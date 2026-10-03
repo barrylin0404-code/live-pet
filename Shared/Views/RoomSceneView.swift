@@ -654,13 +654,12 @@ public struct PetRoomSceneView: View {
                             displaySize: 78 * petScale
                         )
                     } else {
-                        AnimatedPixelPetView(
-                            mood: mood,
-                            pose: pose,
-                            isSleeping: isSleeping,
-                            scale: petScale,
+                        ClipPetView(
                             speciesId: speciesId,
-                            growthStage: growthStage
+                            anim: .idle,
+                            frame: clipFrame,
+                            facingLeft: facingLeft,
+                            displaySize: 78 * petScale
                         )
                     }
                 }

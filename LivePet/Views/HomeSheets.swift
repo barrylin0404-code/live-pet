@@ -156,7 +156,6 @@ struct SelectGameSheet: View {
             LazyVGrid(columns: columns, spacing: 12) {
                 gameCard(title: "Play Ball", pixel: "prop-ball", action: onPlayBall)
                 gameCard(title: "Follow the wand", pixel: "prop-wand", action: onFollowWand)
-                gameCard(title: "Hit the Island", icon: "sportscourt.fill", action: onHitIsland)
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 16)

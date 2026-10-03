@@ -31,9 +31,9 @@ struct SelectFoodSheet: View {
                     PetSound.shared.play(.uiTick)
                     onClose?()
                 } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 24))
-                        .foregroundStyle(stroke.opacity(0.55))
+                    Text("Done")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
                 }
                 .buttonStyle(.plain)
             }
@@ -145,9 +145,9 @@ struct SelectGameSheet: View {
                     PetSound.shared.play(.uiTick)
                     onClose?()
                 } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 24))
-                        .foregroundStyle(stroke.opacity(0.55))
+                    Text("Done")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
                 }
                 .buttonStyle(.plain)
             }
@@ -273,9 +273,7 @@ struct PetsSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
-                    }
+                    Button("Done") { dismiss() }
                 }
             }
             .onAppear { pendingId = store.pet.id }
@@ -464,9 +462,7 @@ struct ScenesSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
-                    }
+                    Button("Done") { dismiss() }
                 }
             }
         }

@@ -39,7 +39,7 @@ struct PetLiveActivityWidget: Widget {
                         .font(.headline)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    islandBottom(context: context)
+                    islandBottom()
                 }
             } compactLeading: {
                 // Dense walk + edge flip (TimelineView) — not a static island crop.
@@ -85,76 +85,46 @@ struct PetLiveActivityWidget: Widget {
     }
 
     @ViewBuilder
-    private func islandBottom(context: ActivityViewContext<PetActivityAttributes>) -> some View {
+    private func islandBottom() -> some View {
         if #available(iOSApplicationExtension 17.0, *) {
-            HStack(spacing: 12) {
+            HStack(spacing: 16) {
                 Button(intent: FeedPetIntent()) {
-                    Label("Feed", systemImage: "fork.knife")
-                        .labelStyle(.iconOnly)
-                        .font(.body.weight(.semibold))
+                    islandTile("ctrl-feed")
                 }
-                .tint(.orange)
+                .buttonStyle(.plain)
                 .accessibilityLabel("Feed")
 
                 Button(intent: PetPetIntent()) {
-                    Label("Pet", systemImage: "pawprint.fill")
-                        .labelStyle(.iconOnly)
-                        .font(.body.weight(.semibold))
+                    islandTile("ctrl-pet")
                 }
-                .tint(.pink)
+                .buttonStyle(.plain)
                 .accessibilityLabel("Pet")
 
                 Button(intent: LullPetIntent()) {
-                    Label("Lull", systemImage: "moon.fill")
-                        .labelStyle(.iconOnly)
-                        .font(.body.weight(.semibold))
+                    islandTile("ctrl-sleep")
                 }
-                .tint(.purple)
-                .accessibilityLabel("Lull")
-
-                Spacer(minLength: 0)
-
-                let snap = PetSnapshot.load()
-                HStack(spacing: 6) {
-                    Image(systemName: "heart.fill")
-                        .foregroundStyle(.pink)
-                    Text("\(snap?.moodScore ?? bandFallback(context.state.mood))")
-                        .font(.caption2.monospacedDigit())
-                    Image(systemName: "fork.knife")
-                        .foregroundStyle(.orange)
-                    Text("\(snap?.satiety ?? (context.state.mood == .hungry ? 18 : 60))")
-                        .font(.caption2.monospacedDigit())
-                }
-                .foregroundStyle(.secondary)
+                .buttonStyle(.plain)
+                .accessibilityLabel("Sleep")
             }
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
         } else {
-            let snap = PetSnapshot.load()
-            HStack(spacing: 10) {
-                MetricChip(
-                    title: "Feeling",
-                    value: snap?.moodScore ?? bandFallback(context.state.mood),
-                    tint: .pink
-                )
-                MetricChip(
-                    title: "Satiety",
-                    value: snap?.satiety ?? (context.state.mood == .hungry ? 18 : 60),
-                    tint: .orange
-                )
+            HStack(spacing: 16) {
+                islandTile("ctrl-feed")
+                islandTile("ctrl-pet")
+                islandTile("ctrl-sleep")
             }
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
         }
     }
-}
 
-private func bandFallback(_ mood: PetMood) -> Int {
-    switch mood {
-    case .happy, .playful: return 80
-    case .content: return 60
-    case .hungry, .low: return 22
-    case .sleepy: return 40
+    private func islandTile(_ name: String) -> some View {
+        Image(name)
+            .interpolation(.none)
+            .resizable()
+            .scaledToFit()
+            .frame(width: 28, height: 28)
     }
 }
 
@@ -192,24 +162,5 @@ private struct LockScreenPetView: View {
             Spacer(minLength: 0)
         }
         .padding()
-    }
-}
-
-private struct MetricChip: View {
-    let title: String
-    let value: Int
-    let tint: Color
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            ProgressView(value: Double(value), total: 100)
-                .tint(tint)
-            Text("\(value)%")
-                .font(.caption2.monospacedDigit())
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

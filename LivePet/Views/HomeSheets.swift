@@ -90,9 +90,11 @@ struct SelectFoodSheet: View {
                     foodGlyph(item)
                         .frame(height: 44)
                     if isFavorite {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 11))
-                            .foregroundStyle(favoriteGold)
+                        Image("prop-star")
+                            .resizable()
+                            .interpolation(.none)
+                            .scaledToFit()
+                            .frame(width: 16, height: 16)
                             .offset(x: 6, y: -4)
                     }
                 }
@@ -305,10 +307,6 @@ struct PetsSheet: View {
                 Text(p.petGlyph == "pip" ? "Pip" : p.growthStage.displayName)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                if selected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(Color(red: 0.30, green: 0.70, blue: 0.40))
-                }
             }
             .frame(maxWidth: .infinity)
             .padding(12)

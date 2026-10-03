@@ -90,9 +90,11 @@ struct InventoryPanel: View {
                 )
 
                 if isFavorite {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 9))
-                        .foregroundStyle(favoriteGold)
+                    Image("prop-star")
+                        .resizable()
+                        .interpolation(.none)
+                        .scaledToFit()
+                        .frame(width: 14, height: 14)
                         .offset(x: 2, y: -2)
                 }
             }

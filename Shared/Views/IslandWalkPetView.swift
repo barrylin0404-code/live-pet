@@ -24,6 +24,8 @@ public struct IslandWalkPetView: View {
     /// Hard cap for this slot. Compact Dynamic Island is about 36.67 pt;
     /// a taller view can keep the Live Activity from starting.
     public var slotHeight: CGFloat
+    /// Roam clock origin from ContentState. Nil falls back to wall clock (legacy Activities).
+    public var walkEpoch: Double?
 
     /// ~8 fps pixel feel (6-frame side-view walk).
     private static let frameInterval: TimeInterval = 0.125
@@ -43,7 +45,8 @@ public struct IslandWalkPetView: View {
         scale: CGFloat = 0.5,
         forceWalkWhenIdle: Bool = true,
         travelAmplitude: CGFloat = 11,
-        slotHeight: CGFloat = 36
+        slotHeight: CGFloat = 36,
+        walkEpoch: Double? = nil
     ) {
         self.mood = mood
         self.pose = pose
@@ -54,6 +57,7 @@ public struct IslandWalkPetView: View {
         self.forceWalkWhenIdle = forceWalkWhenIdle
         self.travelAmplitude = travelAmplitude
         self.slotHeight = slotHeight
+        self.walkEpoch = walkEpoch
     }
 
     private var effectivePose: PetPose {
@@ -140,10 +144,12 @@ public struct IslandWalkPetView: View {
         // Several statements: a getter (not a ViewBuilder) needs an explicit return.
         return TimelineView(.animation(minimumInterval: Self.frameInterval, paused: false)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
+            // Care sheets sit at x=0; stroll from walkEpoch so Feed/Pet handback does not teleport.
+            let roamT = walkEpoch.map { t - $0 } ?? t
             let frameTick = Int(t / Self.frameInterval)
 
             // Walk an edge, park and idle a beat, turn, walk back — a pet roaming, not a slider.
-            let (xNorm, facingRight, parked, legProgress) = Self.roam(at: t, walk: Self.walkLeg, pause: pause)
+            let (xNorm, facingRight, parked, legProgress) = Self.roam(at: roamT, walk: Self.walkLeg, pause: pause)
 
             let frames = Self.walkFrames(speciesId: speciesId, facingRight: facingRight)
             let name = frames[frameTick % max(frames.count, 1)]

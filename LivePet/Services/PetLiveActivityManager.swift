@@ -53,7 +53,7 @@ final class PetLiveActivityManager: ObservableObject {
         guard let activity = currentActivity else { return }
 
         let stale = renewDeadline ?? Date().addingTimeInterval(Self.staleLeeway)
-        let content = ActivityContent(state: pet.activityState.islandContentState(), staleDate: stale)
+        let content = ActivityContent(state: islandState(for: pet, previous: activity.content.state), staleDate: stale)
         Task {
             await activity.update(content)
         }
@@ -100,7 +100,7 @@ final class PetLiveActivityManager: ObservableObject {
                 }
                 // Fresh → update only (never request a second Activity).
                 let stale = renewDeadline ?? Date().addingTimeInterval(Self.staleLeeway)
-                let content = ActivityContent(state: pet.activityState.islandContentState(), staleDate: stale)
+                let content = ActivityContent(state: islandState(for: pet, previous: existing.content.state), staleDate: stale)
                 Task {
                     await existing.update(content)
                 }
@@ -157,6 +157,13 @@ final class PetLiveActivityManager: ObservableObject {
         }
     }
 
+
+    /// Care→walk recenters; walk→walk keeps the Activity's roam epoch.
+    private func islandState(for pet: Pet, previous: PetActivityAttributes.ContentState? = nil) -> PetActivityAttributes.ContentState {
+        let prior = previous ?? currentActivity?.content.state
+        return PetActivityAttributes.ContentState.islandUpdate(from: pet.activityState, previous: prior)
+    }
+
     private var needsRenew: Bool {
         guard let started = AppGroup.defaults.object(forKey: Self.startedKey) as? Date else {
             return false
@@ -173,7 +180,7 @@ final class PetLiveActivityManager: ObservableObject {
 
     /// Gate: await end, then request — avoids racing a still-active Activity.
     private func endThenRequest(pet: Pet) async {
-        let finalState = currentActivity?.content.state ?? pet.activityState.islandContentState()
+        let finalState = currentActivity?.content.state ?? islandState(for: pet)
         if let activity = currentActivity {
             let finalContent = ActivityContent(state: finalState, staleDate: nil)
             await activity.end(finalContent, dismissalPolicy: .immediate)
@@ -190,7 +197,7 @@ final class PetLiveActivityManager: ObservableObject {
             petGlyph: pet.petGlyph
         )
         let stale = Date().addingTimeInterval(Self.renewAfter + Self.staleLeeway)
-        let content = ActivityContent(state: pet.activityState.islandContentState(), staleDate: stale)
+        let content = ActivityContent(state: islandState(for: pet), staleDate: stale)
 
         do {
             let activity = try Activity.request(

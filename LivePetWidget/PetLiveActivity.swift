@@ -23,7 +23,8 @@ struct PetLiveActivityWidget: Widget {
                         scale: 0.6,
                         forceWalkWhenIdle: true,
                         travelAmplitude: 12,
-                        slotHeight: 64
+                        slotHeight: 64,
+                        walkEpoch: look.walkEpoch
                     )
                 }
                 DynamicIslandExpandedRegion(.trailing) {
@@ -57,7 +58,8 @@ struct PetLiveActivityWidget: Widget {
                     scale: 0.34,
                     forceWalkWhenIdle: true,
                     travelAmplitude: 4,
-                    slotHeight: 36
+                    slotHeight: 36,
+                    walkEpoch: look.walkEpoch
                 )
             } compactTrailing: {
                 // Same side-view pet, paced inside this slot. It does not cross the camera.
@@ -70,7 +72,8 @@ struct PetLiveActivityWidget: Widget {
                     scale: 0.34,
                     forceWalkWhenIdle: true,
                     travelAmplitude: 4,
-                    slotHeight: 36
+                    slotHeight: 36,
+                    walkEpoch: look.walkEpoch
                 )
             } minimal: {
                 IslandWalkPetView(
@@ -82,7 +85,8 @@ struct PetLiveActivityWidget: Widget {
                     scale: 0.28,
                     forceWalkWhenIdle: true,
                     travelAmplitude: 0,
-                    slotHeight: 30
+                    slotHeight: 30,
+                    walkEpoch: look.walkEpoch
                 )
             }
             .keylineTint(Color(red: 0.98, green: 0.52, blue: 0.42))
@@ -148,7 +152,8 @@ private struct LockScreenPetView: View {
                 scale: 0.7,
                 forceWalkWhenIdle: true,
                 travelAmplitude: 14,
-                slotHeight: 72
+                slotHeight: 72,
+                walkEpoch: look.walkEpoch
             )
             VStack(alignment: .leading, spacing: 4) {
                 Text(context.attributes.petName)
@@ -179,6 +184,8 @@ struct IslandLook {
     var snapshot: PetSnapshot?
     /// A nap that ended since the last write (projection woke a pet saved asleep).
     var wokeOnItsOwn: Bool
+    /// Roam clock for IslandWalkPetView (Activity epoch, or centered after a projected wake).
+    var walkEpoch: Double?
 
     init(state: PetActivityAttributes.ContentState, petName: String, now: Date = .now) {
         let sleeping = state.isSleeping || state.petPose == .sleep
@@ -188,6 +195,7 @@ struct IslandLook {
         name = petName
         snapshot = nil
         wokeOnItsOwn = false
+        walkEpoch = state.walkEpoch
         guard let saved = PetSnapshot.loadSaved(),
               saved.name == petName,
               (saved.petGlyph == "pip") == (state.speciesId == "pip") else { return }
@@ -205,6 +213,10 @@ struct IslandLook {
             isSleeping = false
             pose = .walk
             wokeOnItsOwn = true
+            // Sleep sheet was centered — resume stroll from x=0, not wall-clock.
+            walkEpoch = PetActivityAttributes.ContentState.centeredWalkEpoch(
+                at: now.timeIntervalSinceReferenceDate
+            )
         }
         mood = projected.mood
     }

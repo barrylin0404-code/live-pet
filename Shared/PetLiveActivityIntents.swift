@@ -114,8 +114,11 @@ enum PetIntentMutator {
     /// Same Island mapping as `PetLiveActivityManager` (idle → walk), so an Island tap and an
     /// app write never hand the Activity two different poses for the same pet.
     private static func pushActivity(pet: Pet) async {
-        let state = pet.activityState.islandContentState()
         for activity in Activity<PetActivityAttributes>.activities {
+            let state = PetActivityAttributes.ContentState.islandUpdate(
+                from: pet.activityState,
+                previous: activity.content.state
+            )
             let stale = Date().addingTimeInterval(8 * 60 * 60)
             let content = ActivityContent(state: state, staleDate: stale)
             await activity.update(content)

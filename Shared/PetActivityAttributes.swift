@@ -11,19 +11,24 @@ public struct PetActivityAttributes: ActivityAttributes {
         public var isSleeping: Bool
         /// Optional short stage id (`kit` | `nubby` | `nubby_plus`) — keep payload tiny.
         public var growthStage: String?
+        /// Roam clock origin (`Date.timeIntervalSinceReferenceDate` when phase was 0).
+        /// Lets care→walk resume at the care pose's x instead of wall-clock teleport.
+        public var walkEpoch: Double?
 
         public init(
             speciesId: String = "nubby",
             pose: String = PetPose.idle.rawValue,
             moodBand: String = PetMood.content.rawValue,
             isSleeping: Bool = false,
-            growthStage: String? = nil
+            growthStage: String? = nil,
+            walkEpoch: Double? = nil
         ) {
             self.speciesId = speciesId
             self.pose = pose
             self.moodBand = moodBand
             self.isSleeping = isSleeping
             self.growthStage = growthStage
+            self.walkEpoch = walkEpoch
         }
 
         public var mood: PetMood {
@@ -34,8 +39,17 @@ public struct PetActivityAttributes: ActivityAttributes {
             PetPose(rawValue: pose) ?? .idle
         }
 
+        /// Mid outbound leg (walkLeg 1.0 → phase 0.5) → xNorm 0, matching care sheets.
+        public static func centeredWalkEpoch(
+            at t: TimeInterval = Date().timeIntervalSinceReferenceDate,
+            walkLeg: TimeInterval = 1.0
+        ) -> Double {
+            t - walkLeg / 2
+        }
+
         /// Island mapping: idle/clean → walk. Care oneshots + sleep pass through.
-        /// Frame / facing animation stays in widget TimelineView (no update spam).
+        /// Does not stamp `walkEpoch` — use `islandUpdate(from:previous:)` so stroll phase
+        /// survives mood ticks and only recenters after care / sleep.
         public func islandContentState() -> ContentState {
             if isSleeping || petPose == .sleep || petPose == .eat || petPose == .play {
                 return self
@@ -48,8 +62,37 @@ public struct PetActivityAttributes: ActivityAttributes {
                 pose: PetPose.walk.rawValue,
                 moodBand: moodBand,
                 isSleeping: isSleeping,
-                growthStage: growthStage
+                growthStage: growthStage,
+                walkEpoch: walkEpoch
             )
+        }
+
+        /// Merge pet → Island payload with the live Activity state.
+        /// Care/sleep → walk recenters at x=0; walk → walk keeps the prior epoch.
+        public static func islandUpdate(from petState: ContentState, previous: ContentState?) -> ContentState {
+            var next = petState.islandContentState()
+            guard next.petPose == .walk else {
+                next.walkEpoch = nil
+                return next
+            }
+            let fromCare = previous.map { prev in
+                prev.isSleeping
+                    || prev.petPose == .eat
+                    || prev.petPose == .play
+                    || prev.petPose == .clean
+                    || prev.petPose == .sleep
+            } ?? false
+            if fromCare {
+                next.walkEpoch = centeredWalkEpoch()
+            } else if next.walkEpoch == nil {
+                if let epoch = previous?.walkEpoch, previous?.petPose == .walk {
+                    next.walkEpoch = epoch
+                } else if previous == nil || previous?.petPose != .walk {
+                    // Fresh request / first stroll — start centered, not at a random wall-clock x.
+                    next.walkEpoch = centeredWalkEpoch()
+                }
+            }
+            return next
         }
     }
 

@@ -48,11 +48,6 @@ struct PetWeatherWidgetView: View {
 
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top, spacing: 10) {
-                Image(systemName: w.conditionSymbol)
-                    .font(.title2)
-                    .foregroundStyle(WidgetChrome.ink)
-                    .accessibilityHidden(true)
-
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
                         if let temp = w.displayTemperature {

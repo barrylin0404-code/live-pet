@@ -92,7 +92,8 @@ public struct IslandWalkPetView: View {
                 anim: anim,
                 frame: tick,
                 facingLeft: false,
-                displaySize: height
+                displaySize: height,
+                growthStage: growthStage
             )
         }
         .frame(height: height)

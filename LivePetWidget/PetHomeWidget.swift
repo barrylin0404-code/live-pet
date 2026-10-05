@@ -55,7 +55,8 @@ struct PetHomeWidgetView: View {
                         anim: sleeping ? .sleeping : .idle,
                         frame: tick,
                         facingLeft: false,
-                        displaySize: petSide
+                        displaySize: petSide,
+                        growthStage: snap.resolvedGrowthStage
                     )
                 }
                 .position(x: geo.size.width / 2, y: petTop + petSide / 2)

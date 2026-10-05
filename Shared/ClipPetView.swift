@@ -79,6 +79,12 @@ public struct ClipPetView: View {
     }
 
 
+    /// The app catalog's `nubby-kit-*` / `nubby-nubby_plus-*` frames are still the Wave 3
+    /// front-view blobs, not Designer P0 side-view Nubby. Mixing them with side-view walk / eat
+    /// clips makes the room pet switch between two different characters. Keep this off until
+    /// side-view stage sheets ship. Kit / Big Nubby read through `bodyScaleMultiplier`.
+    static let stageSheetsMatchSideView = false
+
     /// Kit / Big Nubby only have short idle (and plus sleep) sheets — prefer them when present.
     private static func stageAssetName(
         speciesId: String,
@@ -86,7 +92,7 @@ public struct ClipPetView: View {
         anim: PetAnim,
         frame: Int
     ) -> String? {
-        guard speciesId != "pip" else { return nil }
+        guard stageSheetsMatchSideView, speciesId != "pip" else { return nil }
         switch growthStage {
         case .kit:
             guard anim == .idle || anim == .idleBreathing || anim == .idleBlink else { return nil }

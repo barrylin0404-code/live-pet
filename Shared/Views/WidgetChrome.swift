@@ -165,7 +165,8 @@ struct WidgetPetForeground: View {
                 anim: anim,
                 frame: tick,
                 facingLeft: false,
-                displaySize: size
+                displaySize: size,
+                growthStage: stage
             )
             .scaleEffect(CGFloat(stage.bodyScaleMultiplier))
         }

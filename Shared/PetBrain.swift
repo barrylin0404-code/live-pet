@@ -67,7 +67,7 @@ public struct PetBrain: Equatable {
         commandedUntil = max(commandedUntil, clock + 0.35)
     }
 
-    /// A toy on the floor. The pet walks to it, then plays, same as food.
+    /// A toy on the floor. Brief curious glance, then walk and play — same lead-in as food.
     public mutating func noticeToy(at fraction: CGFloat) {
         toyX = min(0.78, max(0.22, fraction))
         playReady = false
@@ -76,8 +76,9 @@ public struct PetBrain: Equatable {
         foodX = nil
         feedReady = false
         wanderTarget = nil
-        let left = toyX! < x
-        player.request(left ? .walkLeft : .walkRight, facingLeft: left, force: true)
+        // Glance toward the toy before pathfinding (mirrors eatNotice on food drops).
+        player.request(.curious, facingLeft: toyX! < x, force: true)
+        commandedUntil = max(commandedUntil, clock + 0.35)
     }
 
     /// Games and the wand set position. Tick will not wander while a hold is active.
@@ -275,6 +276,10 @@ public struct PetBrain: Equatable {
         }
 
         if let toy = toyX {
+            // Hold the curious glance, then walk — same beat as eatNotice → walkToFood.
+            if player.anim == .curious && !player.finishedOneShot && clock < commandedUntil {
+                return
+            }
             let dx = toy - x
             if abs(dx) > 0.03 {
                 let left = dx < 0

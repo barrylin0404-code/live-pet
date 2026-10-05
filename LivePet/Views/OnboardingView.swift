@@ -33,9 +33,15 @@ struct OnboardingView: View {
                     .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
 
                 TextField("Nubby", text: $name)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.title3)
+                    .font(.title3.weight(.semibold))
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0), lineWidth: 2)
+                    )
                     .padding(.horizontal, 40)
                     .accessibilityLabel("Pet name")
                     .onChange(of: name) { _, newValue in
@@ -48,12 +54,13 @@ struct OnboardingView: View {
                     store.completeOnboarding(name: name)
                 } label: {
                     Text(ctaTitle)
-                        .font(.headline)
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
+                        .background(Color(red: 0.98, green: 0.52, blue: 0.42), in: Capsule())
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(Color(red: 0.98, green: 0.52, blue: 0.42))
+                .buttonStyle(PressScaleButtonStyle())
                 .padding(.horizontal, 40)
                 .padding(.bottom, 28)
             }

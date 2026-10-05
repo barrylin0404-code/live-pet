@@ -27,6 +27,10 @@ struct InventoryItem: Identifiable, Codable, Equatable, Hashable {
         switch id {
         case "fish": return "prop-fish"
         case "berry": return "prop-berry"
+        case "sprout": return "prop-sprout"
+        case "cherries": return "prop-cherries"
+        case "cupcake": return "prop-cupcake"
+        case "biscuit": return "prop-biscuit"
         case "twinkle_ball": return "prop-ball"
         case "soft_square": return "prop-wand"
         case "bounce_block": return "prop-island"

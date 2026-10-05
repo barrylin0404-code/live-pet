@@ -130,7 +130,10 @@ struct ContentView: View {
                 }
             }
             .sheet(isPresented: $showPets) {
-                PetsSheet(store: store) { syncActivity() }
+                PetsSheet(store: store) {
+                    resetBrainForPetSwitch()
+                    syncActivity()
+                }
             }
             .sheet(isPresented: $showScenes) {
                 ScenesSheet(store: store, onPets: {
@@ -214,6 +217,11 @@ struct ContentView: View {
                 activityManager.renewIfNeeded(pet: store.pet)
                 syncActivity()
                 startBrain()
+            }
+            .onChange(of: store.pet.petGlyph) { _ in
+                // Pip must not inherit Nubby mid-clip / room position.
+                resetBrainForPetSwitch()
+                syncActivity()
             }
             .onDisappear {
                 store.stopTicking()
@@ -722,6 +730,20 @@ struct ContentView: View {
                 syncActivity()
             }
         }
+    }
+
+    /// Fresh brain so a switch (Pets sheet or Meet Pip) does not keep the prior pet's clip / x.
+    private func resetBrainForPetSwitch() {
+        brain = PetBrain()
+        petX = brain.x
+        facingLeft = brain.player.facingLeft
+        pendingFoodId = nil
+        droppedSymbol = nil
+        careBusy = false
+        ballVisible = false
+        wandVisible = false
+        wandInteractive = false
+        playBounce = 0
     }
 
     private func syncActivity() {

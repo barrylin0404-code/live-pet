@@ -106,7 +106,7 @@ struct MeetPipSheet: View {
                 }
                 .padding(16)
                 .frame(maxWidth: .infinity)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .background(Color.clear, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .strokeBorder(border, lineWidth: 2)

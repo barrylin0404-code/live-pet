@@ -75,7 +75,7 @@ struct InventoryPanel: View {
                     }
                 }
                 .frame(width: 52, height: 52)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(Color.clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .strokeBorder(isFavorite ? favoriteGold : cellBorder, lineWidth: isFavorite ? 2.5 : 2)

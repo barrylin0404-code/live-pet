@@ -212,9 +212,10 @@ public struct PetBrain: Equatable {
         return false
     }
 
-    public mutating func tick(dt: Double, sleeping: Bool, mood: PetMood = .content, roamPace: Double = 1.0) {
+    public mutating func tick(dt: Double, sleeping: Bool, mood: PetMood = .content, roamPace: Double = 1.0, roamIdleHold: Double = 1.0) {
         moodHint = mood
         let pace = min(1.45, max(0.7, roamPace))
+        let idleScale = min(1.45, max(0.7, roamIdleHold))
         let dt = min(0.05, max(0, dt))
         clock += dt
         player.advance(dt: dt)
@@ -413,7 +414,8 @@ public struct PetBrain: Equatable {
                 wanderTarget = nil
                 player.request(.idle, force: true)
                 // Shorter park so idle variety / short walks fire sooner (Shimeji density).
-                idleHold = Double.random(in: 0.4...1.15)
+                // Calm scenes linger; Meadow resumes sooner.
+                idleHold = Double.random(in: 0.4...1.15) * idleScale
                 return
             }
             let left = dx < 0
@@ -450,21 +452,21 @@ public struct PetBrain: Equatable {
                 player.request(.idle, force: true)
             }
             if idleHold <= 0 {
-                chooseNext()
+                chooseNext(idleScale: idleScale)
             }
         }
     }
 
     /// Only reached after sleep / care / food / toy holds clear — never interrupts those.
-    private mutating func chooseNext() {
+    private mutating func chooseNext(idleScale: Double = 1.0) {
         switch moodHint {
         case .hungry:
             player.request(.hungry, force: true)
-            idleHold = 0.3
+            idleHold = 0.3 * idleScale
             return
         case .low:
             player.request(.sad, force: true)
-            idleHold = 0.3
+            idleHold = 0.3 * idleScale
             return
         case .playful:
             // Commercial bar: playful pets scoot then play — not only stand-in-place.
@@ -483,7 +485,7 @@ public struct PetBrain: Equatable {
             }
             if Int.random(in: 0..<2) == 0 {
                 player.request(.hop, force: true)
-                idleHold = 0.08
+                idleHold = 0.08 * idleScale
             } else {
                 player.request(.playing, force: true)
                 commandedUntil = clock + 1.35
@@ -509,21 +511,21 @@ public struct PetBrain: Equatable {
             }
         } else if roll < 11 {
             player.request(.idleBlink, force: true)
-            idleHold = 0.32
+            idleHold = 0.32 * idleScale
         } else if roll < 13 {
             player.request(Bool.random() ? .idleYawn : .idleStretch, force: true)
-            idleHold = 0.12
+            idleHold = 0.12 * idleScale
         } else if roll < 15 {
             player.request(Bool.random() ? .idleGroom : .idleScratch, force: true)
-            idleHold = 0.12
+            idleHold = 0.12 * idleScale
         } else if roll < 17 {
             let fidgets: [PetAnim] = [.idleEarMovement, .idleTailMovement, .idleCurious]
             player.request(fidgets.randomElement() ?? .idleCurious, force: true)
-            idleHold = 0.12
+            idleHold = 0.12 * idleScale
         } else if roll < 18 {
             let looks: [PetAnim] = [.idleLookLeft, .idleLookRight, .idleLookUp, .idleLookDown]
             player.request(looks.randomElement() ?? .idleLookLeft, force: true)
-            idleHold = 0.4
+            idleHold = 0.4 * idleScale
         } else if roll < 19 {
             switch Int.random(in: 0..<3) {
             case 0:
@@ -534,11 +536,11 @@ public struct PetBrain: Equatable {
                 let left = Bool.random()
                 player.request(left ? .turnLeft : .turnRight, facingLeft: left, force: true)
             }
-            idleHold = 0.1
+            idleHold = 0.1 * idleScale
         } else {
             let rests: [PetAnim] = [.idleSit, .idleLay, .idleBreathing]
             player.request(rests.randomElement() ?? .idleSit, force: true)
-            idleHold = 0.22
+            idleHold = 0.22 * idleScale
         }
     }
 }

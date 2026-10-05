@@ -117,6 +117,8 @@ public struct IslandWalkPetView: View {
 
             let (squashX, squashY, hopY) = Self.hopTransform(frameTick: frameTick, side: height)
 
+            // Kit / plus walk sheets fall back to Nubby clips — scale matches room bodyScale.
+            let stageScale = CGFloat(growthStage.bodyScaleMultiplier)
             Group {
                 if Self.assetExists(name) {
                     Image(name)
@@ -135,7 +137,7 @@ public struct IslandWalkPetView: View {
                     .frame(width: petWidth, height: height)
                 }
             }
-            .scaleEffect(x: squashX, y: squashY)
+            .scaleEffect(x: squashX * stageScale, y: squashY * stageScale)
             .offset(x: CGFloat(xNorm) * amp, y: hopY)
             .frame(width: petWidth + amp * 2, height: height)
             .clipped()

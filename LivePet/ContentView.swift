@@ -603,6 +603,14 @@ struct ContentView: View {
         }
         schedulePoseClear(holdMs: 1400)
         syncActivity()
+        // Room pet answers the result card once the cover has slid away — happy after catches,
+        // sad after none (sheets, no floaters). Too early and the beat plays behind the cover.
+        let won = catches > 0
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 450_000_000)
+            guard !showHitIsland, !store.pet.isSleeping else { return }
+            brain.reactPlayResult(happy: won)
+        }
     }
 
     // MARK: - Care (Clean / Sleep / tap)

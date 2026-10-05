@@ -51,14 +51,21 @@ struct GrowCelebrationSheet: View {
     }
 }
 
-/// Skippable Meet Pip sheet after first Grow.
+/// Skippable Meet Pip sheet after first Grow — cream card, no system nav chrome.
 struct MeetPipSheet: View {
     var onMeet: () -> Void
     var onSkip: () -> Void
 
+    private let cream = Color(red: 1.0, green: 0.98, blue: 0.94)
+    private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
+    private let border = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
+    private let pipBlue = Color(red: 0x7E / 255.0, green: 0xC8 / 255.0, blue: 0xE3 / 255.0)
+
     var body: some View {
-        NavigationStack {
+        ZStack {
+            cream.ignoresSafeArea()
             VStack(spacing: 18) {
+                Spacer(minLength: 12)
                 TimelineView(.animation(minimumInterval: 1.0 / 8.0)) { context in
                     let frame = Int(context.date.timeIntervalSinceReferenceDate * 8)
                     ClipPetView(
@@ -70,30 +77,44 @@ struct MeetPipSheet: View {
                     )
                 }
                 .frame(height: 130)
-                Text("Meet Pip")
-                    .font(.title2.bold())
-                Text("Pip is the mint duck. Switch pets from the rooms list.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
+
+                VStack(spacing: 10) {
+                    Text("Meet Pip")
+                        .font(.title2.bold())
+                        .foregroundStyle(ink)
+                    Text("Pip is the mint duck. Switch pets from the rooms list.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 4)
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity)
+                .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(border, lineWidth: 2)
+                )
+                .padding(.horizontal, 20)
+
                 Button(action: onMeet) {
                     Text("Meet Pip")
                         .font(.headline.weight(.bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .background(Color(red: 0x7E/255.0, green: 0xC8/255.0, blue: 0xE3/255.0), in: Capsule())
+                        .background(pipBlue, in: Capsule())
                 }
                 .buttonStyle(PressScaleButtonStyle())
-                .padding(.horizontal)
+                .padding(.horizontal, 20)
+
                 Button("Skip for now", action: onSkip)
-                    .foregroundStyle(.secondary)
-                Spacer()
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(ink.opacity(0.55))
+
+                Spacer(minLength: 8)
             }
-            .padding()
-            .navigationTitle("Pip")
-            .navigationBarTitleDisplayMode(.inline)
+            .padding(.bottom, 20)
         }
     }
 }

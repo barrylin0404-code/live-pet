@@ -591,10 +591,11 @@ struct ContentView: View {
         store.clean()
         PetSound.shared.play(.clean)
         pulseBubbles()
-        schedulePoseClear(holdMs: 3200)
+        // Hold through bathStart→bathing→wet→shake→bathHappy (+ idle linger).
+        schedulePoseClear(holdMs: 4800)
         syncActivity()
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 3_400_000_000)
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
             careBusy = false
         }
     }

@@ -132,7 +132,11 @@ public struct PetBrain: Equatable {
 
     public mutating func reactBath() {
         player.request(.bathStart, force: true)
-        commandedUntil = clock + 0.7
+        // Cover bathStart frames; later stages extend commandedUntil / resume below.
+        commandedUntil = clock + 0.85
+        wanderTarget = nil
+        foodX = nil
+        toyX = nil
     }
 
     public mutating func reactFavoriteFood() {
@@ -307,10 +311,47 @@ public struct PetBrain: Equatable {
             commandedUntil = clock + 0.7
             return
         }
-        if player.anim == .bathing {
+        // Bath chain must finish even if a stage's hold window expired mid-clip.
+        // bathStart → bathing → wet → shakeWater → bathHappy → idle (+ idleHold).
+        switch player.anim {
+        case .bathStart:
+            if player.finishedOneShot {
+                player.request(.bathing, force: true)
+                commandedUntil = clock + 1.6
+            } else {
+                commandedUntil = clock + 0.2
+            }
+            return
+        case .bathing:
             player.request(.wet, force: true)
             commandedUntil = clock + 0.8
             return
+        case .wet:
+            if player.finishedOneShot {
+                player.request(.shakeWater, force: true)
+                commandedUntil = clock + 0.9
+            } else {
+                commandedUntil = clock + 0.2
+            }
+            return
+        case .shakeWater:
+            if player.finishedOneShot {
+                player.request(.bathHappy, force: true)
+                commandedUntil = clock + 0.7
+            } else {
+                commandedUntil = clock + 0.2
+            }
+            return
+        case .bathHappy:
+            if player.finishedOneShot {
+                player.request(.idle, force: true)
+                idleHold = max(idleHold, 0.9)
+            } else {
+                commandedUntil = clock + 0.2
+            }
+            return
+        default:
+            break
         }
 
         // Tired: walk to the sofa, then ask the app to tuck in. Food and care holds win.

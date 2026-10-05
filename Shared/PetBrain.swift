@@ -136,6 +136,21 @@ public struct PetBrain: Equatable {
         player.request(walk, facingLeft: facingLeft, force: player.anim != walk)
     }
 
+    /// Wand / Soft Square lure chase — run when far, play when close, walk mid-range.
+    /// Keeps existing clips denser without inventing new art.
+    public mutating func trackLure(at fraction: CGFloat, facingLeft: Bool, distance: CGFloat) {
+        x = min(0.88, max(0.12, fraction))
+        wanderTarget = nil
+        if distance > 0.14 {
+            player.request(facingLeft ? .runLeft : .runRight, facingLeft: facingLeft, force: true)
+        } else if distance < 0.05 {
+            player.request(.playing, facingLeft: facingLeft, force: player.anim != .playing)
+        } else {
+            let walk: PetAnim = facingLeft ? .walkLeft : .walkRight
+            player.request(walk, facingLeft: facingLeft, force: player.anim != walk)
+        }
+    }
+
     /// Single tap. Returns false (no clip change) while the pet is eating, playing with a
     /// dropped toy, or in the bath — the care beat finishes first.
     @discardableResult
@@ -378,11 +393,16 @@ public struct PetBrain: Equatable {
             let dx = toy - x
             if abs(dx) > 0.03 {
                 let left = dx < 0
-                let walk: PetAnim = left ? .walkLeft : .walkRight
-                if player.anim != walk {
-                    player.request(walk, facingLeft: left, force: true)
+                // Ball / Bounce Block: run in when the drop is far, walk the last bit — denser chase.
+                let far = abs(dx) > 0.18
+                let gait: PetAnim = far
+                    ? (left ? .runLeft : .runRight)
+                    : (left ? .walkLeft : .walkRight)
+                if player.anim != gait {
+                    player.request(gait, facingLeft: left, force: true)
                 }
-                x += (left ? -1 : 1) * CGFloat(dt) * 0.16 * CGFloat(pace)
+                let speed: CGFloat = far ? 0.22 : 0.16
+                x += (left ? -1 : 1) * CGFloat(dt) * speed * CGFloat(pace)
                 x = min(0.82, max(0.18, x))
                 return
             }

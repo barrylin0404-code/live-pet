@@ -86,7 +86,7 @@ struct MeetPipSheet: View {
                     let frame = Int(context.date.timeIntervalSinceReferenceDate * 8)
                     ClipPetView(
                         speciesId: "pip",
-                        anim: .idle,
+                        anim: .happy,
                         frame: frame,
                         facingLeft: false,
                         displaySize: 120

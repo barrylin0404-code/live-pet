@@ -214,6 +214,9 @@ struct ContentView: View {
                     default:
                         dropToyAndPlay(item)
                     }
+                }, onClean: {
+                    showInventory = false
+                    performClean()
                 })
             }
             .sheet(isPresented: $store.showGrowCelebration, onDismiss: {
@@ -457,7 +460,8 @@ struct ContentView: View {
             // Brain walks to the food and calls feed when the eat clip finishes (careBusy clears there).
             // Fail-safe is sized to this walk at this room's pace, so calm rooms are not cut short.
             try? await Task.sleep(nanoseconds: failSafe)
-            guard pendingFoodId == foodId else { return }
+            // Mirror toy fail-safe: if the meal already finished (or pet switched), do not feed again.
+            guard careBusy, pendingFoodId == foodId else { return }
             pendingFoodId = nil
             brain.abandonFood()
             store.feed(itemID: foodId)
@@ -589,7 +593,8 @@ struct ContentView: View {
                 guard toySessionGeneration == session else { return }
                 let dx = wandX - brain.x
                 let next = min(0.88, max(0.12, brain.x + dx * 0.22))
-                brain.place(at: next, facingLeft: wandX < brain.x)
+                // Denser lure chase with existing clips: run when far, play when close, walk mid.
+                brain.trackLure(at: next, facingLeft: wandX < brain.x, distance: abs(dx))
                 // Soft hop while tracking
                 if Int(elapsed * 10) % 4 == 0 {
                     bouncePet()

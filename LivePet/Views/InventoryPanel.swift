@@ -76,8 +76,13 @@ struct InventoryPanel: View {
             ZStack(alignment: .topTrailing) {
                 VStack(spacing: 2) {
                     inventoryGlyph(item)
-                    if item.isFood || item.isCare {
+                    if item.isFood {
                         Text("×\(item.quantity)")
+                            .font(.system(size: 9, weight: .bold).monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    } else if item.isCare {
+                        // Soap never depletes — match Select Food ×∞, not a fake stock count.
+                        Text("×∞")
                             .font(.system(size: 9, weight: .bold).monospacedDigit())
                             .foregroundStyle(.secondary)
                     }

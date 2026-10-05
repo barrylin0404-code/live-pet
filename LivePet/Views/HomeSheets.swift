@@ -236,6 +236,7 @@ struct PetsSheet: View {
                     .foregroundStyle(ink)
                 Spacer(minLength: 0)
                 Button {
+                    PetSound.shared.play(.uiTick)
                     dismiss()
                 } label: {
                     Text("Done")
@@ -270,8 +271,11 @@ struct PetsSheet: View {
                 Button {
                     // Same pet: just close — don't reset the room brain mid-walk.
                     if let id = pendingId, id != store.pet.id {
+                        PetSound.shared.play(.meow)
                         store.setActivePet(id: id)
                         onSwitch()
+                    } else {
+                        PetSound.shared.play(.uiTick)
                     }
                     dismiss()
                 } label: {
@@ -297,6 +301,7 @@ struct PetsSheet: View {
         let selected = (pendingId ?? store.pet.id) == p.id
         return Button {
             pendingId = p.id
+            PetSound.shared.play(.uiTick)
             #if canImport(UIKit)
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             #endif
@@ -317,6 +322,7 @@ struct PetsSheet: View {
                 .frame(height: 72)
                 Text(p.name)
                     .font(.subheadline.weight(.bold))
+                    .foregroundStyle(ink)
                 Text((p.petGlyph == "pip" ? "Pip" : p.growthStage.displayName) + (p.isSleeping ? " · napping" : ""))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -341,6 +347,7 @@ struct PetsSheet: View {
             .frame(height: 72)
             Text("Pip")
                 .font(.subheadline.weight(.bold))
+                .foregroundStyle(ink)
             Text("Grows with Nubby")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -353,6 +360,8 @@ struct PetsSheet: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .strokeBorder(Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0), lineWidth: 2)
         )
+        // Dim so locked Pip does not read as selectable next to Nubby.
+        .opacity(0.55)
         .accessibilityLabel("Pip, grows with Nubby")
     }
 }
@@ -541,6 +550,8 @@ struct InventorySheet: View {
     @ObservedObject var store: PetStore
     var onFood: (InventoryItem) -> Void
     var onToy: (InventoryItem) -> Void
+    /// Bubble Soap — same bath path as the ribbon (dock ctrl-bath).
+    var onClean: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
 
     private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
@@ -548,13 +559,20 @@ struct InventorySheet: View {
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
     private let favoriteGold = Color(red: 0xE8 / 255.0, green: 0xC5 / 255.0, blue: 0x47 / 255.0)
 
+    /// Favorites lead — same order family as the ribbon / Food sheet. Soap trails toys.
     private var items: [InventoryItem] {
         let raw = store.foods.filter { $0.pixelSpriteName != nil }
             + store.toys.filter { $0.pixelSpriteName != nil }
+            + store.careItems.filter { $0.pixelSpriteName != nil }
         return raw.sorted { a, b in
-            let af = a.isFood ? store.pet.isFavoriteFood(a.id) : store.pet.isFavoriteToy(a.id)
-            let bf = b.isFood ? store.pet.isFavoriteFood(b.id) : store.pet.isFavoriteToy(b.id)
+            let af = a.isFood ? store.pet.isFavoriteFood(a.id)
+                : (a.isToy ? store.pet.isFavoriteToy(a.id) : false)
+            let bf = b.isFood ? store.pet.isFavoriteFood(b.id)
+                : (b.isToy ? store.pet.isFavoriteToy(b.id) : false)
             if af != bf { return af && !bf }
+            // Foods, then toys, then care — favorites already floated up within type.
+            let rank: (InventoryItem) -> Int = { $0.isFood ? 0 : ($0.isToy ? 1 : 2) }
+            if rank(a) != rank(b) { return rank(a) < rank(b) }
             return false
         }
     }
@@ -586,7 +604,7 @@ struct InventorySheet: View {
                     }
                 }
                 .padding(.horizontal, 16)
-                Text("Owned goods with pixel art.")
+                Text("Owned goods with pixel art. Soap never runs out.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .padding(.top, 8)
@@ -602,13 +620,15 @@ struct InventorySheet: View {
     private func cell(_ item: InventoryItem) -> some View {
         let isFavorite = item.isFood
             ? store.pet.isFavoriteFood(item.id)
-            : store.pet.isFavoriteToy(item.id)
+            : (item.isToy ? store.pet.isFavoriteToy(item.id) : false)
         return Button {
             PetSound.shared.play(.uiTick)
             if item.isFood {
                 onFood(item)
-            } else {
+            } else if item.isToy {
                 onToy(item)
+            } else {
+                onClean?()
             }
         } label: {
             ZStack(alignment: .topTrailing) {
@@ -624,6 +644,10 @@ struct InventorySheet: View {
                         .lineLimit(1)
                     if item.isFood {
                         Text("×\(item.quantity)")
+                            .font(.system(size: 10, weight: .bold).monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    } else if item.isCare {
+                        Text("×∞")
                             .font(.system(size: 10, weight: .bold).monospacedDigit())
                             .foregroundStyle(.secondary)
                     }
@@ -667,6 +691,36 @@ struct ShopSheet: View {
     private let favoriteGold = Color(red: 0xE8 / 255.0, green: 0xC5 / 255.0, blue: 0x47 / 255.0)
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
 
+    /// Favorite food first — same lead as the inventory ribbon / Select Food.
+    private var foodsFavoriteFirst: [InventoryItem] {
+        store.foods.filter { $0.pixelSpriteName != nil }.sorted { a, b in
+            let af = store.pet.isFavoriteFood(a.id)
+            let bf = store.pet.isFavoriteFood(b.id)
+            if af != bf { return af && !bf }
+            return false
+        }
+    }
+
+    /// Favorite toy rows first, then the other pixel toys, then wand / Island games.
+    private var toyRowsFavoriteFirst: [(title: String, sprite: String, toyId: String?, action: () -> Void)] {
+        let toys: [(String, String, String, () -> Void)] = [
+            ("Play Ball", "prop-ball", "twinkle_ball", onPlayBall),
+            ("Soft Square", "prop-soft", "soft_square", onSoftSquare),
+            ("Bounce Block", "prop-bounce", "bounce_block", onBounceBlock)
+        ]
+        let sorted = toys.sorted { a, b in
+            let af = store.pet.isFavoriteToy(a.2)
+            let bf = store.pet.isFavoriteToy(b.2)
+            if af != bf { return af && !bf }
+            return false
+        }
+        var rows: [(title: String, sprite: String, toyId: String?, action: () -> Void)] =
+            sorted.map { (title: $0.0, sprite: $0.1, toyId: $0.2, action: $0.3) }
+        rows.append((title: "Follow the wand", sprite: "prop-wand", toyId: nil, action: onFollowWand))
+        rows.append((title: "Hit the Island", sprite: "prop-island", toyId: nil, action: onHitIsland))
+        return rows
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             HStack {
@@ -689,7 +743,7 @@ struct ShopSheet: View {
 
             ScrollView {
                 VStack(spacing: 10) {
-                    ForEach(store.foods.filter { $0.pixelSpriteName != nil }) { item in
+                    ForEach(foodsFavoriteFirst) { item in
                         row(
                             title: item.name,
                             sprite: item.pixelSpriteName ?? "prop-fish",
@@ -699,11 +753,14 @@ struct ShopSheet: View {
                         }
                     }
                     // Toys with pixel art — Soft Square / Bounce Block / ball (wand + island are games).
-                    row(title: "Play Ball", sprite: "prop-ball", isFavorite: store.pet.isFavoriteToy("twinkle_ball"), action: onPlayBall)
-                    row(title: "Soft Square", sprite: "prop-soft", isFavorite: store.pet.isFavoriteToy("soft_square"), action: onSoftSquare)
-                    row(title: "Bounce Block", sprite: "prop-bounce", isFavorite: store.pet.isFavoriteToy("bounce_block"), action: onBounceBlock)
-                    row(title: "Follow the wand", sprite: "prop-wand", action: onFollowWand)
-                    row(title: "Hit the Island", sprite: "prop-island", action: onHitIsland)
+                    ForEach(Array(toyRowsFavoriteFirst.enumerated()), id: \.offset) { _, rowInfo in
+                        row(
+                            title: rowInfo.title,
+                            sprite: rowInfo.sprite,
+                            isFavorite: rowInfo.toyId.map { store.pet.isFavoriteToy($0) } ?? false,
+                            action: rowInfo.action
+                        )
+                    }
                 }
                 .padding(.horizontal, 16)
                 Text("Free. No upgrade.")

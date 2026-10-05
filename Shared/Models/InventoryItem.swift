@@ -34,6 +34,7 @@ struct InventoryItem: Identifiable, Codable, Equatable, Hashable {
         case "twinkle_ball": return "prop-ball"
         case "soft_square": return "prop-soft"
         case "bounce_block": return "prop-bounce"
+        case "bubble_soap": return "prop-soap"
         default: return nil
         }
     }

@@ -45,10 +45,10 @@ public struct ClipPetView: View {
         let bakedLeft = shown == .walkLeft || shown == .runLeft || shown == .turnLeft
             || shown == .idleLookLeft || shown == .idleLookRight
         let stageDrawn = Self.hasAsset(stageName)
-        // Kit / Big Nubby sheets are drawn at stage size already. Only the adult clips they fall
-        // back to (walk, eat, happy…) take `bodyScaleMultiplier` — callers must not scale again,
-        // or Little Nubby shrinks a third every time it stops walking. Scale about the feet line
-        // (y 56 of the 64 canvas, where every sheet stands) so a small pet does not float.
+        // Kit / Big Nubby idle+walk(+sleep) sheets are drawn at stage size already. Only the
+        // adult clips they still fall back to (eat, happy, bath…) take `bodyScaleMultiplier` —
+        // callers must not scale again, or Little Nubby shrinks when it stops walking. Scale
+        // about the feet line (y 56 of the 64 canvas) so a small pet does not float.
         let stageFit: CGFloat = stageDrawn ? 1 : CGFloat(growthStage.bodyScaleMultiplier)
         Group {
             #if canImport(UIKit)
@@ -98,12 +98,13 @@ public struct ClipPetView: View {
         #endif
     }
 
-    /// App Lead cleared Designer side-view kit / plus sheets (idle×6, plus sleep×4).
-    /// Kit / plus idle+sleep use those sheets; other anims stay on rebuild Nubby clips + body scale.
+    /// App Lead cleared Designer side-view kit / plus sheets (idle×6, walks×6, plus sleep×4).
+    /// Kit / plus idle+walk(+sleep) use those sheets; other anims stay on rebuild Nubby + body scale.
     static let stageSheetsMatchSideView = true
 
-    /// Prefer stage idle/sleep sheets when App Lead flips the flag. Frame counts: idle % 6, sleep % 4.
-    /// These sheets carry the stage size in the art (kit ≈ 0.7×, plus ≈ 1.09× adult Nubby).
+    /// Prefer stage idle / walk / sleep sheets. Frame counts: idle+walk % 6, sleep % 4.
+    /// These sheets carry the stage size in the art (kit smaller, plus bigger). Left walks are
+    /// drawn flipped — ClipPetView must not flip them again (`bakedLeft`).
     private static func stageAssetName(
         speciesId: String,
         growthStage: GrowthStage,
@@ -113,14 +114,28 @@ public struct ClipPetView: View {
         guard stageSheetsMatchSideView, speciesId != "pip" else { return nil }
         switch growthStage {
         case .kit:
-            guard anim == .idle || anim == .idleBreathing || anim == .idleBlink else { return nil }
-            return "nubby-kit-idle-\(frame % 6)"
+            if anim == .idle || anim == .idleBreathing || anim == .idleBlink {
+                return "nubby-kit-idle-\(frame % 6)"
+            }
+            if anim == .walkLeft {
+                return "nubby-kit-walkLeft-\(frame % 6)"
+            }
+            if anim == .walkRight {
+                return "nubby-kit-walkRight-\(frame % 6)"
+            }
+            return nil
         case .nubbyPlus:
             if anim == .sleeping || anim == .sleepBreathing || anim == .sleepStart {
                 return "nubby-nubby_plus-sleep-\(frame % 4)"
             }
             if anim == .idle || anim == .idleBreathing || anim == .idleBlink {
                 return "nubby-nubby_plus-idle-\(frame % 6)"
+            }
+            if anim == .walkLeft {
+                return "nubby-nubby_plus-walkLeft-\(frame % 6)"
+            }
+            if anim == .walkRight {
+                return "nubby-nubby_plus-walkRight-\(frame % 6)"
             }
             return nil
         case .nubby:

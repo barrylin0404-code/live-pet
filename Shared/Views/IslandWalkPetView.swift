@@ -148,9 +148,9 @@ public struct IslandWalkPetView: View {
             // Walk an edge, park and idle a beat, turn, walk back — a pet roaming, not a slider.
             let (xNorm, facingRight, parked, legProgress) = Self.roam(at: roamT, walk: Self.walkLeg, pause: pause)
 
-            let frames = Self.walkFrames(speciesId: speciesId, facingRight: facingRight)
+            let frames = Self.walkFrames(speciesId: speciesId, growthStage: growthStage, facingRight: facingRight)
             let name = frames[frameTick % max(frames.count, 1)]
-            let idleName = "\(speciesId == "pip" ? "pip" : "nubby")-idle-\(Int(t * 6) % 6)"
+            let idleName = Self.idleFrameName(speciesId: speciesId, growthStage: growthStage, frame: Int(t * 6) % 6)
 
             // Hops belong to the stroll, mid-leg on legs the mood allows; a parked pet just
             // breathes and blinks, and a hop is never cut short by the park.
@@ -158,17 +158,24 @@ public struct IslandWalkPetView: View {
                 ? (CGFloat(1), CGFloat(1), CGFloat(0))
                 : Self.hopTransform(legProgress: legProgress, side: height)
 
-            // Kit / plus walk sheets fall back to Nubby clips — scale matches room bodyScale.
-            let stageScale = CGFloat(growthStage.bodyScaleMultiplier)
+            // Stage walk/idle sheets are drawn at kit/plus size — no bodyScale. Adult fallbacks still scale.
+            let stageArt = Self.usesStageWalkArt(speciesId: speciesId, growthStage: growthStage)
+            let stageScale: CGFloat = stageArt ? 1 : CGFloat(growthStage.bodyScaleMultiplier)
             Group {
                 if parked, Self.assetExists(idleName) {
                     parkedIdle(idleName, facingRight: facingRight, petWidth: petWidth, height: height)
                 } else if Self.assetExists(name) {
-                    Image(name)
-                        .interpolation(.none)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: petWidth, height: height)
+                    if stageArt {
+                        // Full 64-px stage walks — same walk-window crop as care / parked idle.
+                        stageWalkFrame(name, facingRight: facingRight, petWidth: petWidth, height: height)
+                    } else {
+                        // Widget catalog adult walks are already tight crops.
+                        Image(name)
+                            .interpolation(.none)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: petWidth, height: height)
+                    }
                 } else {
                     PixelPetView(
                         mood: mood,
@@ -254,6 +261,21 @@ public struct IslandWalkPetView: View {
             .frame(width: petWidth, height: height, alignment: .topLeading)
     }
 
+    /// Kit / plus walk sheets are full 64-px (left already drawn). Crop into the pill; no mirror.
+    private func stageWalkFrame(_ name: String, facingRight: Bool, petWidth: CGFloat, height: CGFloat) -> some View {
+        let crop = Self.walkCrop(speciesId: speciesId, facingRight: facingRight)
+        let unit = min(petWidth / crop.w, height / crop.h)
+        let side = 64 * unit
+        let cropX = (petWidth - crop.w * unit) / 2
+        let cropY = (height - crop.h * unit) / 2
+        return Image(name)
+            .interpolation(.none)
+            .resizable()
+            .frame(width: side, height: side)
+            .offset(x: cropX - crop.x * unit, y: cropY - crop.y * unit)
+            .frame(width: petWidth, height: height, alignment: .topLeading)
+    }
+
     /// Squash→stretch→land squash in a 4-frame window starting `hopStart` into the leg.
     /// Flat walk (identity) the rest of the time — matches clip occasional idle hop.
     private static func hopTransform(legProgress: Double, side: CGFloat) -> (sx: CGFloat, sy: CGFloat, y: CGFloat) {
@@ -276,12 +298,31 @@ public struct IslandWalkPetView: View {
         }
     }
 
-    /// Same side-view sheets as the room. Left sheets are already flipped.
-    /// The widget catalog holds a tight crop so the pet fills the pill.
-    private static func walkFrames(speciesId: String, facingRight: Bool) -> [String] {
-        let species = speciesId == "pip" ? "pip" : "nubby"
+    /// Same side-view sheets as the room. Left sheets are already flipped — pick walkLeft / walkRight
+    /// by name; never mirror again. Kit / plus use their own walks when App Lead flag is on.
+    private static func walkFrames(speciesId: String, growthStage: GrowthStage, facingRight: Bool) -> [String] {
         let dir = facingRight ? "walkRight" : "walkLeft"
+        if usesStageWalkArt(speciesId: speciesId, growthStage: growthStage) {
+            let prefix = growthStage == .kit ? "nubby-kit" : "nubby-nubby_plus"
+            return (0..<6).map { "\(prefix)-\(dir)-\($0)" }
+        }
+        let species = speciesId == "pip" ? "pip" : "nubby"
         return (0..<6).map { "\(species)-\(dir)-\($0)" }
+    }
+
+    private static func idleFrameName(speciesId: String, growthStage: GrowthStage, frame: Int) -> String {
+        let i = ((frame % 6) + 6) % 6
+        if usesStageWalkArt(speciesId: speciesId, growthStage: growthStage) {
+            let prefix = growthStage == .kit ? "nubby-kit" : "nubby-nubby_plus"
+            return "\(prefix)-idle-\(i)"
+        }
+        let species = speciesId == "pip" ? "pip" : "nubby"
+        return "\(species)-idle-\(i)"
+    }
+
+    private static func usesStageWalkArt(speciesId: String, growthStage: GrowthStage) -> Bool {
+        guard ClipPetView.stageSheetsMatchSideView, speciesId != "pip" else { return false }
+        return growthStage == .kit || growthStage == .nubbyPlus
     }
 
     private static func assetExists(_ name: String) -> Bool {

@@ -19,7 +19,7 @@ struct InventoryPanel: View {
         var list: [InventoryItem] = []
         list.append(contentsOf: store.foods.filter { $0.pixelSpriteName != nil })
         list.append(contentsOf: store.toys.filter { $0.pixelSpriteName != nil })
-        // Care without pixel art (bubble_soap) stays internal — bath dock uses ctrl-bath.
+        // Bubble Soap has art now — ribbon still routes care taps to bath (dock ctrl-bath).
         list.append(contentsOf: store.careItems.filter { $0.pixelSpriteName != nil })
         // Favorites lead so Feed / Play favorites are one tap away.
         return list.sorted { a, b in

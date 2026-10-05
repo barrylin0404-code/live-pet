@@ -39,12 +39,15 @@ public struct PetActivityAttributes: ActivityAttributes {
             PetPose(rawValue: pose) ?? .idle
         }
 
-        /// Mid outbound leg (walkLeg 1.0 → phase 0.5) → xNorm 0, matching care sheets.
+        /// Mid return leg → xNorm 0 facing left, matching care sheets — and outside the
+        /// outbound-only hop window. Mid outbound (old) landed Feed/Pet settle mid-hop.
         public static func centeredWalkEpoch(
             at t: TimeInterval = Date().timeIntervalSinceReferenceDate,
-            walkLeg: TimeInterval = 1.0
+            walkLeg: TimeInterval = 1.0,
+            mood: PetMood = .content
         ) -> Double {
-            t - walkLeg / 2
+            let pause = mood.islandEdgePause
+            return t - (walkLeg + pause + walkLeg / 2)
         }
 
         /// Island mapping: idle → walk. Care oneshots (eat / play / clean) + sleep pass through.
@@ -93,13 +96,13 @@ public struct PetActivityAttributes: ActivityAttributes {
                     && prev.petPose != .sleep
             } ?? false
             if fromCare || (fromMoodHold && !next.mood.holdsIslandStroll) {
-                next.walkEpoch = centeredWalkEpoch()
+                next.walkEpoch = centeredWalkEpoch(mood: next.mood)
             } else if next.walkEpoch == nil {
                 if let epoch = previous?.walkEpoch, previous?.petPose == .walk {
                     next.walkEpoch = epoch
                 } else if previous == nil || previous?.petPose != .walk {
                     // Fresh request / first stroll — start centered, not at a random wall-clock x.
-                    next.walkEpoch = centeredWalkEpoch()
+                    next.walkEpoch = centeredWalkEpoch(mood: next.mood)
                 }
             }
             return next
@@ -161,6 +164,17 @@ public enum PetMood: String, Codable, Hashable, CaseIterable {
         switch self {
         case .hungry, .low: return true
         default: return false
+        }
+    }
+
+    /// Edge park length on Island stroll. Playful barely stops; happy denser than content;
+    /// sleepy lingers. Shared so walkEpoch / IslandLook / Walk sims stay in sync.
+    public var islandEdgePause: TimeInterval {
+        switch self {
+        case .playful: return 0.45
+        case .happy: return 0.65
+        case .sleepy: return 1.4
+        default: return 0.9
         }
     }
 

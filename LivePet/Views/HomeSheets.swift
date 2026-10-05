@@ -842,7 +842,8 @@ struct WidgetsGallerySheet: View {
         ("Pet Weather", "Local weather peek"),
         ("Pet Day", "Date + care streak"),
         ("Pet Note", "Daily message"),
-        ("Pet Photo", "Portrait widget")
+        ("Pet Photo", "Portrait widget"),
+        ("Lock Screen", "Mono pet + Feeling dots")
     ]
 
     var body: some View {
@@ -910,7 +911,7 @@ struct WidgetsGallerySheet: View {
                 }
                 .padding(16)
 
-                Text("Long-press Home Screen → + → search “Live Pet” → add a widget. Free forever — no Upgrade tab.")
+                Text("Long-press Home Screen → + → search “Live Pet” → add a widget. Lock Screen: long-press → Customize → add Live Pet Lock Screen. Free forever — no Upgrade tab.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 16)

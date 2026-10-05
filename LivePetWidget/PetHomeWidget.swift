@@ -66,7 +66,7 @@ struct PetHomeWidgetView: View {
                 .position(x: geo.size.width / 2, y: petTop + petSide / 2)
             }
         }
-        .accessibilityLabel(snap.petGlyph == "pip" ? "Pip" : "Nubby")
+        .accessibilityLabel("\(snap.name), \(WidgetChrome.feelingPhrase(mood: snap.mood))")
     }
 }
 

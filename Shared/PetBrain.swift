@@ -663,6 +663,11 @@ public struct PetBrain: Equatable {
             }
             wanderTarget = nil
             return
+        case .happy:
+            // Happy denser than content (Shimeji) — more short walks / hop, less loaf. Existing clips.
+            afterPlayfulScoot = false
+            chooseNextHappy(idleScale: idleScale, isPip: isPip)
+            return
         default:
             afterPlayfulScoot = false
             break
@@ -675,6 +680,29 @@ public struct PetBrain: Equatable {
             chooseNextPip(roll: roll, idleScale: idleScale)
         } else {
             chooseNextNubby(roll: roll, idleScale: idleScale)
+        }
+    }
+
+    /// Happy: between content and playful — more walks/hops, shorter parks; no scoot chain.
+    private mutating func chooseNextHappy(idleScale: Double, isPip: Bool) {
+        let roll = Int.random(in: 0..<20)
+        if roll < (isPip ? 10 : 8) {
+            startShortWander(runChanceIn: isPip ? 3 : 4)
+        } else if roll < 13 {
+            player.request(.idleBlink, force: true)
+            idleHold = 0.22 * idleScale
+        } else if roll < 16 {
+            player.request(Bool.random() ? .hop : .jump, force: true)
+            idleHold = 0.08 * idleScale
+        } else if roll < 18 {
+            let fidgets: [PetAnim] = isPip
+                ? [.idleCurious, .idleEarMovement, .idleTailMovement, .idleBreathing]
+                : [.idleCurious, .idleLookLeft, .idleLookRight, .idleTailMovement]
+            player.request(fidgets.randomElement() ?? .idleCurious, force: true)
+            idleHold = 0.14 * idleScale
+        } else {
+            player.request(Bool.random() ? .idleStretch : .idleScratch, force: true)
+            idleHold = 0.12 * idleScale
         }
     }
 

@@ -238,13 +238,9 @@ public struct IslandWalkPetView: View {
         }
     }
 
-    /// Edge park length by mood: playful pets barely stop, sleepy ones linger (Shimeji density).
+    /// Edge park length by mood — `PetMood.islandEdgePause` (happy denser than content).
     static func edgePause(for mood: PetMood) -> TimeInterval {
-        switch mood {
-        case .playful: return 0.45
-        case .sleepy: return 1.4
-        default: return 0.9
-        }
+        mood.islandEdgePause
     }
 
     /// Widget walk sheets are tight crops of the 64-px room sheets; the idle sheet is not.

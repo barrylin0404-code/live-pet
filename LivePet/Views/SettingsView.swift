@@ -19,8 +19,27 @@ struct SettingsView: View {
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Settings")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(ink)
+                Spacer(minLength: 0)
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Done")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(ink)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
                 block("Pet") {
                     HStack {
                         TextField("Name", text: $draftName)
@@ -177,12 +196,12 @@ struct SettingsView: View {
                         showResetConfirm = true
                     }
                 }
+                }
+                .padding(16)
             }
-            .padding(16)
         }
         .background(cream.ignoresSafeArea())
-        .navigationTitle("Settings")
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             draftName = store.pet.name
             weatherStatus = WeatherFetchService.shared.statusMessage

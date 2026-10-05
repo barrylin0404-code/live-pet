@@ -284,30 +284,21 @@ struct ContentView: View {
             HStack(spacing: 8) {
                 ClipPetView(
                     speciesId: store.pet.petGlyph,
-                    anim: .idle,
+                    anim: .happy,
                     frame: 0,
                     facingLeft: false,
-                    displaySize: 36
+                    displaySize: 40
                 )
-                Text(store.growBannerTitle)
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
-                Spacer(minLength: 0)
                 Text("Grow")
-                    .font(.caption.weight(.bold))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
+                    .font(.system(size: 15, weight: .heavy, design: .rounded))
+                    .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
                     .background(Color(red: 1.0, green: 0.85, blue: 0.55), in: Capsule())
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(Color(red: 1.0, green: 0.97, blue: 0.90), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0), lineWidth: 2)
-            )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressScaleButtonStyle())
+        .accessibilityLabel(store.growBannerTitle)
     }
 
     // MARK: - Continuous walk (P0 density)

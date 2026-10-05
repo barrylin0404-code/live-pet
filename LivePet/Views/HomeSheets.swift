@@ -855,7 +855,7 @@ struct InfoHowToSheet: View {
                     labelRow("Play", "Play Ball, Follow the wand, or Hit the Island.")
                     labelRow("Inventory", "Tap fish, berry, Soft Square, Bounce Block, or ball above the dock — they land in the room.")
                     labelRow("Island", "Turn on Dynamic Island from More.")
-                    Text("Bath and Sleep are on the dock. Shake to sleep too.")
+                    Text("Bath and Sleep are on the dock — Sleep toggles wake. Shake only sleeps when awake.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }

@@ -17,6 +17,9 @@ final class PetLiveActivityManager: ObservableObject {
     private var moodFlipTask: Task<Void, Never>?
     /// Soft Island ambient meow while Live Activity is desired (main app only).
     private var ambientMeowTask: Task<Void, Never>?
+    /// One end→request at a time. Pet switch fires `onPetChange` and `syncActivity` back to back;
+    /// a second start before the first lands would request a duplicate Activity.
+    private var requestInFlight = false
 
     /// Renew before the hard ~8h ActivityKit cap (restart at 7h).
     private static let renewAfter: TimeInterval = 7 * 60 * 60
@@ -39,11 +42,16 @@ final class PetLiveActivityManager: ObservableObject {
             lastError = "Live Activities are disabled in Settings."
             return
         }
+        guard !requestInFlight else { return }
+        requestInFlight = true
         renewTask?.cancel()
         renewTask = nil
         moodFlipTask?.cancel()
         moodFlipTask = nil
-        Task { await endThenRequest(pet: pet) }
+        Task {
+            await endThenRequest(pet: pet)
+            requestInFlight = false
+        }
     }
 
     func update(pet: Pet) {
@@ -55,6 +63,12 @@ final class PetLiveActivityManager: ObservableObject {
             return
         }
         guard let activity = currentActivity else { return }
+        // Name / species live in the immutable attributes — rename or Nubby↔Pip needs a fresh
+        // Activity, or the Island keeps the old name and IslandLook stops projecting this pet.
+        guard Self.attributesMatch(activity, pet: pet) else {
+            start(pet: pet)
+            return
+        }
 
         let stale = renewDeadline ?? Date().addingTimeInterval(Self.staleLeeway)
         let content = ActivityContent(state: islandState(for: pet, previous: activity.content.state), staleDate: stale)
@@ -62,6 +76,11 @@ final class PetLiveActivityManager: ObservableObject {
             await activity.update(content)
         }
         scheduleMoodFlips()
+    }
+
+    /// Activity was requested for this pet (name + species). Attributes cannot be updated.
+    private static func attributesMatch(_ activity: Activity<PetActivityAttributes>, pet: Pet) -> Bool {
+        activity.attributes.petName == pet.name && activity.attributes.petGlyph == pet.petGlyph
     }
 
     func renewIfNeeded(pet: Pet) {
@@ -96,8 +115,8 @@ final class PetLiveActivityManager: ObservableObject {
                 }
             }
 
-            if needsRenew {
-                // Stale + Island on (Activity still present) → end→request.
+            if needsRenew || !Self.attributesMatch(existing, pet: pet) {
+                // Stale, or requested for another name / species → end→request.
                 start(pet: pet)
             } else {
                 if AppGroup.defaults.object(forKey: Self.startedKey) == nil {

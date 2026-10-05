@@ -687,7 +687,7 @@ public struct PetRoomSceneView: View {
                             anim: clipAnim,
                             frame: clipFrame,
                             facingLeft: facingLeft,
-                            displaySize: 78 * petScale * growthStage.bodyScaleMultiplier,
+                            displaySize: 78 * petScale,
                             growthStage: growthStage
                         )
                     } else {
@@ -696,7 +696,7 @@ public struct PetRoomSceneView: View {
                             anim: .idle,
                             frame: clipFrame,
                             facingLeft: facingLeft,
-                            displaySize: 78 * petScale * growthStage.bodyScaleMultiplier,
+                            displaySize: 78 * petScale,
                             growthStage: growthStage
                         )
                     }

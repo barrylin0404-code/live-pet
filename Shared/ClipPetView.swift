@@ -44,9 +44,15 @@ public struct ClipPetView: View {
         // walkLeft sheets already face left. Flipping them again turns the cat around.
         let bakedLeft = shown == .walkLeft || shown == .runLeft || shown == .turnLeft
             || shown == .idleLookLeft || shown == .idleLookRight
+        let stageDrawn = Self.hasAsset(stageName)
+        // Kit / Big Nubby sheets are drawn at stage size already. Only the adult clips they fall
+        // back to (walk, eat, happy…) take `bodyScaleMultiplier` — callers must not scale again,
+        // or Little Nubby shrinks a third every time it stops walking. Scale about the feet line
+        // (y 56 of the 64 canvas, where every sheet stands) so a small pet does not float.
+        let stageFit: CGFloat = stageDrawn ? 1 : CGFloat(growthStage.bodyScaleMultiplier)
         Group {
             #if canImport(UIKit)
-            if let stageName, UIImage(named: stageName) != nil {
+            if let stageName, stageDrawn {
                 Image(stageName)
                     .interpolation(.none)
                     .resizable()
@@ -73,17 +79,31 @@ public struct ClipPetView: View {
             drawn
             #endif
         }
+        .scaleEffect(stageFit, anchor: Self.feetAnchor)
         .frame(width: displaySize, height: displaySize)
         .scaleEffect(x: (facingLeft && !bakedLeft) ? -1 : 1, y: 1)
         .accessibilityLabel(speciesId == "pip" ? "Pip" : "Nubby")
     }
 
 
+    /// Feet line on the 64-px sheets (idle, eat, kit, plus all stand on y 56).
+    static let feetAnchor = UnitPoint(x: 0.5, y: 56.0 / 64.0)
+
+    private static func hasAsset(_ name: String?) -> Bool {
+        guard let name else { return false }
+        #if canImport(UIKit)
+        return UIImage(named: name) != nil
+        #else
+        return false
+        #endif
+    }
+
     /// App Lead cleared Designer side-view kit / plus sheets (idle×6, plus sleep×4).
     /// Kit / plus idle+sleep use those sheets; other anims stay on rebuild Nubby clips + body scale.
     static let stageSheetsMatchSideView = true
 
     /// Prefer stage idle/sleep sheets when App Lead flips the flag. Frame counts: idle % 6, sleep % 4.
+    /// These sheets carry the stage size in the art (kit ≈ 0.7×, plus ≈ 1.09× adult Nubby).
     private static func stageAssetName(
         speciesId: String,
         growthStage: GrowthStage,

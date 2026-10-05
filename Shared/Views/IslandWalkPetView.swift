@@ -100,10 +100,9 @@ public struct IslandWalkPetView: View {
     }
 
     /// Eat, play, bath, sleep, hungry, and sad use the same side-view sheets as the room.
-    /// Kit / plus scale matches the room `bodyScaleMultiplier` (walk already does).
+    /// Kit / plus scale lives in ClipPetView (stage sheets are drawn at stage size).
     private func careBody(_ anim: PetAnim) -> some View {
         let height = slotHeight
-        let stageScale = CGFloat(growthStage.bodyScaleMultiplier)
         return TimelineView(.animation(minimumInterval: 1.0 / 6.0, paused: false)) { context in
             let tick = Int(context.date.timeIntervalSinceReferenceDate * 6)
             ClipPetView(
@@ -114,7 +113,6 @@ public struct IslandWalkPetView: View {
                 displaySize: height,
                 growthStage: growthStage
             )
-            .scaleEffect(stageScale)
         }
         .frame(height: height)
         .clipped()
@@ -158,7 +156,9 @@ public struct IslandWalkPetView: View {
                     .frame(width: petWidth, height: height)
                 }
             }
-            .scaleEffect(x: squashX * stageScale, y: squashY * stageScale)
+            // Feet stay on the pill floor: kit shrinks (and hops squash) toward the ground, same as
+            // the care sheets, instead of floating mid-slot.
+            .scaleEffect(x: squashX * stageScale, y: squashY * stageScale, anchor: .bottom)
             .offset(x: CGFloat(xNorm) * amp, y: hopY)
             .frame(width: petWidth + amp * 2, height: height)
             .clipped()

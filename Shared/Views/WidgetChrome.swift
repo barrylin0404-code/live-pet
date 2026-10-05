@@ -130,7 +130,6 @@ struct WidgetPetForeground: View {
                 displaySize: size,
                 growthStage: stage
             )
-            .scaleEffect(CGFloat(stage.bodyScaleMultiplier))
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)

@@ -116,8 +116,8 @@ struct HitIslandGameView: View {
                         displaySize: 96,
                         growthStage: growthStage
                     )
-                    // Kit / plus read the same size as in the room.
-                    .scaleEffect(CGFloat(growthStage.bodyScaleMultiplier) * (paddleFlash ? 1.06 : 1.0))
+                    // Kit / plus size comes from ClipPetView, same as in the room.
+                    .scaleEffect(paddleFlash ? 1.06 : 1.0)
                 }
                 .position(
                     x: geo.size.width * paddleX,
@@ -237,7 +237,6 @@ struct HitIslandGameView: View {
                             displaySize: 96,
                             growthStage: growthStage
                         )
-                        .scaleEffect(CGFloat(growthStage.bodyScaleMultiplier))
                     }
                     .frame(width: 96, height: 96)
                     Text(resultHeadline)

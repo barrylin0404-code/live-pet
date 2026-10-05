@@ -336,7 +336,7 @@ struct PetsSheet: View {
             .background(Color.clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(selected ? selectedBorder : Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0), lineWidth: selected ? 3 : 2)
+                    .strokeBorder(selected ? selectedBorder : Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0), lineWidth: selected ? 3 : 2)
             )
         }
         .buttonStyle(PressScaleButtonStyle())
@@ -362,7 +362,7 @@ struct PetsSheet: View {
         .background(Color.clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0), lineWidth: 2)
+                .strokeBorder(Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0), lineWidth: 2)
         )
         // Dim so locked Pip does not read as selectable next to Nubby.
         .opacity(0.55)
@@ -560,7 +560,8 @@ struct InventorySheet: View {
     @Environment(\.dismiss) private var dismiss
 
     private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
-    private let border = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
+    // Match Food / Play / Scenes — ink stroke, not beige leftover.
+    private let border = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
     private let favoriteGold = Color(red: 0xE8 / 255.0, green: 0xC5 / 255.0, blue: 0x47 / 255.0)
 
@@ -692,7 +693,8 @@ struct ShopSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
-    private let border = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
+    // Match Food / Play / Scenes — ink stroke, not beige leftover.
+    private let border = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
     private let favoriteGold = Color(red: 0xE8 / 255.0, green: 0xC5 / 255.0, blue: 0x47 / 255.0)
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
 
@@ -829,7 +831,8 @@ struct WidgetsGallerySheet: View {
     @EnvironmentObject private var store: PetStore
 
     private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
-    private let border = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
+    // Match Food / Play / Scenes — ink stroke, not beige leftover.
+    private let border = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 

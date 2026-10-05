@@ -13,7 +13,8 @@ struct InventoryPanel: View {
     var onClean: () -> Void
 
     private let favoriteGold = Color(red: 0xE8 / 255.0, green: 0xC5 / 255.0, blue: 0x47 / 255.0)
-    private let cellBorder = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
+    // Ribbon cells match Food / Scenes ink stroke (no beige leftover).
+    private let cellBorder = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
 
     private var ribbonItems: [InventoryItem] {
         var list: [InventoryItem] = []

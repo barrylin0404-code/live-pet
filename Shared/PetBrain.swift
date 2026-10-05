@@ -150,7 +150,9 @@ public struct PetBrain: Equatable {
         x = min(0.88, max(0.12, fraction))
         wanderTarget = nil
         if distance > 0.14 {
-            player.request(facingLeft ? .runLeft : .runRight, facingLeft: facingLeft, force: true)
+            // Same as walk/play mid-close: do not force-restart every lure tick (stuck frame 0).
+            let run: PetAnim = facingLeft ? .runLeft : .runRight
+            player.request(run, facingLeft: facingLeft, force: player.anim != run)
         } else if distance < 0.05 {
             player.request(.playing, facingLeft: facingLeft, force: player.anim != .playing)
         } else {

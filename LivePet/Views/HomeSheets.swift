@@ -131,7 +131,7 @@ struct SelectGameSheet: View {
     private let cream = Color(red: 0xF7 / 255.0, green: 0xF0 / 255.0, blue: 0xE6 / 255.0)
     private let stroke = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
     private let border = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
-    private let columns = [GridItem(.fixed(148), spacing: 12), GridItem(.fixed(148), spacing: 12)]
+
 
     var body: some View {
         VStack(spacing: 0) {
@@ -155,10 +155,10 @@ struct SelectGameSheet: View {
             .padding(.top, 14)
             .padding(.bottom, 10)
 
-            LazyVGrid(columns: columns, spacing: 12) {
-                gameCard(title: "Play Ball", pixel: "prop-ball", action: onPlayBall)
-                gameCard(title: "Follow the wand", pixel: "prop-wand", action: onFollowWand)
-                gameCard(title: "Hit the Island", pixel: "prop-island", action: onHitIsland)
+            VStack(spacing: 10) {
+                gameRow(title: "Play Ball", pixel: "prop-ball", action: onPlayBall)
+                gameRow(title: "Follow the wand", pixel: "prop-wand", action: onFollowWand)
+                gameRow(title: "Hit the Island", pixel: "prop-island", action: onHitIsland)
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 16)
@@ -190,7 +190,7 @@ struct SelectGameSheet: View {
         }
     }
 
-    private func gameCard(title: String, icon: String? = nil, pixel: String? = nil, action: @escaping () -> Void) -> some View {
+    private func gameRow(title: String, icon: String? = nil, pixel: String? = nil, action: @escaping () -> Void) -> some View {
         Button {
             PetSound.shared.play(.uiTick)
             #if canImport(UIKit)
@@ -198,14 +198,16 @@ struct SelectGameSheet: View {
             #endif
             action()
         } label: {
-            VStack(spacing: 10) {
+            HStack(spacing: 12) {
                 gameGlyph(icon: icon, pixel: pixel)
                 Text(title)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
-                    .multilineTextAlignment(.center)
+                Spacer(minLength: 0)
             }
-            .frame(width: 148, height: 120)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)

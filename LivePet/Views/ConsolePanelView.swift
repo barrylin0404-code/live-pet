@@ -26,6 +26,8 @@ struct ConsolePanelView: View {
     private let fpPink = Color(red: 0xE8 / 255.0, green: 0x91 / 255.0, blue: 0xB8 / 255.0)
     private let fpBevel = Color(red: 0xC4 / 255.0, green: 0x45 / 255.0, blue: 0x7A / 255.0)
     private let crossDeboss = Color(red: 0xB0 / 255.0, green: 0x3A / 255.0, blue: 0x6A / 255.0)
+    private let playTeal = Color(red: 0x4C / 255.0, green: 0xB8 / 255.0, blue: 0xB0 / 255.0)
+    private let playBevel = Color(red: 0x2F / 255.0, green: 0x8A / 255.0, blue: 0x84 / 255.0)
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
     private let heartFill = Color(red: 1.0, green: 0.30, blue: 0.43)
 
@@ -198,7 +200,7 @@ struct ConsolePanelView: View {
             playButton
                 .offset(x: -21, y: 46)
         }
-        .frame(width: 100, height: 100, alignment: .topTrailing)
+        .frame(width: 100, height: 118, alignment: .topTrailing)
         .padding(.trailing, 4)
     }
 
@@ -207,19 +209,24 @@ struct ConsolePanelView: View {
             lightHaptic()
             onFood()
         } label: {
-            ZStack {
-                Circle().fill(fpPink)
-                Circle().strokeBorder(fpBevel, lineWidth: 3)
-                // Debossed D-pad CROSS artwork (not a directional pad)
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
-                    .fill(crossDeboss)
-                    .frame(width: 16, height: 44)
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
-                    .fill(crossDeboss)
-                    .frame(width: 44, height: 16)
+            VStack(spacing: 4) {
+                ZStack {
+                    Circle().fill(fpPink)
+                    Circle().strokeBorder(fpBevel, lineWidth: 3)
+                    // Debossed D-pad CROSS artwork (not a directional pad)
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(crossDeboss)
+                        .frame(width: 16, height: 44)
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(crossDeboss)
+                        .frame(width: 44, height: 16)
+                }
+                .frame(width: 72, height: 72)
+                .shadow(color: fpPink.opacity(0.35), radius: 3, y: 1)
+                Text("F")
+                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                    .foregroundStyle(ink.opacity(0.55))
             }
-            .frame(width: 72, height: 72)
-            .shadow(color: fpPink.opacity(0.35), radius: 3, y: 1)
         }
         .buttonStyle(PressScaleButtonStyle())
         .simultaneousGesture(
@@ -241,9 +248,9 @@ struct ConsolePanelView: View {
                 .font(.system(size: 18, weight: .heavy, design: .rounded))
                 .foregroundStyle(.white)
                 .frame(width: 48, height: 48)
-                .background(fpPink, in: Circle())
-                .overlay(Circle().strokeBorder(fpBevel, lineWidth: 2.5))
-                .shadow(color: fpPink.opacity(0.3), radius: 2, y: 1)
+                .background(playTeal, in: Circle())
+                .overlay(Circle().strokeBorder(playBevel, lineWidth: 2.5))
+                .shadow(color: playTeal.opacity(0.3), radius: 2, y: 1)
         }
         .buttonStyle(PressScaleButtonStyle())
         .simultaneousGesture(

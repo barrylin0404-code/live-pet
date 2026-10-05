@@ -203,7 +203,7 @@ public struct PetBrain: Equatable {
         return false
     }
 
-    /// True once, when a tired pet has reached the sofa and should be tucked in.
+    /// True once, when a tired pet has reached the room's rest spot and should be tucked in.
     public mutating func consumeNapReady() -> Bool {
         if napReady {
             napReady = false
@@ -222,7 +222,7 @@ public struct PetBrain: Equatable {
         return false
     }
 
-    public mutating func tick(dt: Double, sleeping: Bool, mood: PetMood = .content, roamPace: Double = 1.0, roamIdleHold: Double = 1.0) {
+    public mutating func tick(dt: Double, sleeping: Bool, mood: PetMood = .content, roamPace: Double = 1.0, roamIdleHold: Double = 1.0, restX: Double = 0.39) {
         moodHint = mood
         let pace = min(1.45, max(0.7, roamPace))
         let idleScale = min(1.45, max(0.7, roamIdleHold))
@@ -397,9 +397,10 @@ public struct PetBrain: Equatable {
             break
         }
 
-        // Tired: walk to the sofa, then ask the app to tuck in. Food and care holds win.
+        // Tired: walk to the room's rest spot (sofa / rug / door), then ask the app to tuck in.
+        // Food and care holds win.
         if moodHint == .sleepy, foodX == nil {
-            let sofa: CGFloat = 0.39
+            let sofa = CGFloat(min(0.78, max(0.22, restX)))
             let dx = sofa - x
             if abs(dx) > 0.03 {
                 let left = dx < 0

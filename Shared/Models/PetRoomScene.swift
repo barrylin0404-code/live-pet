@@ -71,6 +71,20 @@ public enum PetRoomScene: String, Codable, CaseIterable, Identifiable, Sendable 
         }
     }
 
+    /// Where a tired pet walks to nap (x fraction of the room), read off each plate:
+    /// the sofa indoors, the rug where there is no sofa, the door on the porch, open sand undersea.
+    public var restXFraction: Double {
+        switch self {
+        case .sunNook: return 0.39      // red sofa
+        case .moonPorch: return 0.42    // violet sofa
+        case .meadowWalk: return 0.28   // by the fence
+        case .tideGlass: return 0.74    // rug under the porthole
+        case .skylineDusk: return 0.52  // rug below the window
+        case .snowPorch: return 0.26    // by the door
+        case .coralShelf: return 0.50   // open sand between the kelp
+        }
+    }
+
     /// Pixel plate for this room. Each room uses its own plate.
     public var plateImageName: String? {
         switch self {

@@ -58,7 +58,17 @@ struct ContentView: View {
                         InventoryPanel(
                             store: store,
                             onFeed: { syncActivity() },
-                            onPlay: { syncActivity() },
+                            onToy: { item in
+                                switch item.id {
+                                case "twinkle_ball":
+                                    store.play(itemID: item.id)
+                                    startPlayBall()
+                                case "soft_square", "bounce_block":
+                                    dropToyAndPlay(item)
+                                default:
+                                    dropToyAndPlay(item)
+                                }
+                            },
                             onClean: {
                                 performClean()
                             }
@@ -171,7 +181,7 @@ struct ContentView: View {
                         startPlayBall()
                     case "soft_square":
                         store.play(itemID: item.id)
-                        startFollowWand()
+                        startFollowWand(showSoftSquare: true)
                     case "bounce_block":
                         dropToyAndPlay(item)
                     default:
@@ -493,12 +503,23 @@ struct ContentView: View {
 
     // MARK: - Follow the wand (drift + track ≥1.5s + heart)
 
-    private func startFollowWand() {
+    private func startFollowWand(showSoftSquare: Bool = false) {
         guard !careBusy else { return }
         careBusy = true
         brain.hold(3.2)
         wandX = 0.50
         wandY = 0.36
+        if showSoftSquare {
+            // Soft Square from Inventory: flash prop-soft, then the wand leads.
+            droppedSymbol = "prop-soft"
+            droppedX = brain.x < 0.5 ? 0.62 : 0.38
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 900_000_000)
+                if droppedSymbol == "prop-soft" {
+                    droppedSymbol = nil
+                }
+            }
+        }
         wandVisible = true
         wandInteractive = true
         PetSound.shared.play(.play)

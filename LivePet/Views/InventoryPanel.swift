@@ -7,7 +7,8 @@ import UIKit
 struct InventoryPanel: View {
     @ObservedObject var store: PetStore
     var onFeed: () -> Void
-    var onPlay: () -> Void
+    /// Toys leave the ribbon so ContentView can drop props / start games.
+    var onToy: (InventoryItem) -> Void
     var onClean: () -> Void
 
     private let favoriteGold = Color(red: 0xE8 / 255.0, green: 0xC5 / 255.0, blue: 0x47 / 255.0)
@@ -56,8 +57,7 @@ struct InventoryPanel: View {
                 store.feed(itemID: item.id)
                 onFeed()
             } else if item.isToy {
-                store.play(itemID: item.id)
-                onPlay()
+                onToy(item)
             } else {
                 store.clean()
                 onClean()

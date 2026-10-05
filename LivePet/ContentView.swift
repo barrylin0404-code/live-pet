@@ -175,6 +175,18 @@ struct ContentView: View {
                 }, onFollowWand: {
                     showShop = false
                     startFollowWand()
+                }, onSoftSquare: {
+                    showShop = false
+                    if let soft = store.toys.first(where: { $0.id == "soft_square" }) {
+                        store.play(itemID: soft.id)
+                    }
+                    startFollowWand(showSoftSquare: true)
+                }, onBounceBlock: {
+                    showShop = false
+                    if let bounce = store.toys.first(where: { $0.id == "bounce_block" })
+                        ?? InventoryItem.catalog.first(where: { $0.id == "bounce_block" }) {
+                        dropToyAndPlay(bounce)
+                    }
                 }, onHitIsland: {
                     showShop = false
                     PetSound.shared.play(.islandStart)

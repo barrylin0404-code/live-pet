@@ -639,6 +639,8 @@ struct ShopSheet: View {
     var onFood: (InventoryItem) -> Void
     var onPlayBall: () -> Void
     var onFollowWand: () -> Void
+    var onSoftSquare: () -> Void
+    var onBounceBlock: () -> Void
     var onHitIsland: () -> Void
     @Environment(\.dismiss) private var dismiss
 
@@ -673,7 +675,10 @@ struct ShopSheet: View {
                             onFood(item)
                         }
                     }
+                    // Toys with pixel art — Soft Square / Bounce Block / ball (wand + island are games).
                     row(title: "Play Ball", sprite: "prop-ball", action: onPlayBall)
+                    row(title: "Soft Square", sprite: "prop-soft", action: onSoftSquare)
+                    row(title: "Bounce Block", sprite: "prop-bounce", action: onBounceBlock)
                     row(title: "Follow the wand", sprite: "prop-wand", action: onFollowWand)
                     row(title: "Hit the Island", sprite: "prop-island", action: onHitIsland)
                 }
@@ -692,7 +697,10 @@ struct ShopSheet: View {
     }
 
     private func row(title: String, sprite: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button {
+            PetSound.shared.play(.uiTick)
+            action()
+        } label: {
             HStack(spacing: 12) {
                 Image(sprite)
                     .resizable()

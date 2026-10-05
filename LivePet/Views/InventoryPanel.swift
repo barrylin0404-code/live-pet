@@ -61,7 +61,7 @@ struct InventoryPanel: View {
             } else if item.isToy {
                 onToy(item)
             } else {
-                store.clean()
+                // Bath lives in ContentView.performClean (sound + brain) — do not double-call store.clean.
                 onClean()
             }
         } label: {

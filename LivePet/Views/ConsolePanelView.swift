@@ -122,12 +122,13 @@ struct ConsolePanelView: View {
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(ink)
                         .frame(width: 52, alignment: .leading)
-                    HStack(spacing: 5) {
+                    HStack(spacing: 4) {
                         ForEach(0..<3, id: \.self) { i in
-                            Circle()
-                                .fill(i < filledSatiety ? Color.orange : Color.orange.opacity(0.22))
-                                .frame(width: 11, height: 11)
-                                .overlay(Circle().strokeBorder(Color.orange.opacity(0.5), lineWidth: 1.2))
+                            Image(i < filledSatiety ? "satiety-bowl-full" : "satiety-bowl-empty")
+                                .resizable()
+                                .interpolation(.none)
+                                .scaledToFit()
+                                .frame(width: 16, height: 16)
                         }
                     }
                     Spacer(minLength: 0)

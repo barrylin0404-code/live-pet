@@ -104,15 +104,13 @@ struct StatusStripView: View {
     }
 
     private var satietyRow: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 5) {
             ForEach(0..<3, id: \.self) { i in
-                Circle()
-                    .fill(i < filledSatiety ? Color.orange : Color.orange.opacity(0.25))
-                    .frame(width: 14, height: 14)
-                    .overlay(
-                        Circle()
-                            .strokeBorder(Color.orange.opacity(0.55), lineWidth: 1.5)
-                    )
+                Image(i < filledSatiety ? "satiety-bowl-full" : "satiety-bowl-empty")
+                    .resizable()
+                    .interpolation(.none)
+                    .scaledToFit()
+                    .frame(width: 18, height: 18)
             }
         }
     }

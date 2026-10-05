@@ -1,0 +1,21 @@
+{
+  "images": [
+    {
+      "idiom": "universal",
+      "filename": "satiety-bowl-empty.png",
+      "scale": "1x"
+    },
+    {
+      "idiom": "universal",
+      "filename": "satiety-bowl-empty@2x.png",
+      "scale": "2x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  },
+  "properties": {
+    "template-rendering-intent": "original"
+  }
+}

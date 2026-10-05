@@ -68,7 +68,7 @@ public struct PetActivityAttributes: ActivityAttributes {
         }
 
         /// Merge pet → Island payload with the live Activity state.
-        /// Care/sleep → walk recenters at x=0; walk → walk keeps the prior epoch.
+        /// Care/sleep → walk and hungry/sad → stroll recenter at x=0; walk → walk keeps the prior epoch.
         public static func islandUpdate(from petState: ContentState, previous: ContentState?) -> ContentState {
             var next = petState.islandContentState()
             guard next.petPose == .walk else {
@@ -82,7 +82,16 @@ public struct PetActivityAttributes: ActivityAttributes {
                     || prev.petPose == .clean
                     || prev.petPose == .sleep
             } ?? false
-            if fromCare {
+            // Hungry/sad sheets sit at x=0 — leaving that hold for a stroll must recenter
+            // the same way care→walk does (mood tick alone used to keep the old roam phase).
+            let fromMoodHold = previous.map { prev in
+                prev.mood.holdsIslandStroll
+                    && !prev.isSleeping
+                    && prev.petPose != .eat
+                    && prev.petPose != .play
+                    && prev.petPose != .sleep
+            } ?? false
+            if fromCare || (fromMoodHold && !next.mood.holdsIslandStroll) {
                 next.walkEpoch = centeredWalkEpoch()
             } else if next.walkEpoch == nil {
                 if let epoch = previous?.walkEpoch, previous?.petPose == .walk {
@@ -143,6 +152,14 @@ public enum PetMood: String, Codable, Hashable, CaseIterable {
         case .sleepy: return "Sleepy"
         case .playful: return "Playful"
         case .low: return "Needs care"
+        }
+    }
+
+    /// Island / Lock Screen: hungry & low hold a sheet instead of strolling.
+    public var holdsIslandStroll: Bool {
+        switch self {
+        case .hungry, .low: return true
+        default: return false
         }
     }
 

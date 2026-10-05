@@ -219,6 +219,35 @@ struct IslandLook {
             )
         }
         mood = projected.mood
+        // Activity band still hungry/low while projection recovered (snapshot care, no
+        // Activity write yet): hold sheets sit at x=0 — resume stroll centered, same as
+        // islandUpdate after care→walk / projected wake. Do not touch walk→walk ticks.
+        if !wokeOnItsOwn,
+           !isSleeping,
+           pose != .eat, pose != .play, pose != .clean, pose != .sleep,
+           !mood.holdsIslandStroll {
+            if state.mood.holdsIslandStroll {
+                pose = .walk
+                walkEpoch = PetActivityAttributes.ContentState.centeredWalkEpoch(
+                    at: now.timeIntervalSinceReferenceDate
+                )
+            } else if Self.edgePause(for: state.mood) != Self.edgePause(for: mood) {
+                // Stale Activity band (e.g. playful) vs projected content/sleepy changes
+                // park length — same clock would teleport on the compact / Lock stroll.
+                walkEpoch = PetActivityAttributes.ContentState.centeredWalkEpoch(
+                    at: now.timeIntervalSinceReferenceDate
+                )
+            }
+        }
+    }
+
+    /// Mirror `IslandWalkPetView.edgePause` — keep values in sync.
+    private static func edgePause(for mood: PetMood) -> TimeInterval {
+        switch mood {
+        case .playful: return 0.45
+        case .sleepy: return 1.4
+        default: return 0.9
+        }
     }
 }
 

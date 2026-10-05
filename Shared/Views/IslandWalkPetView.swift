@@ -96,11 +96,8 @@ public struct IslandWalkPetView: View {
 
     /// Awake mood that should read on the Island instead of the stroll. Nil = keep walking.
     static func moodAnim(for mood: PetMood) -> PetAnim? {
-        switch mood {
-        case .hungry: return .hungry
-        case .low: return .sad
-        default: return nil
-        }
+        guard mood.holdsIslandStroll else { return nil }
+        return mood == .hungry ? .hungry : .sad
     }
 
     /// Eat, play, bath, sleep, hungry, and sad use the same side-view sheets as the room.

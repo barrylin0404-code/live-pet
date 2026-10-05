@@ -23,6 +23,7 @@ enum PetIntentMutator {
         }
         persist(pet: pet, items: items)
         await pushActivity(pet: pet)
+        await settleCarePose(after: pet)
     }
 
     /// Play-lite Feeling bump (Island “Pet”).
@@ -31,6 +32,24 @@ enum PetIntentMutator {
         model.pet()
         persist(pet: model, items: nil)
         await pushActivity(pet: model)
+        await settleCarePose(after: model)
+    }
+
+    /// Eat / play sheets hold a beat on the Island, then hand back to the walk (or hungry/sad) —
+    /// the room does the same via `clearTransientCarePose`. Without this the Island kept eating
+    /// until the app next opened. Skipped if anything else wrote the pet in the meantime.
+    /// Leaves `lastUpdated` alone so the settle never erases decay.
+    private static func settleCarePose(after written: Pet) async {
+        try? await Task.sleep(nanoseconds: 2_400_000_000)
+        guard let data = AppGroup.defaults.data(forKey: AppGroup.petKey),
+              var latest = try? JSONDecoder().decode(Pet.self, from: data),
+              latest.id == written.id,
+              abs(latest.lastUpdated.timeIntervalSince(written.lastUpdated)) < 0.001,
+              latest.pose == .eat || latest.pose == .play || latest.pose == .clean,
+              !latest.isSleeping else { return }
+        latest.pose = .idle
+        persist(pet: latest, items: nil)
+        await pushActivity(pet: latest)
     }
 
     /// Sleep / tuck-in (Island “Lull”). Matches the dock: wake a napping pet instead of tucking in again.

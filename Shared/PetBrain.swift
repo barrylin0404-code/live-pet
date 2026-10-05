@@ -9,6 +9,10 @@ public struct PetBrain: Equatable {
     public private(set) var napReady: Bool
     public private(set) var toyX: CGFloat?
     public private(set) var playReady: Bool
+    /// True once when the bath chain reaches idle after bathHappy.
+    public private(set) var bathReady: Bool
+    /// True once when sleepStart has settled into sleeping (or sleeping was forced).
+    public private(set) var sleepSettleReady: Bool
 
     private var wanderTarget: CGFloat?
     private var idleHold: Double
@@ -30,6 +34,8 @@ public struct PetBrain: Equatable {
         self.napReady = false
         self.toyX = nil
         self.playReady = false
+        self.bathReady = false
+        self.sleepSettleReady = false
         self.wanderTarget = nil
         self.idleHold = 0.6
         self.commandedUntil = 0
@@ -192,6 +198,8 @@ public struct PetBrain: Equatable {
         wanderTarget = nil
         foodX = nil
         toyX = nil
+        bathReady = false
+        sleepSettleReady = false
     }
 
     /// End of a lure / game the app drove (wand, Soft Square, Hit the Island): one happy or sad
@@ -228,9 +236,12 @@ public struct PetBrain: Equatable {
             wanderTarget = nil
             commandedUntil = clock + 0.9
             sleepPhase = 0
+            sleepSettleReady = false
+            bathReady = false
         } else {
             player.request(.wakeUp, force: true)
             commandedUntil = clock + 0.6
+            sleepSettleReady = false
         }
     }
 
@@ -263,6 +274,24 @@ public struct PetBrain: Equatable {
         return false
     }
 
+    /// True once, when the bath chain finishes (bathHappy → idle).
+    public mutating func consumeBathReady() -> Bool {
+        if bathReady {
+            bathReady = false
+            return true
+        }
+        return false
+    }
+
+    /// True once, when sleepStart has settled into the sleeping loop.
+    public mutating func consumeSleepSettleReady() -> Bool {
+        if sleepSettleReady {
+            sleepSettleReady = false
+            return true
+        }
+        return false
+    }
+
     public mutating func tick(dt: Double, sleeping: Bool, mood: PetMood = .content, roamPace: Double = 1.0, roamIdleHold: Double = 1.0, restX: Double = 0.39) {
         moodHint = mood
         let pace = min(1.45, max(0.7, roamPace))
@@ -278,12 +307,14 @@ public struct PetBrain: Equatable {
                 if player.finishedOneShot {
                     player.request(.sleeping, force: true)
                     sleepPhase = 0
+                    sleepSettleReady = true
                 }
                 return
             }
             if player.anim != .sleeping && player.anim != .sleepBreathing {
                 player.request(.sleeping, force: true)
                 sleepPhase = 0
+                sleepSettleReady = true
             } else if player.anim == .sleeping && sleepPhase > 2.4 {
                 player.request(.sleepBreathing, force: true)
             } else if player.anim == .sleepBreathing && sleepPhase > 5 {
@@ -382,9 +413,11 @@ public struct PetBrain: Equatable {
                                                 || player.anim == .favoriteFoodReaction
                                                 || player.anim == .loveReaction
                                                 || player.anim == .bathHappy) {
+                let finishedBath = player.anim == .bathHappy
                 // Brief satisfied idle before chooseNext wanders again.
                 player.request(.idle, force: true)
                 idleHold = max(idleHold, 0.9)
+                if finishedBath { bathReady = true }
             } else if player.finishedOneShot && player.anim != .held {
                 player.request(.idle, force: true)
             }
@@ -430,6 +463,7 @@ public struct PetBrain: Equatable {
             if player.finishedOneShot {
                 player.request(.idle, force: true)
                 idleHold = max(idleHold, 0.9)
+                bathReady = true
             } else {
                 commandedUntil = clock + 0.2
             }

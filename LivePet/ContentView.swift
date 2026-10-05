@@ -27,6 +27,10 @@ struct ContentView: View {
     @State private var facingLeft = false
     @State private var walkTask: Task<Void, Never>?
     @State private var careBusy = false
+    /// Retires an in-flight bath/sleep unlock so Wake / pet switch / a finished hold cannot clear a later care.
+    @State private var careGeneration = 0
+    /// Generation of the active bath/sleep hold — consumeBathReady / sleepSettle end this one only.
+    @State private var careHoldGeneration = 0
 
     // Drop-to-room
     @State private var droppedSymbol: String?
@@ -387,6 +391,12 @@ struct ContentView: View {
                     careBusy = false
                     syncActivity()
                 }
+                if brain.consumeBathReady() {
+                    endCareHold(careHoldGeneration)
+                }
+                if brain.consumeSleepSettleReady() {
+                    endCareHold(careHoldGeneration)
+                }
             }
         }
     }
@@ -625,6 +635,8 @@ struct ContentView: View {
     /// Care while napping: wake first so feed/play/bath/pet are not soft-locked.
     private func wakeFromNapIfNeeded() {
         guard store.pet.isSleeping else { return }
+        // Drop any sleep-settle careBusy so the care that woke them is not gated by the old hold.
+        cancelCareHold()
         brain.reactSleep(on: false)
         store.wake()
         syncActivity()
@@ -633,7 +645,7 @@ struct ContentView: View {
     private func performClean() {
         guard !careBusy else { return }
         wakeFromNapIfNeeded()
-        careBusy = true
+        let gen = beginCareHold()
         brain.reactBath()
         store.clean()
         PetSound.shared.play(.clean)
@@ -641,15 +653,17 @@ struct ContentView: View {
         // Hold through bathStart→bathing→wet→shake→bathHappy (+ idle linger).
         schedulePoseClear(holdMs: 4800)
         syncActivity()
+        // Unlock on consumeBathReady (bathHappy → idle). Fail-safe only if that never fires.
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 5_000_000_000)
-            careBusy = false
+            try? await Task.sleep(nanoseconds: 7_000_000_000)
+            endCareHold(gen)
         }
     }
 
     private func performSleep() {
         if store.pet.isSleeping {
-            // Waking needs no busy hold — toys and food right after a wake should just work.
+            // Cancel the sleep-settle hold so Feed/toy right after Wake are not ignored.
+            cancelCareHold()
             brain.reactSleep(on: false)
             store.wake()
             PetSound.shared.play(.meow)
@@ -657,15 +671,16 @@ struct ContentView: View {
             return
         }
         guard !careBusy else { return }
-        careBusy = true
+        let gen = beginCareHold()
         brain.reactSleep(on: true)
         store.sleep()
         PetSound.shared.play(.sleep)
         pulseZzz()
         syncActivity()
+        // Unlock on consumeSleepSettleReady (sleepStart → sleeping). Fail-safe if settle never signals.
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 1_600_000_000)
-            careBusy = false
+            try? await Task.sleep(nanoseconds: 2_500_000_000)
+            endCareHold(gen)
         }
     }
 
@@ -814,6 +829,28 @@ struct ContentView: View {
         }
     }
 
+    /// Start a bath/sleep care hold. Returns the generation that alone may unlock it.
+    @discardableResult
+    private func beginCareHold() -> Int {
+        careGeneration += 1
+        careHoldGeneration = careGeneration
+        careBusy = true
+        return careGeneration
+    }
+
+    /// Unlock only if this hold is still current, then retire the generation so a late fail-safe is a no-op.
+    private func endCareHold(_ generation: Int) {
+        guard careGeneration == generation else { return }
+        careBusy = false
+        careGeneration += 1
+    }
+
+    /// Wake / pet switch: drop busy and retire any in-flight bath/sleep unlock.
+    private func cancelCareHold() {
+        careGeneration += 1
+        careBusy = false
+    }
+
     /// Fail-safe for a food / toy walk: notice glance + the walk at this room's pace (same
     /// 0.16 speed and pace clamp as PetBrain) + the eat or play beat + a second of slack.
     /// Never shorter than the old flat 5.2s.
@@ -840,7 +877,8 @@ struct ContentView: View {
         pendingFoodId = nil
         pendingToyId = nil
         droppedSymbol = nil
-        careBusy = false
+        // Retire bath/sleep unlock so a prior timer cannot clear careBusy mid-walk on the new pet.
+        cancelCareHold()
         ballVisible = false
         wandVisible = false
         wandInteractive = false

@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-05 (MT)  
 **Repo:** https://github.com/barrylin0404-code/live-pet  
-**`main` tip (this ship):** Sleepy-awake yawn + Grow ink card + Accessory copy (on tip past `4679619` Island careCrop)
+**`main` tip (this ship):** `d4ec745` — Sleepy-awake yawn + Grow ink card + Accessory copy (on `4679619` Island careCrop)
 
 ## Product locks
 
@@ -51,7 +51,7 @@ App Lead compares home + Island to Shimeji reference. Reviewer quality only afte
 
 ## Eng status
 
-Tip past `4679619` on `main` (this push). Sleepy-awake yawn + Grow ink card + Accessory copy. Shared typecheck OK; islandlook + carehold + roam OK. SwiftUI/ActivityKit not compiled for real here (Linux stubs) — confirm on Mac. **Not DONE.**
+Tip `d4ec745` on `main` (pushed). Sleepy-awake yawn + Grow ink card + Accessory copy. Shared typecheck OK; islandlook + carehold + roam OK. SwiftUI/ActivityKit not compiled for real here (Linux stubs) — confirm on Mac. **Not DONE.**
 
 **Waiting on**
 1. App Lead: compare a running build on a device or Mac against Shimeji for DONE (Eng does not call DONE).

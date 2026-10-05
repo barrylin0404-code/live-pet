@@ -123,9 +123,7 @@ struct FeelingMiniHearts: View {
         let filled = WidgetChrome.miniHeartCount(moodScore: moodScore)
         HStack(spacing: 3) {
             ForEach(0..<3, id: \.self) { i in
-                Image(systemName: i < filled ? "heart.fill" : "heart")
-                    .font(.system(size: size))
-                    .foregroundStyle(i < filled ? WidgetChrome.heartFill : WidgetChrome.heartEmpty)
+                PixelHeartView(filled: i < filled, size: size)
             }
         }
         .accessibilityLabel("Feeling, \(moodScore) percent, \(filled) of 3 hearts")

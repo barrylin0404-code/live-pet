@@ -7,8 +7,6 @@ struct StatusStripView: View {
     private let mintBorder = Color(red: 0xC5 / 255.0, green: 0xD9 / 255.0, blue: 0xC0 / 255.0)
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
     private let ageInk = Color(red: 0.55, green: 0.45, blue: 0.33)
-    private let heartFill = Color(red: 1.0, green: 0.30, blue: 0.43)
-    private let heartEmpty = Color(red: 1.0, green: 0.70, blue: 0.76)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -94,11 +92,9 @@ struct StatusStripView: View {
     }
 
     private var heartRow: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 4) {
             ForEach(0..<4, id: \.self) { i in
-                Image(systemName: i < filledHearts ? "heart.fill" : "heart")
-                    .font(.system(size: 20))
-                    .foregroundStyle(i < filledHearts ? heartFill : heartEmpty)
+                PixelHeartView(filled: i < filledHearts, size: 18)
             }
         }
     }

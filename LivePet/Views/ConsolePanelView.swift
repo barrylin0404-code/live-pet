@@ -29,7 +29,6 @@ struct ConsolePanelView: View {
     private let playTeal = Color(red: 0x4C / 255.0, green: 0xB8 / 255.0, blue: 0xB0 / 255.0)
     private let playBevel = Color(red: 0x2F / 255.0, green: 0x8A / 255.0, blue: 0x84 / 255.0)
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
-    private let heartFill = Color(red: 1.0, green: 0.30, blue: 0.43)
 
     var body: some View {
         VStack(spacing: 8) {
@@ -107,9 +106,7 @@ struct ConsolePanelView: View {
                         .frame(width: 52, alignment: .leading)
                     HStack(spacing: 3) {
                         ForEach(0..<4, id: \.self) { i in
-                            Image(systemName: i < filledHearts ? "heart.fill" : "heart")
-                                .font(.system(size: 14))
-                                .foregroundStyle(i < filledHearts ? heartFill : heartFill.opacity(0.35))
+                            PixelHeartView(filled: i < filledHearts, size: 14)
                         }
                     }
                     Spacer(minLength: 0)

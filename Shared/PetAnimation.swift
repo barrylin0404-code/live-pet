@@ -70,7 +70,7 @@ public enum PetAnimCatalog {
             return PetAnimClip(anim: anim, frameCount: 5, fps: 12, mode: .once, priority: 3, interruptible: false)
         case .eating:
             return PetAnimClip(anim: anim, frameCount: 5, fps: 8, mode: .once, priority: 5, interruptible: false)
-        case .happy, .petHappy, .excited, .veryHappy, .loveReaction, .playExcited:
+        case .happy, .petHappy, .excited, .veryHappy, .loveReaction, .playExcited, .favoriteFoodReaction:
             return PetAnimClip(anim: anim, frameCount: 4, fps: 10, mode: .once, priority: 5, interruptible: false)
         case .sleepStart:
             return PetAnimClip(anim: anim, frameCount: 2, fps: 6, mode: .once, priority: 5, interruptible: false)
@@ -85,8 +85,10 @@ public enum PetAnimCatalog {
     /// Sheet name token. Eat frames are `nubby-eat-*`, not `nubby-eating-*`.
     public static func assetToken(for anim: PetAnim) -> String {
         switch anim {
-        case .eating, .eatStart, .eatFinish, .eatNotice, .favoriteFoodReaction:
+        case .eating, .eatStart, .eatFinish, .eatNotice:
             return "eat"
+        case .favoriteFoodReaction:
+            return "happy"
         case .sleepStart:
             // Designer ships short `*-sleep-*` lead-in sheets.
             return "sleep"
@@ -107,8 +109,10 @@ public enum PetAnimCatalog {
         switch anim {
         case .walkToFood, .walkSlow, .walkFast, .sleepyWalk, .walkToBed:
             return facingLeft ? .walkLeft : .walkRight
-        case .eating, .eatStart, .eatFinish, .eatNotice, .favoriteFoodReaction:
+        case .eating, .eatStart, .eatFinish, .eatNotice:
             return .eating
+        case .favoriteFoodReaction:
+            return .happy
         case .bathStart, .bathFinish, .bathHappy:
             return .bathing
         case .playStart, .playFinish:

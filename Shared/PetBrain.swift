@@ -123,8 +123,10 @@ public struct PetBrain: Equatable {
     }
 
     public mutating func reactFavoriteFood() {
+        // Burst on the happy sheet — not another eat cycle after the meal.
         player.request(.favoriteFoodReaction, force: true)
-        commandedUntil = max(commandedUntil, clock + 1.0)
+        commandedUntil = max(commandedUntil, clock + 1.35)
+        idleHold = max(idleHold, 1.0)
         wanderTarget = nil
     }
 
@@ -221,7 +223,9 @@ public struct PetBrain: Equatable {
             } else if player.finishedOneShot && player.anim == .eating {
                 feedReady = true
                 player.request(.happy, force: true)
-                commandedUntil = clock + 0.9
+                // Linger on happy before tick resumes wander.
+                commandedUntil = clock + 1.25
+                idleHold = max(idleHold, 1.0)
             }
             return
         }
@@ -271,6 +275,13 @@ public struct PetBrain: Equatable {
             } else if player.finishedOneShot && player.anim == .shakeWater {
                 player.request(.bathHappy, force: true)
                 commandedUntil = clock + 0.7
+            } else if player.finishedOneShot && (player.anim == .happy
+                                                || player.anim == .favoriteFoodReaction
+                                                || player.anim == .loveReaction
+                                                || player.anim == .bathHappy) {
+                // Brief satisfied idle before chooseNext wanders again.
+                player.request(.idle, force: true)
+                idleHold = max(idleHold, 0.9)
             } else if player.finishedOneShot && player.anim != .held {
                 player.request(.idle, force: true)
             }

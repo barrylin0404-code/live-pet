@@ -52,13 +52,6 @@ struct ContentView: View {
                 ZStack(alignment: .bottom) {
                     roomViewport
                     VStack(spacing: 0) {
-                        careMetersBar
-                            .padding(.horizontal, 14)
-                            .padding(.top, 10)
-                        Spacer(minLength: 0)
-                    }
-                    .allowsHitTesting(false)
-                    VStack(spacing: 0) {
                         Spacer(minLength: 0)
                         if store.isGrowEligible {
                             growChip.padding(.bottom, 8)
@@ -353,58 +346,6 @@ struct ContentView: View {
                 }
             }
         }
-    }
-
-    private var filledFeelingHearts: Int {
-        switch store.pet.moodScore {
-        case 75...100: return 4
-        case 50..<75: return 3
-        case 25..<50: return 2
-        case 1..<25: return 1
-        default: return 0
-        }
-    }
-
-    private var filledSatietyBowls: Int {
-        switch store.pet.satiety {
-        case 67...100: return 3
-        case 34..<67: return 2
-        case 1..<34: return 1
-        default: return 0
-        }
-    }
-
-    /// Small Feeling + Satiety readouts on the room — not a dashboard card.
-    private var careMetersBar: some View {
-        HStack(alignment: .center, spacing: 10) {
-            HStack(spacing: 3) {
-                ForEach(0..<4, id: \.self) { i in
-                    PixelHeartView(filled: i < filledFeelingHearts, size: 14)
-                }
-            }
-            .accessibilityLabel("Feeling, \(store.pet.moodScore) percent")
-
-            HStack(spacing: 4) {
-                ForEach(0..<3, id: \.self) { i in
-                    Image(i < filledSatietyBowls ? "satiety-bowl-full" : "satiety-bowl-empty")
-                        .resizable()
-                        .interpolation(.none)
-                        .scaledToFit()
-                        .frame(width: 14, height: 14)
-                }
-            }
-            .accessibilityLabel("Satiety, \(store.pet.satiety) percent")
-
-            Spacer(minLength: 0)
-
-            Text("\(store.pet.ageDays)d")
-                .font(.system(size: 12, weight: .heavy, design: .rounded))
-                .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21).opacity(0.55))
-                .accessibilityLabel("\(store.pet.ageDays) days old")
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(Color(red: 1.0, green: 0.97, blue: 0.92).opacity(0.82), in: Capsule())
     }
 
     private var toyDock: some View {

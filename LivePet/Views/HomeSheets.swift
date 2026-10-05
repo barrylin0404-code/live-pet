@@ -699,21 +699,50 @@ struct WidgetsGallerySheet: View {
     ]
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Widgets")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(ink)
+                Spacer(minLength: 0)
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Done")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(ink)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
+
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 12) {
                     ForEach(widgets, id: \.0) { title, blurb in
                         VStack(alignment: .leading, spacing: 8) {
-                            TimelineView(.animation(minimumInterval: 1.0 / 6.0)) { context in
-                                let frame = Int(context.date.timeIntervalSinceReferenceDate * 6)
-                                ClipPetView(
-                                    speciesId: store.pet.petGlyph,
-                                    anim: .idle,
-                                    frame: frame,
-                                    facingLeft: false,
-                                    displaySize: 48
-                                )
+                            ZStack {
+                                Image("home-widget-plate")
+                                    .resizable()
+                                    .interpolation(.none)
+                                    .scaledToFill()
+                                    .frame(height: 56)
+                                    .clipped()
+                                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                TimelineView(.animation(minimumInterval: 1.0 / 6.0)) { context in
+                                    let frame = Int(context.date.timeIntervalSinceReferenceDate * 6)
+                                    ClipPetView(
+                                        speciesId: store.pet.petGlyph,
+                                        anim: .idle,
+                                        frame: frame,
+                                        facingLeft: false,
+                                        displaySize: 44
+                                    )
+                                }
                             }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
                             Text(title)
                                 .font(.subheadline.weight(.bold))
                                 .foregroundStyle(ink)
@@ -739,16 +768,11 @@ struct WidgetsGallerySheet: View {
                     .padding(.horizontal, 16)
                     .padding(.bottom, 12)
             }
-            .background(cream.ignoresSafeArea())
-            .navigationTitle("Widgets")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
         }
+        .background(cream.ignoresSafeArea())
         .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(24)
     }
 }
 

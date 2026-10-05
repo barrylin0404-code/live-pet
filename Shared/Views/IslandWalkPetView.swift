@@ -119,12 +119,12 @@ public struct IslandWalkPetView: View {
     }
 
     private var walkBody: some View {
-
         let height = slotHeight
         // Side-view sheets are wider than tall. A wider frame lets height fill the pill.
         let petWidth = height * 1.35
         let amp = travelAmplitude
-        TimelineView(.animation(minimumInterval: Self.frameInterval, paused: false)) { context in
+        // Several statements: a getter (not a ViewBuilder) needs an explicit return.
+        return TimelineView(.animation(minimumInterval: Self.frameInterval, paused: false)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let frameTick = Int(t / Self.frameInterval)
 

@@ -19,6 +19,8 @@ struct InventoryPanel: View {
         var list: [InventoryItem] = []
         list.append(contentsOf: store.foods.filter { $0.pixelSpriteName != nil })
         list.append(contentsOf: store.toys.filter { $0.pixelSpriteName != nil })
+        // Care without pixel art (bubble_soap) stays internal — bath dock uses ctrl-bath.
+        list.append(contentsOf: store.careItems.filter { $0.pixelSpriteName != nil })
         return list
     }
 

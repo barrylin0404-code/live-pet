@@ -62,7 +62,9 @@ public struct PetBrain: Equatable {
         toyX = nil
         playReady = false
         wanderTarget = nil
-        player.request(.walkToFood, facingLeft: foodX! < x, force: true)
+        // Brief eatNotice glance (aliases eat sheets) before walking over.
+        player.request(.eatNotice, facingLeft: foodX! < x, force: true)
+        commandedUntil = max(commandedUntil, clock + 0.35)
     }
 
     /// A toy on the floor. The pet walks to it, then plays, same as food.
@@ -224,6 +226,10 @@ public struct PetBrain: Equatable {
         }
 
         if let food = foodX {
+            // Hold the notice glance, then walk.
+            if player.anim == .eatNotice && !player.finishedOneShot && clock < commandedUntil {
+                return
+            }
             let dx = food - x
             if abs(dx) > 0.03 {
                 let dirLeft = dx < 0

@@ -148,15 +148,26 @@ struct WidgetPetForeground: View {
 
     var body: some View {
         let sleeping = snapshot.isSleeping == true || snapshot.mood == .sleepy
+        let stage = snapshot.resolvedGrowthStage
+        let anim: PetAnim = {
+            if sleeping { return .sleeping }
+            switch snapshot.mood {
+            case .hungry: return .hungry
+            case .low: return .sad
+            case .playful, .happy: return .happy
+            default: return .idle
+            }
+        }()
         TimelineView(.animation(minimumInterval: 1.0 / 6.0, paused: false)) { context in
             let tick = Int(context.date.timeIntervalSinceReferenceDate * 6)
             ClipPetView(
                 speciesId: snapshot.petGlyph == "pip" ? "pip" : "nubby",
-                anim: sleeping ? .sleeping : .idle,
+                anim: anim,
                 frame: tick,
                 facingLeft: false,
                 displaySize: size
             )
+            .scaleEffect(CGFloat(stage.bodyScaleMultiplier))
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)

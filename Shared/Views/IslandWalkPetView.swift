@@ -114,10 +114,21 @@ public struct IslandWalkPetView: View {
         let cropY = (height - crop.h * unit) / 2
         return TimelineView(.animation(minimumInterval: 1.0 / 6.0, paused: false)) { context in
             let tick = Int(context.date.timeIntervalSinceReferenceDate * 6)
+            // Sleep pose breathes on shipped sleepBreathing sheets (same cycle as widgets / room).
+            let shownAnim: PetAnim
+            let shownFrame: Int
+            if anim == .sleeping {
+                let breath = PetSleepClip.clip(tick: tick)
+                shownAnim = breath.anim
+                shownFrame = breath.frame
+            } else {
+                shownAnim = anim
+                shownFrame = tick
+            }
             ClipPetView(
                 speciesId: speciesId,
-                anim: anim,
-                frame: tick,
+                anim: shownAnim,
+                frame: shownFrame,
                 facingLeft: false,
                 displaySize: sheetSide,
                 growthStage: growthStage

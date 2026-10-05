@@ -104,7 +104,7 @@ struct InventoryPanel: View {
                 }
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressScaleButtonStyle())
         .accessibilityLabel(item.name)
         .disabled(item.isFood && item.quantity <= 0)
     }

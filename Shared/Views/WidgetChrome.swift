@@ -104,9 +104,10 @@ extension View {
 }
 
 /// Which sheet + frame a widget pet shows for a (projected) snapshot at a 6 fps tick.
-/// Hungry / sad hold their sheets and sleep breathes. Happy / playful play one happy beat, then
-/// idle (blinks) a couple of seconds: the happy sheet is a one-shot, and looped nonstop it read
-/// as a pet bouncing in place on the Home Screen.
+/// Hungry / sad hold their sheets. A real nap (`isSleeping`) breathes via `PetSleepClip`
+/// (sleeping ↔ sleepBreathing on shipped sheets). Sleepy-but-awake still holds sleeping.
+/// Happy / playful play one happy beat, then idle (blinks) a couple of seconds: the happy
+/// sheet is a one-shot, and looped nonstop it read as a pet bouncing in place on the Home Screen.
 enum WidgetMoodClip {
     /// 6 fps ticks per happy cycle (~3 s): 4 happy frames, then the 6-frame idle twice.
     static let happyCycle = 16
@@ -117,7 +118,10 @@ enum WidgetMoodClip {
 
     /// Scenes StatusStrip + widgets share this so happy/playful never loop the one-shot forever.
     static func clip(mood: PetMood, isSleeping: Bool, tick: Int) -> (anim: PetAnim, frame: Int) {
-        if isSleeping || mood == .sleepy {
+        if isSleeping {
+            return PetSleepClip.clip(tick: tick)
+        }
+        if mood == .sleepy {
             return (.sleeping, tick)
         }
         switch mood {

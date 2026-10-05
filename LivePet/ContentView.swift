@@ -435,7 +435,7 @@ struct ContentView: View {
                 .interpolation(.none)
                 .frame(width: 40, height: 40)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressScaleButtonStyle())
         .accessibilityLabel(label)
     }
 

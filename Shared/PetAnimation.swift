@@ -68,16 +68,20 @@ public enum PetAnimCatalog {
             return PetAnimClip(anim: anim, frameCount: 4, fps: 12, mode: .once, priority: 3, interruptible: false)
         case .jump:
             return PetAnimClip(anim: anim, frameCount: 5, fps: 12, mode: .once, priority: 3, interruptible: false)
-        case .eating:
+        case .eating, .eatStart, .eatFinish, .eatNotice:
+            // Aliases share the shipped eat sheets (5 frames) — default 6 would wrap / linger.
             return PetAnimClip(anim: anim, frameCount: 5, fps: 8, mode: .once, priority: 5, interruptible: false)
         case .happy, .petHappy, .excited, .veryHappy, .loveReaction, .playExcited, .favoriteFoodReaction:
+            return PetAnimClip(anim: anim, frameCount: 4, fps: 10, mode: .once, priority: 5, interruptible: false)
+        case .bathStart, .bathFinish, .bathHappy:
+            // Aliases share bathing×4 — not the default 6-frame one-shot bucket.
             return PetAnimClip(anim: anim, frameCount: 4, fps: 10, mode: .once, priority: 5, interruptible: false)
         case .sleepStart:
             return PetAnimClip(anim: anim, frameCount: 2, fps: 6, mode: .once, priority: 5, interruptible: false)
         case .playing, .bathing, .sleeping, .sleepBreathing, .held:
             return PetAnimClip(anim: anim, frameCount: 4, fps: 6, mode: .loop, priority: 4, interruptible: true)
         default:
-            // One-shot reactions and care beats.
+            // One-shot reactions and care beats (wet / shakeWater / wakeUp are 6-frame sheets).
             return PetAnimClip(anim: anim, frameCount: 6, fps: 10, mode: .once, priority: 5, interruptible: false)
         }
     }
@@ -151,6 +155,24 @@ public enum PetAnimCatalog {
 
     public static func fallbackIdleName(speciesId: String) -> String {
         speciesId == "pip" ? "pip-idle-0" : "nubby-idle-0"
+    }
+}
+
+/// Nap sheet pick for widgets / Island / StatusStrip at 6 fps.
+/// Mirrors `PetBrain` sleepPhase: sleeping ~2.4s, then sleepBreathing until ~5s, repeat.
+/// Uses shipped sleepBreathing sheets only — no invented art.
+public enum PetSleepClip {
+    /// ~5 s cycle at 6 fps (brain sleepPhase 0→5).
+    public static let cycleTicks = 30
+    /// ~2.4 s on sleeping before breath (brain `sleepPhase > 2.4`).
+    public static let holdTicks = 14
+
+    public static func clip(tick: Int) -> (anim: PetAnim, frame: Int) {
+        let phase = ((tick % cycleTicks) + cycleTicks) % cycleTicks
+        if phase < holdTicks {
+            return (.sleeping, tick)
+        }
+        return (.sleepBreathing, tick)
     }
 }
 

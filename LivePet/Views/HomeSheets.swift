@@ -214,11 +214,30 @@ struct PetsSheet: View {
     @State private var pendingId: UUID?
 
     private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
+    private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
     private let selectedBorder = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Pets")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(ink)
+                Spacer(minLength: 0)
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Done")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(ink)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
+
             VStack(spacing: 16) {
                 Text("Choose who hangs out")
                     .font(.subheadline.weight(.semibold))
@@ -255,17 +274,9 @@ struct PetsSheet: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 8)
             }
-            .padding(.top, 12)
-            .background(cream.ignoresSafeArea())
-            .navigationTitle("Pets")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-            .onAppear { pendingId = store.pet.id }
         }
+        .background(cream.ignoresSafeArea())
+        .onAppear { pendingId = store.pet.id }
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(24)
@@ -346,6 +357,7 @@ struct ScenesSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
+    private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
     private let coral = Color(red: 0xFA / 255.0, green: 0x85 / 255.0, blue: 0x6B / 255.0)
     /// Three columns — Sun/Moon/Meadow, Tide/Skyline/Snow, Coral (+ next empty).
     private let columns = [
@@ -355,12 +367,30 @@ struct ScenesSheet: View {
     ]
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Scenes")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(ink)
+                Spacer(minLength: 0)
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Done")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(ink)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
+
             ScrollView {
                 // Feeling + Satiety + age — console meters live here (More), not on the room plate.
                 StatusStripView(pet: store.pet)
                     .padding(.horizontal, 16)
-                    .padding(.top, 12)
+                    .padding(.top, 4)
 
                 LazyVGrid(columns: columns, spacing: 14) {
                     ForEach(PetRoomScene.availableInDisplayOrder) { scene in
@@ -442,15 +472,8 @@ struct ScenesSheet: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 16)
             }
-            .background(cream.ignoresSafeArea())
-            .navigationTitle("Scenes")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
         }
+        .background(cream.ignoresSafeArea())
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(24)

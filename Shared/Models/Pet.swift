@@ -150,7 +150,7 @@ struct Pet: Identifiable, Equatable, Codable {
         touch()
     }
 
-    /// Wake from a nap — Sleep dock toggles; shake only sleeps when awake.
+    /// Wake from a nap — Sleep dock toggles; care can wake then act.
     mutating func wake() {
         guard isSleeping else { return }
         isSleeping = false

@@ -422,6 +422,7 @@ struct ContentView: View {
     // MARK: - Drop-to-room food
 
     private func dropFoodAndEat(_ item: InventoryItem) {
+        wakeFromNapIfNeeded()
         careBusy = true
         pendingFoodId = item.id
         droppedX = brain.player.facingLeft ? 0.32 : 0.68
@@ -455,6 +456,7 @@ struct ContentView: View {
     /// Drop a pixel toy in the room; pet walks over and plays (same path as food).
     private func dropToyAndPlay(_ item: InventoryItem) {
         guard !careBusy else { return }
+        wakeFromNapIfNeeded()
         careBusy = true
         let dropX: CGFloat = brain.x < 0.5 ? 0.68 : 0.32
         // Soft Square must land as prop-soft (never wand / bounce fallback).
@@ -484,6 +486,7 @@ struct ContentView: View {
 
     private func startPlayBall() {
         guard !careBusy else { return }
+        wakeFromNapIfNeeded()
         careBusy = true
         let dropX: CGFloat = brain.x < 0.5 ? 0.70 : 0.30
         ballX = dropX
@@ -525,6 +528,7 @@ struct ContentView: View {
 
     private func startFollowWand(showSoftSquare: Bool = false) {
         guard !careBusy else { return }
+        wakeFromNapIfNeeded()
         careBusy = true
         brain.hold(3.2)
         wandX = 0.50
@@ -587,7 +591,16 @@ struct ContentView: View {
 
     // MARK: - Care (Clean / Sleep / tap)
 
+    /// Care while napping: wake first so feed/play/bath/pet are not soft-locked.
+    private func wakeFromNapIfNeeded() {
+        guard store.pet.isSleeping else { return }
+        brain.reactSleep(on: false)
+        store.wake()
+        syncActivity()
+    }
+
     private func performClean() {
+        wakeFromNapIfNeeded()
         careBusy = true
         brain.reactBath()
         store.clean()
@@ -627,6 +640,7 @@ struct ContentView: View {
     }
 
     private func performPetTap() {
+        wakeFromNapIfNeeded()
         brain.reactPet()
         store.petTap()
         PetSound.shared.play(.pet)
@@ -643,6 +657,7 @@ struct ContentView: View {
 
     /// Drag/stroke petting — denser bob + hearts, longer reaction ≥0.8–1.2s
     private func performPetStroke() {
+        wakeFromNapIfNeeded()
         brain.reactGrab()
         store.petTap()
         PetSound.shared.play(.pet)
@@ -656,6 +671,7 @@ struct ContentView: View {
 
     /// Double-tap — jump or curious glance (brain picks).
     private func performPetDoubleTap() {
+        wakeFromNapIfNeeded()
         brain.reactDoubleTap()
         store.petTap()
         PetSound.shared.play(.pet)

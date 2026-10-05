@@ -108,7 +108,8 @@ public enum PetMood: String, Codable, Hashable, CaseIterable {
         if satiety < 25 { return .hungry }
         if energy < 20 { return .sleepy }
         if moodScore < 25 { return .low }
-        if moodScore >= 75 && energy >= 50 { return .playful }
+        // Reachable after light pets/feed (default mood 72 → one pet tap).
+        if moodScore >= 70 && energy >= 40 { return .playful }
         if moodScore >= 60 && satiety >= 50 { return .happy }
         return .content
     }

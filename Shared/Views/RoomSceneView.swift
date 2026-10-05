@@ -19,6 +19,8 @@ public struct RoomSceneView<PetContent: View>: View {
     public var ballYFraction: CGFloat
     public var onBallTap: (() -> Void)?
     public var wandVisible: Bool
+    /// Pixel lure while following — Soft Square uses `prop-soft`.
+    public var wandSpriteName: String
     public var wandXFraction: CGFloat
     public var wandYFraction: CGFloat
     public var onRoomDrag: ((CGFloat, CGFloat) -> Void)?
@@ -39,6 +41,7 @@ public struct RoomSceneView<PetContent: View>: View {
         ballYFraction: CGFloat = 0.70,
         onBallTap: (() -> Void)? = nil,
         wandVisible: Bool = false,
+        wandSpriteName: String = "prop-wand",
         wandXFraction: CGFloat = 0.5,
         wandYFraction: CGFloat = 0.4,
         onRoomDrag: ((CGFloat, CGFloat) -> Void)? = nil,
@@ -58,6 +61,7 @@ public struct RoomSceneView<PetContent: View>: View {
         self.ballYFraction = ballYFraction
         self.onBallTap = onBallTap
         self.wandVisible = wandVisible
+        self.wandSpriteName = wandSpriteName
         self.wandXFraction = wandXFraction
         self.wandYFraction = wandYFraction
         self.onRoomDrag = onRoomDrag
@@ -93,7 +97,7 @@ public struct RoomSceneView<PetContent: View>: View {
                         .onTapGesture { onBallTap?() }
                 }
                 if wandVisible {
-                    Image("prop-wand")
+                    Image(wandSpriteName)
                         .resizable()
                         .interpolation(.none)
                         .frame(width: 32, height: 64)
@@ -559,6 +563,7 @@ public struct PetRoomSceneView: View {
     public var ballYFraction: CGFloat
     public var onBallTap: (() -> Void)?
     public var wandVisible: Bool
+    public var wandSpriteName: String
     public var wandXFraction: CGFloat
     public var wandYFraction: CGFloat
     public var onRoomDrag: ((CGFloat, CGFloat) -> Void)?
@@ -587,6 +592,7 @@ public struct PetRoomSceneView: View {
         ballYFraction: CGFloat = 0.70,
         onBallTap: (() -> Void)? = nil,
         wandVisible: Bool = false,
+        wandSpriteName: String = "prop-wand",
         wandXFraction: CGFloat = 0.5,
         wandYFraction: CGFloat = 0.4,
         onRoomDrag: ((CGFloat, CGFloat) -> Void)? = nil,
@@ -614,6 +620,7 @@ public struct PetRoomSceneView: View {
         self.ballYFraction = ballYFraction
         self.onBallTap = onBallTap
         self.wandVisible = wandVisible
+        self.wandSpriteName = wandSpriteName
         self.wandXFraction = wandXFraction
         self.wandYFraction = wandYFraction
         self.onRoomDrag = onRoomDrag
@@ -638,6 +645,7 @@ public struct PetRoomSceneView: View {
             ballYFraction: ballYFraction,
             onBallTap: onBallTap,
             wandVisible: wandVisible,
+            wandSpriteName: wandSpriteName,
             wandXFraction: wandXFraction,
             wandYFraction: wandYFraction,
             onRoomDrag: onRoomDrag,

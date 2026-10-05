@@ -35,6 +35,7 @@ struct ContentView: View {
     @State private var ballX: CGFloat = 0.72
     @State private var ballY: CGFloat = 0.70
     @State private var wandVisible = false
+    @State private var wandSpriteName = "prop-wand"
     @State private var wandInteractive = false
     @State private var wandX: CGFloat = 0.55
     @State private var wandY: CGFloat = 0.38
@@ -254,6 +255,7 @@ struct ContentView: View {
             ballYFraction: ballY,
             onBallTap: { bounceBallHit() },
             wandVisible: wandVisible,
+            wandSpriteName: wandSpriteName,
             wandXFraction: wandX,
             wandYFraction: wandY,
             onRoomDrag: wandInteractive ? { fx, fy in
@@ -511,16 +513,9 @@ struct ContentView: View {
         brain.hold(3.2)
         wandX = 0.50
         wandY = 0.36
+        wandSpriteName = showSoftSquare ? "prop-soft" : "prop-wand"
         if showSoftSquare {
-            // Soft Square from Inventory: flash prop-soft, then the wand leads.
-            droppedSymbol = "prop-soft"
-            droppedX = brain.x < 0.5 ? 0.62 : 0.38
-            Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 900_000_000)
-                if droppedSymbol == "prop-soft" {
-                    droppedSymbol = nil
-                }
-            }
+            droppedSymbol = nil
         }
         wandVisible = true
         wandInteractive = true
@@ -555,6 +550,7 @@ struct ContentView: View {
             syncActivity()
             try? await Task.sleep(nanoseconds: 350_000_000)
             withAnimation { wandVisible = false }
+            wandSpriteName = "prop-wand"
             careBusy = false
         }
     }

@@ -4,6 +4,11 @@ struct OnboardingView: View {
     @EnvironmentObject private var store: PetStore
     @State private var name: String = "Nubby"
 
+    // Cream sheet chrome — clear fill + ink stroke (no white card fills / beige leftover).
+    private let cream = Color(red: 1.0, green: 0.98, blue: 0.94)
+    private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
+    private let stroke = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
+
     var body: some View {
         ZStack {
             GeometryReader { geo in
@@ -31,17 +36,17 @@ struct OnboardingView: View {
                 VStack(spacing: 18) {
                     Text("Meet your pixel pet")
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
+                        .foregroundStyle(ink)
 
                     TextField("Nubby", text: $name)
                         .font(.title3.weight(.semibold))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 12)
-                        .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .background(Color.clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .strokeBorder(Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0), lineWidth: 2)
+                                .strokeBorder(stroke, lineWidth: 2)
                         )
                         .accessibilityLabel("Pet name")
                         .onChange(of: name) { _, newValue in
@@ -65,12 +70,12 @@ struct OnboardingView: View {
                 .padding(16)
                 .frame(maxWidth: .infinity)
                 .background(
-                    Color(red: 1.0, green: 0.98, blue: 0.94),
+                    cream,
                     in: RoundedRectangle(cornerRadius: 20, style: .continuous)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .strokeBorder(Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0), lineWidth: 2)
+                        .strokeBorder(stroke, lineWidth: 2.5)
                 )
                 .padding(.horizontal, 24)
                 .padding(.bottom, 28)

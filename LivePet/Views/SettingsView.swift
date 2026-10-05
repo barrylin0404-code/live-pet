@@ -15,7 +15,8 @@ struct SettingsView: View {
     @State private var weatherStatus: String = ""
 
     private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
-    private let border = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
+    // Cream sheet chrome — ink stroke (Photo + rename blocks; no beige leftover).
+    private let border = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
 
     var body: some View {

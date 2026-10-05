@@ -71,7 +71,8 @@ struct MeetPipSheet: View {
 
     private let cream = Color(red: 1.0, green: 0.98, blue: 0.94)
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
-    private let border = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
+    // Match Scenes / Food / Onboarding — ink stroke, not beige leftover.
+    private let border = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
     private let pipBlue = Color(red: 0x7E / 255.0, green: 0xC8 / 255.0, blue: 0xE3 / 255.0)
 
     var body: some View {

@@ -377,7 +377,8 @@ struct HitIslandGameView: View {
     private func advanceOrbs(dt: Double) {
         var next: [FallingOrb] = []
         let paddleY: CGFloat = 0.82
-        let catchRadius: CGFloat = 0.13
+        // Hitbox tracks spawn size (18…26) so the larger drawn islands from d21192f
+        // do not float past the paddle while looking like a catch. Mid-size ≈ old 0.13.
         let g: CGFloat = 0.55
         for var orb in orbs {
             orb.vy += g * CGFloat(dt)
@@ -386,7 +387,9 @@ struct HitIslandGameView: View {
             if orb.x < 0.1 { orb.x = 0.1; orb.vx = abs(orb.vx) }
             if orb.x > 0.9 { orb.x = 0.9; orb.vx = -abs(orb.vx) }
 
-            if orb.vy > 0, orb.y >= paddleY, orb.y <= paddleY + 0.09, abs(orb.x - paddleX) <= catchRadius {
+            let catchRadius = 0.09 + orb.size * 0.0018
+            let catchBand = 0.07 + orb.size * 0.0010
+            if orb.vy > 0, orb.y >= paddleY, orb.y <= paddleY + catchBand, abs(orb.x - paddleX) <= catchRadius {
                 orb.vy = -abs(orb.vy) * 0.92 - 0.10
                 orb.vx += (orb.x - paddleX) * 0.85
                 orb.bounces += 1

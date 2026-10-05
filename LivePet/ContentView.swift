@@ -42,6 +42,8 @@ struct ContentView: View {
     @State private var showHitIsland = false
     @State private var brain = PetBrain()
     @State private var pendingFoodId: String?
+    /// Toy play applies once on consume / fail-safe (same idea as pendingFoodId) — never bump Feeling at drop and again at end.
+    @State private var pendingToyId: String?
     /// Last stroke beat that counted as petting (sound + Feeling). Drag repeats in between
     /// only keep the held clip alive so a long stroke is not a meow machine-gun.
     @State private var lastStrokeBeat: Date = .distantPast
@@ -67,10 +69,10 @@ struct ContentView: View {
                             onToy: { item in
                                 switch item.id {
                                 case "twinkle_ball":
-                                    store.play(itemID: item.id)
+                                    pendingToyId = item.id
                                     startPlayBall()
                                 case "soft_square":
-                                    store.play(itemID: item.id)
+                                    pendingToyId = item.id
                                     startFollowWand(showSoftSquare: true)
                                 case "bounce_block":
                                     dropToyAndPlay(item)
@@ -177,9 +179,7 @@ struct ContentView: View {
                     startFollowWand()
                 }, onSoftSquare: {
                     showShop = false
-                    if let soft = store.toys.first(where: { $0.id == "soft_square" }) {
-                        store.play(itemID: soft.id)
-                    }
+                    pendingToyId = "soft_square"
                     startFollowWand(showSoftSquare: true)
                 }, onBounceBlock: {
                     showShop = false
@@ -201,10 +201,10 @@ struct ContentView: View {
                     showInventory = false
                     switch item.id {
                     case "twinkle_ball":
-                        store.play(itemID: item.id)
+                        pendingToyId = item.id
                         startPlayBall()
                     case "soft_square":
-                        store.play(itemID: item.id)
+                        pendingToyId = item.id
                         startFollowWand(showSoftSquare: true)
                     case "bounce_block":
                         dropToyAndPlay(item)
@@ -218,6 +218,8 @@ struct ContentView: View {
                 if !store.pet.isSleeping {
                     brain.reactGrown()
                 }
+                // Swipe used to skip Meet Pip (binding-only dismiss). Offer Pip after every close.
+                store.offerMeetPipIfNeeded()
             }) {
                 GrowCelebrationSheet(pet: store.pet) {
                     store.dismissGrowCelebration()
@@ -381,7 +383,7 @@ struct ContentView: View {
                 if brain.consumePlayReady() {
                     ballVisible = false
                     droppedSymbol = nil
-                    store.playDefault()
+                    applyPendingToyPlay()
                     pulseHeart(crumbs: false)
                     spawnPlayBurst()
                     careBusy = false
@@ -420,6 +422,7 @@ struct ContentView: View {
     // MARK: - Drop-to-room food
 
     private func dropFoodAndEat(_ item: InventoryItem) {
+        guard !careBusy else { return }
         wakeFromNapIfNeeded()
         careBusy = true
         pendingFoodId = item.id
@@ -450,6 +453,7 @@ struct ContentView: View {
         guard !careBusy else { return }
         wakeFromNapIfNeeded()
         careBusy = true
+        pendingToyId = item.id
         let dropX: CGFloat = brain.x < 0.5 ? 0.68 : 0.32
         // Soft Square must land as prop-soft (never wand / bounce fallback).
         if item.id == "soft_square" {
@@ -459,18 +463,19 @@ struct ContentView: View {
         }
         droppedX = dropX
         brain.noticeToy(at: dropX)
-        store.play(itemID: item.id)
         PetSound.shared.play(.play)
         #if canImport(UIKit)
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         #endif
+        let toyId = item.id
         let toySprite = droppedSymbol
         Task { @MainActor in
             // consumePlayReady clears the toy and careBusy as soon as the play beat ends.
             // Fail-safe covers a cross-room walk (~3.5s) + 1.15s play if that never fires.
             try? await Task.sleep(nanoseconds: 5_200_000_000)
-            guard careBusy, droppedSymbol == toySprite, toySprite != nil else { return }
+            guard careBusy, pendingToyId == toyId, droppedSymbol == toySprite else { return }
             droppedSymbol = nil
+            applyPendingToyPlay()
             careBusy = false
             syncActivity()
         }
@@ -502,7 +507,7 @@ struct ContentView: View {
             try? await Task.sleep(nanoseconds: 4_900_000_000)
             guard ballVisible else { return }
             ballVisible = false
-            store.playDefault()
+            applyPendingToyPlay()
             careBusy = false
             syncActivity()
         }
@@ -559,7 +564,7 @@ struct ContentView: View {
                 elapsed += Double(tick) / 1_000_000_000
             }
             wandInteractive = false
-            store.playDefault()
+            applyPendingToyPlay()
             bouncePetPlay()
             pulseHeart(crumbs: false)
             spawnPlayBurst()
@@ -597,6 +602,7 @@ struct ContentView: View {
     }
 
     private func performClean() {
+        guard !careBusy else { return }
         wakeFromNapIfNeeded()
         careBusy = true
         brain.reactBath()
@@ -621,6 +627,7 @@ struct ContentView: View {
             syncActivity()
             return
         }
+        guard !careBusy else { return }
         careBusy = true
         brain.reactSleep(on: true)
         store.sleep()
@@ -764,12 +771,23 @@ struct ContentView: View {
         }
     }
 
+    /// One Feeling bump per toy session — pending id when known, else first catalog toy.
+    private func applyPendingToyPlay() {
+        if let id = pendingToyId {
+            pendingToyId = nil
+            store.play(itemID: id)
+        } else {
+            store.playDefault()
+        }
+    }
+
     /// Fresh brain so a switch (Pets sheet or Meet Pip) does not keep the prior pet's clip / x.
     private func resetBrainForPetSwitch() {
         brain = PetBrain()
         petX = brain.x
         facingLeft = brain.player.facingLeft
         pendingFoodId = nil
+        pendingToyId = nil
         droppedSymbol = nil
         careBusy = false
         ballVisible = false

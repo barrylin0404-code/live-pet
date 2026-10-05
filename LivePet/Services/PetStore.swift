@@ -279,9 +279,12 @@ final class PetStore: ObservableObject {
 
     func dismissGrowCelebration() {
         showGrowCelebration = false
-        if pipUnlocked && !defaults.bool(forKey: AppGroup.meetPipShownKey) {
-            showMeetPip = true
-        }
+    }
+
+    /// Done and swipe both land here via Grow sheet onDismiss — Meet Pip must not depend on the Done button alone.
+    func offerMeetPipIfNeeded() {
+        guard pipUnlocked, !defaults.bool(forKey: AppGroup.meetPipShownKey) else { return }
+        showMeetPip = true
     }
 
     func meetPip(switchActive: Bool) {

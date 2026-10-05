@@ -83,6 +83,13 @@ final class PetStore: ObservableObject {
             items = InventoryItem.catalog
         }
 
+        // Island intents write `petKey` first; prefer it when it's the same pet and newer.
+        if let data = defaults.data(forKey: AppGroup.petKey),
+           let island = try? JSONDecoder().decode(Pet.self, from: data),
+           island.id == pet.id, island.lastUpdated > pet.lastUpdated {
+            pet = island
+        }
+
         // Remap legacy favorite food ids after catalog revamp
         let foodMap: [String: String] = [
             "fish_biscuit": "fish", "crumb_cake": "cupcake",
@@ -145,6 +152,23 @@ final class PetStore: ObservableObject {
     func stopTicking() {
         tickTask?.cancel()
         tickTask = nil
+    }
+
+    /// Back from background: adopt Island Feed / Pet / Sleep that landed in the App Group while
+    /// we were away, then catch up decay for the time the tick task was suspended.
+    func syncOnBecomeActive() {
+        guard hasCompletedOnboarding else { return }
+        if let data = defaults.data(forKey: AppGroup.petKey),
+           let island = try? JSONDecoder().decode(Pet.self, from: data),
+           island.id == pet.id, island.lastUpdated > pet.lastUpdated {
+            pet = island
+        }
+        if let data = defaults.data(forKey: AppGroup.inventoryKey),
+           let saved = try? JSONDecoder().decode([InventoryItem].self, from: data) {
+            items = Self.mergeCatalog(into: saved)
+        }
+        pet.applyOfflineDecay()
+        commit()
     }
 
     func completeOnboarding(name: String) {

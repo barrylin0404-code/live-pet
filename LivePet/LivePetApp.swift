@@ -28,7 +28,17 @@ struct LivePetApp: App {
                 }
             }
             .onChange(of: scenePhase) { phase in
+                if phase == .background {
+                    // A suspended tick must not wake later and overwrite Island care.
+                    store.stopTicking()
+                    return
+                }
                 guard phase == .active else { return }
+                // Island care + background decay first, so the Activity sync sends fresh state.
+                store.syncOnBecomeActive()
+                if store.hasCompletedOnboarding {
+                    store.startTicking()
+                }
                 // Enumerate → update-only if fresh; end→request only if missing/stale + Island on.
                 activityManager.syncOnBecomeActive(pet: store.pet)
                 Task {

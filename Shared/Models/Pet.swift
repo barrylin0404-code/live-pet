@@ -219,7 +219,11 @@ struct Pet: Identifiable, Equatable, Codable {
             energy = Self.clamp(energy - units)
             cleanliness = Self.clamp(cleanliness - units)
         }
-        lastAction = "\(name) waited for you"
+        // Short hops (Control Center, a quick Island tap) keep the last care blurb;
+        // only a real absence (~30 min+) reads as waiting.
+        if units >= 20 {
+            lastAction = isSleeping ? "\(name) is sleeping" : "\(name) waited for you"
+        }
         lastUpdated = date
     }
 

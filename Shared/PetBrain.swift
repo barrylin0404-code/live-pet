@@ -111,6 +111,19 @@ public struct PetBrain: Equatable {
         }
     }
 
+    /// Double-tap: jump or curious glance — not another petHappy.
+    public mutating func reactDoubleTap() {
+        wanderTarget = nil
+        petBurstCount = 0
+        petBurstUntil = clock + 0.6
+        if Bool.random() {
+            player.request(.jump, force: true)
+        } else {
+            player.request(.curious, force: true)
+        }
+        commandedUntil = clock + 1.05
+    }
+
     public mutating func reactPlay() {
         player.request(.playing, force: true)
         commandedUntil = clock + 2.0

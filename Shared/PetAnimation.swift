@@ -122,6 +122,9 @@ public enum PetAnimCatalog {
         case .happy, .petHappy, .excited, .veryHappy, .loveReaction, .playExcited, .petReaction,
              .doubleTapReaction:
             return .happy
+        case .curious:
+            // Prefer idleCurious sheets; falls back to idle when missing.
+            return .idleCurious
         case .annoyedReaction, .repeatedTapReaction, .angry:
             // No annoyed sheet — sad is the quality bar (nubby/pip both have it).
             return .sad

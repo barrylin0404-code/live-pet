@@ -263,6 +263,7 @@ struct ContentView: View {
                 wandY = fy
             } : nil,
             onPetTap: { performPetTap() },
+            onPetDoubleTap: { performPetDoubleTap() },
             onPetDrag: { performPetStroke() }
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -628,6 +629,22 @@ struct ContentView: View {
         pulseHeart(crumbs: false)
         spawnPlayBurst()
         schedulePoseClear(holdMs: 1200)
+        syncActivity()
+    }
+
+    /// Double-tap — jump or curious glance (brain picks).
+    private func performPetDoubleTap() {
+        brain.reactDoubleTap()
+        store.petTap()
+        PetSound.shared.play(.pet)
+        PetSound.shared.play(.meow)
+        bouncePetPlay()
+        pulseHeart(crumbs: false)
+        spawnPlayBurst()
+        #if canImport(UIKit)
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        #endif
+        schedulePoseClear(holdMs: 1100)
         syncActivity()
     }
 

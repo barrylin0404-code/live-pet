@@ -568,6 +568,7 @@ public struct PetRoomSceneView: View {
     public var wandYFraction: CGFloat
     public var onRoomDrag: ((CGFloat, CGFloat) -> Void)?
     public var onPetTap: (() -> Void)?
+    public var onPetDoubleTap: (() -> Void)?
     public var onPetDrag: (() -> Void)?
     public var clipAnim: PetAnim?
     public var clipFrame: Int
@@ -597,6 +598,7 @@ public struct PetRoomSceneView: View {
         wandYFraction: CGFloat = 0.4,
         onRoomDrag: ((CGFloat, CGFloat) -> Void)? = nil,
         onPetTap: (() -> Void)? = nil,
+        onPetDoubleTap: (() -> Void)? = nil,
         onPetDrag: (() -> Void)? = nil,
         clipAnim: PetAnim? = nil,
         clipFrame: Int = 0
@@ -625,6 +627,7 @@ public struct PetRoomSceneView: View {
         self.wandYFraction = wandYFraction
         self.onRoomDrag = onRoomDrag
         self.onPetTap = onPetTap
+        self.onPetDoubleTap = onPetDoubleTap
         self.onPetDrag = onPetDrag
         self.clipAnim = clipAnim
         self.clipFrame = clipFrame
@@ -651,7 +654,7 @@ public struct PetRoomSceneView: View {
             onRoomDrag: onRoomDrag,
             onPetDrag: onPetDrag
         ) {
-            TappablePetHost(onTap: onPetTap, onDrag: onPetDrag) {
+            TappablePetHost(onTap: onPetTap, onDoubleTap: onPetDoubleTap, onDrag: onPetDrag) {
                 Group {
                     if let clipAnim {
                         ClipPetView(
@@ -678,12 +681,16 @@ public struct PetRoomSceneView: View {
 }
 
 /// Scales the pet on press and forwards taps (heart/bob without inventory).
+/// Single tap pets; a second tap within ~0.32s becomes a jump/curious double-tap.
 private struct TappablePetHost<Content: View>: View {
     var onTap: (() -> Void)?
+    var onDoubleTap: (() -> Void)?
     var onDrag: (() -> Void)?
     @ViewBuilder var content: () -> Content
     @State private var pressed = false
     @State private var lastDragFire: Date = .distantPast
+    @State private var lastTapAt: Date = .distantPast
+    @State private var pendingSingle: DispatchWorkItem?
 
     var body: some View {
         content()
@@ -698,6 +705,8 @@ private struct TappablePetHost<Content: View>: View {
                         }
                         // Stroke petting: fire while dragging across the pet
                         if hypot(value.translation.width, value.translation.height) > 8 {
+                            pendingSingle?.cancel()
+                            pendingSingle = nil
                             let now = Date()
                             if now.timeIntervalSince(lastDragFire) > 0.28 {
                                 lastDragFire = now
@@ -714,7 +723,19 @@ private struct TappablePetHost<Content: View>: View {
                             #if canImport(UIKit)
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             #endif
-                            onTap?()
+                            let now = Date()
+                            if now.timeIntervalSince(lastTapAt) < 0.32, onDoubleTap != nil {
+                                pendingSingle?.cancel()
+                                pendingSingle = nil
+                                lastTapAt = .distantPast
+                                onDoubleTap?()
+                            } else {
+                                lastTapAt = now
+                                pendingSingle?.cancel()
+                                let work = DispatchWorkItem { onTap?() }
+                                pendingSingle = work
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.28, execute: work)
+                            }
                         }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
                             withAnimation(.spring(response: 0.32, dampingFraction: 0.58)) { pressed = false }

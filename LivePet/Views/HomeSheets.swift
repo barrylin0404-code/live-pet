@@ -286,6 +286,7 @@ struct PetsSheet: View {
                         .padding(.vertical, 14)
                         .background(Color(red: 0.29, green: 0.25, blue: 0.21), in: Capsule())
                 }
+                .buttonStyle(PressScaleButtonStyle())
                 .padding(.horizontal, 16)
                 .padding(.bottom, 8)
             }
@@ -308,12 +309,13 @@ struct PetsSheet: View {
         } label: {
             VStack(spacing: 8) {
                 TimelineView(.animation(minimumInterval: 1.0 / 6.0)) { context in
-                    let frame = Int(context.date.timeIntervalSinceReferenceDate * 6)
-                    // A napping pet naps on its card too.
+                    let tick = Int(context.date.timeIntervalSinceReferenceDate * 6)
+                    // Same sleep-breath / happy one-shot as StatusStrip + Home widgets.
+                    let shown = WidgetMoodClip.clip(mood: p.mood, isSleeping: p.isSleeping, tick: tick)
                     ClipPetView(
                         speciesId: p.petGlyph,
-                        anim: p.isSleeping ? .sleeping : .idle,
-                        frame: frame,
+                        anim: shown.anim,
+                        frame: shown.frame,
                         facingLeft: false,
                         displaySize: 72,
                         growthStage: p.growthStage

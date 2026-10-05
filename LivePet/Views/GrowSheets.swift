@@ -4,7 +4,6 @@ import SwiftUI
 struct GrowCelebrationSheet: View {
     let pet: Pet
     var onDone: () -> Void
-    @State private var scale: CGFloat = 1.0
 
     private let cream = Color(red: 1.0, green: 0.98, blue: 0.94)
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
@@ -28,6 +27,7 @@ struct GrowCelebrationSheet: View {
             .padding(.bottom, 10)
 
             Spacer(minLength: 8)
+            // Happy sheet alone — no forever scale pulse (leftover chrome vs Meet Pip / cream sheets).
             TimelineView(.animation(minimumInterval: 1.0 / 8.0)) { context in
                 let frame = Int(context.date.timeIntervalSinceReferenceDate * 8)
                 ClipPetView(
@@ -38,7 +38,6 @@ struct GrowCelebrationSheet: View {
                     displaySize: 140,
                     growthStage: pet.growthStage
                 )
-                .scaleEffect(scale)
             }
             .frame(height: 190)
             Text(pet.speciesDisplayName)
@@ -59,11 +58,9 @@ struct GrowCelebrationSheet: View {
             .padding(.bottom, 28)
         }
         .background(cream.ignoresSafeArea())
-        .onAppear {
-            withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
-                scale = 1.15
-            }
-        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(24)
     }
 }
 
@@ -138,5 +135,8 @@ struct MeetPipSheet: View {
             }
             .padding(.bottom, 20)
         }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(24)
     }
 }

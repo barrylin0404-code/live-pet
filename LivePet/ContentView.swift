@@ -799,13 +799,15 @@ struct ContentView: View {
                 startPoint: .topLeading, endPoint: .bottomTrailing
             ))
         case .snowPorch:
+            // Matches snow-porch-plate's night sky edge (was the grey blank-room stub).
             return AnyView(LinearGradient(
-                colors: [Color(red: 0.86, green: 0.90, blue: 0.94), Color(red: 0.74, green: 0.80, blue: 0.86)],
+                colors: [Color(red: 37 / 255.0, green: 45 / 255.0, blue: 59 / 255.0), Color(red: 28 / 255.0, green: 34 / 255.0, blue: 46 / 255.0)],
                 startPoint: .topLeading, endPoint: .bottomTrailing
             ))
         case .coralShelf:
+            // Matches coral-shelf-plate's deep-water edge (was the grey blank-room stub).
             return AnyView(LinearGradient(
-                colors: [Color(red: 0.86, green: 0.86, blue: 0.88), Color(red: 0.70, green: 0.70, blue: 0.72)],
+                colors: [Color(red: 30 / 255.0, green: 80 / 255.0, blue: 98 / 255.0), Color(red: 22 / 255.0, green: 60 / 255.0, blue: 76 / 255.0)],
                 startPoint: .topLeading, endPoint: .bottomTrailing
             ))
         }

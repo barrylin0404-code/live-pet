@@ -35,16 +35,6 @@ enum WidgetChrome {
         return max(1, days + 1)
     }
 
-    /// Mini Feeling hearts for utility widgets (0…3). Allows 0 at moodScore ≤ 0.
-    static func miniHeartCount(moodScore: Int) -> Int {
-        guard moodScore > 0 else { return 0 }
-        switch moodScore {
-        case 67...100: return 3
-        case 34..<67: return 2
-        default: return 1
-        }
-    }
-
     static func feelingPhrase(mood: PetMood) -> String {
         switch mood {
         case .happy: return "Feeling sunny"
@@ -110,34 +100,6 @@ struct WidgetBackgroundModifier: ViewModifier {
 extension View {
     func livePetWidgetBackground() -> some View {
         modifier(WidgetBackgroundModifier())
-    }
-}
-
-// MARK: - Mini chrome
-
-struct FeelingMiniHearts: View {
-    let moodScore: Int
-    var size: CGFloat = 10
-
-    var body: some View {
-        let filled = WidgetChrome.miniHeartCount(moodScore: moodScore)
-        HStack(spacing: 3) {
-            ForEach(0..<3, id: \.self) { i in
-                PixelHeartView(filled: i < filled, size: size)
-            }
-        }
-        .accessibilityLabel("Feeling, \(moodScore) percent, \(filled) of 3 hearts")
-    }
-}
-
-struct SatietyMiniBar: View {
-    let satiety: Int
-
-    var body: some View {
-        ProgressView(value: Double(max(0, min(100, satiety))), total: 100)
-            .tint(.orange)
-            .frame(maxWidth: 72)
-            .accessibilityLabel("Satiety \(satiety) percent")
     }
 }
 

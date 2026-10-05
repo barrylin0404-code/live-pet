@@ -57,7 +57,9 @@ struct ContentView: View {
                         }
                         InventoryPanel(
                             store: store,
-                            onFeed: { syncActivity() },
+                            onFood: { item in
+                                dropFoodAndEat(item)
+                            },
                             onToy: { item in
                                 switch item.id {
                                 case "twinkle_ball":

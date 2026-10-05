@@ -759,7 +759,7 @@ struct InfoHowToSheet: View {
                         .foregroundStyle(ink)
                     labelRow("Feed", "Pick food from the dock — your pet walks over and eats.")
                     labelRow("Play", "Play Ball, Follow the wand, or Hit the Island.")
-                    labelRow("Inventory", "Tap fish, berry, ball, wand, or island goods above the dock.")
+                    labelRow("Inventory", "Tap fish, berry, Soft Square, Bounce Block, or ball above the dock — they land in the room.")
                     labelRow("Island", "Turn on Dynamic Island from More.")
                     Text("Bath and Sleep are on the dock. Shake to sleep too.")
                         .font(.footnote)

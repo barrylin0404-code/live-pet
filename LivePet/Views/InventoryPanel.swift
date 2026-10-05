@@ -6,7 +6,8 @@ import UIKit
 /// Always-visible horizontal inventory ribbon — 13-playable-home (≥4 cells).
 struct InventoryPanel: View {
     @ObservedObject var store: PetStore
-    var onFeed: () -> Void
+    /// Foods leave the ribbon so ContentView can drop props and walk-to-eat.
+    var onFood: (InventoryItem) -> Void
     /// Toys leave the ribbon so ContentView can drop props / start games.
     var onToy: (InventoryItem) -> Void
     var onClean: () -> Void
@@ -54,8 +55,7 @@ struct InventoryPanel: View {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             #endif
             if item.isFood {
-                store.feed(itemID: item.id)
-                onFeed()
+                onFood(item)
             } else if item.isToy {
                 onToy(item)
             } else {

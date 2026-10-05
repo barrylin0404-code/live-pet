@@ -28,7 +28,8 @@ struct HitIslandGameView: View {
     @State private var finished = false
     @State private var loopTask: Task<Void, Never>?
     @State private var showIntro = true
-    @State private var paddleFlash = false
+    /// 1 = still; >1 catch pop; <1 miss squash. Spring back via bumpPaddle.
+    @State private var paddleBump: CGFloat = 1.0
     /// Short reaction sheet on the paddle pet — happy on a catch, sad on a miss (no floaters).
     @State private var reaction: PetAnim = .playing
     @State private var reactionUntil: Double = 0
@@ -123,13 +124,13 @@ struct HitIslandGameView: View {
                         growthStage: growthStage
                     )
                     // Kit / plus size comes from ClipPetView, same as in the room.
-                    .scaleEffect(paddleFlash ? 1.06 : 1.0)
+                    .scaleEffect(paddleBump)
                 }
                 .position(
                     x: geo.size.width * paddleX,
                     y: geo.size.height * 0.86
                 )
-                .animation(.spring(response: 0.22, dampingFraction: 0.5), value: paddleFlash)
+                .animation(.spring(response: 0.22, dampingFraction: 0.5), value: paddleBump)
             }
             .contentShape(Rectangle())
             .gesture(
@@ -393,15 +394,11 @@ struct HitIslandGameView: View {
                 orb.vy = -abs(orb.vy) * 0.92 - 0.10
                 orb.vx += (orb.x - paddleX) * 0.85
                 orb.bounces += 1
-                paddleFlash = true
+                bumpPaddle(1.06)
                 PetSound.shared.play(.ballHit)
                 #if canImport(UIKit)
                 UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
                 #endif
-                Task { @MainActor in
-                    try? await Task.sleep(nanoseconds: 120_000_000)
-                    paddleFlash = false
-                }
                 if orb.bounces >= 2 {
                     catches += 1
                     react(.happy)
@@ -413,6 +410,11 @@ struct HitIslandGameView: View {
                 misses += 1
                 react(.sad)
                 PetSound.shared.play(.uiTick)
+                // Miss feel matches catch density without floaters — squash + soft tick.
+                bumpPaddle(0.94)
+                #if canImport(UIKit)
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                #endif
                 continue
             }
             if orb.y < -0.12, orb.bounces > 0 {
@@ -423,6 +425,17 @@ struct HitIslandGameView: View {
             next.append(orb)
         }
         orbs = next
+    }
+
+    /// Brief paddle pop (catch) or squash (miss), then spring back to 1.
+    private func bumpPaddle(_ scale: CGFloat) {
+        paddleBump = scale
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 120_000_000)
+            if abs(paddleBump - scale) < 0.001 {
+                paddleBump = 1.0
+            }
+        }
     }
 
     /// Happy beats a pending sad (a catch right after a miss should read as a win).

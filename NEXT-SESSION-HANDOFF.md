@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-05 (MT)  
 **Repo:** https://github.com/barrylin0404-code/live-pet  
-**`main` tip (this ship):** Wand lure run no longer stuck on frame 0; Shop/Inventory/Pets/Widgets/ribbon beige → cream ink (on tip past `3c5ec89` Onboarding/Meet Pip/Settings cream + Hit Island catch scales)
+**`main` tip (this ship):** Island clean bath pass-through + Hit Island miss feel (on tip past `a5012f8` wand lure + cream ink)
 
 ## Product locks
 
@@ -19,27 +19,26 @@
 
 ## This eng ship
 
-- **Wand / Soft Square lure leftover:** `PetBrain.trackLure` far-run used `force: true` every ~40 ms lure tick → runLeft/runRight restarted at frame 0 (stuck/paddle feel). Now matches walk/play mid-close: `force: player.anim != run` so the loop advances.
-- **Cream ink leftover:** Shop / Inventory sheet / Pets cards (unselected + locked Pip) / Widgets gallery / ribbon cells drop beige `E8D4C4` for ink stroke `4A3F35` — same family as Food / Play / Scenes / Onboarding / Settings. Favorite gold unchanged. Photo polaroid untouched.
-- Sims: typecheck OK; missing-return 0; roam + carehold ALL OK. Island schedule / pushType untouched.
+- **Island clean leftover:** `islandContentState` remapped `.clean` → walk with idle, so an in-app bath never showed bathing on Island / Lock (eat/play already passed through; `IslandWalkPetView` + `islandUpdate` clean→walk recenter already existed). Clean now passes through like eat/play; settle still recenters stroll at x=0.
+- **Hit Island miss feel leftover:** miss only had sad + uiTick while catch had pop + rigid haptic. Miss now squash-bumps paddle (0.94) + soft haptic; catch still pop 1.06 + rigid via shared `bumpPaddle`.
+- Sims: typecheck OK; missing-return 0; islandlook + carehold + roam ALL OK. Island schedule / pushType untouched.
 
 ## Recent eng (prior tips)
 
+- `a5012f8` — Wand lure run loop + Shop/Inventory/Pets/Widgets/ribbon cream ink
 - `3c5ec89` — Onboarding/Meet Pip/Settings cream ink; Hit Island catch scales with orb size
 - `d21192f` — Island careCrop; Food/Play ink cells; Hit Island orb size
-- `2b6655e` — Scenes hub ink stroke; Hit Island timer cream stroke
-- `01d2bc2` — Grow/Meet Pip cream chrome; Pets sleep-breath + PressScale
-- `7ca89b9`…`47be37c` — sleep-breath, scoot/Pip/StatusStrip — see research handoff
+- `2b6655e`…`47be37c` — Scenes ink, Grow chrome, scoot/Pip — see research handoff
 
 ## Still-open polish (if next session)
 
-- Confirm on device: wand / Soft Square far chase runs a smooth loop (not frozen first frame); mid walk + close play unchanged; Feeling once + happy end still fire.
-- Confirm Shop / Inventory / Pets / Widgets / ribbon cells read ink stroke (favorites still gold).
-- Confirm Onboarding/Meet Pip/Settings cream + Hit Island catch scales from `3c5ec89`.
-- Confirm Island careCrop / Food-Play ink / Hit Island orb size from `d21192f`.
+- Confirm on device: in-app bath shows bathing on Island / Lock, then stroll at care x; blurb keeps soap/bath line.
+- Confirm Hit Island miss: brief squash + soft haptic with sad (catch still pops).
+- Confirm wand / Soft Square far chase + cream ink cells from `a5012f8`.
 - Wet→shake + yawn-before-nap already wired with shipped sheets — no new invent.
 - Island Feed/Pet settle + compact careCrop — confirm on device; no eng chase without a real jump residual.
 - Accessory/Lock mono — plus uses shipped `lock-nubby-plus-mono`; confirm circular on device.
+- Grow beige strokes already ink; no invent rare/bathStart/sleepStart sheets.
 - Device confirms from older handoff still apply (rename Island restart, Sleep→Wake→Feed, projected flips, kit one-size, etc.).
 - Do **not** chase ActivityKit pushType / suspended flip delivery — parked.
 - No new PNGs / floaters / DONE. Eng never DONE.
@@ -50,8 +49,8 @@ App Lead compares home + Island to Shimeji reference. Reviewer quality only afte
 
 ## Eng status
 
-Tip past `3c5ec89` on `main` (this push). Wand lure run loop fix + Shop/Inventory/Pets/Widgets/ribbon cream ink. Shared typecheck OK; roam + carehold OK. SwiftUI/ActivityKit not compiled for real here (Linux stubs) — confirm on Mac. **Not DONE.**
+Tip past `a5012f8` on `main` (this push). Island clean bath pass-through + Hit Island miss feel. Shared typecheck OK; islandlook + carehold + roam OK. SwiftUI/ActivityKit not compiled for real here (Linux stubs) — confirm on Mac. **Not DONE.**
 
 **Waiting on**
 1. App Lead: compare a running build on a device or Mac against Shimeji for DONE (Eng does not call DONE).
-2. App Lead: confirm wand chase loop + remaining cream ink cells on device.
+2. App Lead: confirm Island bath sheet + Hit Island miss squash/haptic on device.

@@ -47,11 +47,11 @@ public struct PetActivityAttributes: ActivityAttributes {
             t - walkLeg / 2
         }
 
-        /// Island mapping: idle/clean → walk. Care oneshots + sleep pass through.
+        /// Island mapping: idle → walk. Care oneshots (eat / play / clean) + sleep pass through.
         /// Does not stamp `walkEpoch` — use `islandUpdate(from:previous:)` so stroll phase
         /// survives mood ticks and only recenters after care / sleep.
         public func islandContentState() -> ContentState {
-            if isSleeping || petPose == .sleep || petPose == .eat || petPose == .play {
+            if isSleeping || petPose == .sleep || petPose == .eat || petPose == .play || petPose == .clean {
                 return self
             }
             if petPose == .walk {

@@ -109,7 +109,8 @@ struct HitIslandGameView: View {
                         anim: .playing,
                         frame: Int(elapsed * 6),
                         facingLeft: false,
-                        displaySize: 96
+                        displaySize: 96,
+                        growthStage: growthStage
                     )
                     .scaleEffect(paddleFlash ? 1.06 : 1.0)
                 }
@@ -226,7 +227,8 @@ struct HitIslandGameView: View {
                         anim: .playing,
                         frame: 0,
                         facingLeft: false,
-                        displaySize: 96
+                        displaySize: 96,
+                        growthStage: growthStage
                     )
                     Text("\(catches) catch\(catches == 1 ? "" : "es")")
                         .font(.title3.weight(.heavy))

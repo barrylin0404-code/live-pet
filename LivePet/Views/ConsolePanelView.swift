@@ -285,7 +285,8 @@ struct ConsolePanelView: View {
                 anim: store.pet.isSleeping ? .sleeping : .idle,
                 frame: frame,
                 facingLeft: false,
-                displaySize: 48
+                displaySize: 48,
+                growthStage: store.pet.growthStage
             )
         }
     }

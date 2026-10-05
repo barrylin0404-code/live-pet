@@ -67,7 +67,8 @@ struct StatusStripView: View {
                 anim: pet.isSleeping ? .sleeping : .idle,
                 frame: frame,
                 facingLeft: false,
-                displaySize: 36
+                displaySize: 36,
+                growthStage: pet.growthStage
             )
         }
     }

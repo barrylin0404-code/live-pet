@@ -298,7 +298,8 @@ struct PetsSheet: View {
                         anim: .idle,
                         frame: frame,
                         facingLeft: false,
-                        displaySize: 72
+                        displaySize: 72,
+                        growthStage: p.growthStage
                     )
                 }
                 .frame(height: 72)
@@ -776,7 +777,8 @@ struct WidgetsGallerySheet: View {
                                         anim: .idle,
                                         frame: frame,
                                         facingLeft: false,
-                                        displaySize: 44
+                                        displaySize: 44,
+                                        growthStage: store.pet.growthStage
                                     )
                                 }
                             }

@@ -35,7 +35,8 @@ struct GrowCelebrationSheet: View {
                     anim: .happy,
                     frame: frame,
                     facingLeft: false,
-                    displaySize: 140
+                    displaySize: 140,
+                    growthStage: pet.growthStage
                 )
                 .scaleEffect(scale)
             }

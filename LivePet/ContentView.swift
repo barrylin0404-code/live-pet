@@ -307,7 +307,8 @@ struct ContentView: View {
                     anim: .happy,
                     frame: 0,
                     facingLeft: false,
-                    displaySize: 40
+                    displaySize: 40,
+                    growthStage: store.pet.growthStage
                 )
                 Text("Grow")
                     .font(.system(size: 15, weight: .heavy, design: .rounded))

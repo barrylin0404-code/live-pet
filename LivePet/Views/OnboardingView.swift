@@ -18,7 +18,8 @@ struct OnboardingView: View {
                         anim: .idle,
                         frame: frame,
                         facingLeft: false,
-                        displaySize: 140
+                        displaySize: 140,
+                        growthStage: store.pet.growthStage
                     )
                 }
                 .position(x: geo.size.width * 0.52, y: geo.size.height * 0.62)

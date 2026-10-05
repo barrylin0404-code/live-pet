@@ -720,30 +720,6 @@ struct ContentView: View {
         }
     }
 
-    private func spawnBubbles() {
-        bubbleParticles = (0..<7).map { i in
-            let angle = Double(i) * (.pi * 2 / 7.0)
-            return CareParticle(
-                id: UUID(),
-                x: CGFloat(cos(angle) * 10),
-                y: CGFloat(sin(angle) * 6),
-                size: CGFloat([10, 14, 8, 12, 9, 11, 13][i]),
-                opacity: 0.9
-            )
-        }
-        withAnimation(.easeOut(duration: 0.65)) {
-            bubbleParticles = bubbleParticles.enumerated().map { i, p in
-                let angle = Double(i) * (.pi * 2 / 7.0)
-                return CareParticle(
-                    id: p.id,
-                    x: CGFloat(cos(angle) * 36),
-                    y: CGFloat(sin(angle) * 28) - 24,
-                    size: p.size * 1.15,
-                    opacity: 0.1
-                )
-            }
-        }
-    }
 
     private func schedulePoseClear(holdMs: UInt64 = 900) {
         poseClearTask?.cancel()
@@ -804,13 +780,6 @@ struct ContentView: View {
     }
 }
 
-private struct CareParticle: Identifiable {
-    let id: UUID
-    var x: CGFloat
-    var y: CGFloat
-    var size: CGFloat
-    var opacity: Double
-}
 
 #Preview {
     ContentView()

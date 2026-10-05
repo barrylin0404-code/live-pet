@@ -241,6 +241,12 @@ final class PetStore: ObservableObject {
         commit()
     }
 
+    func wake() {
+        lastUsedFavorite = false
+        pet.wake()
+        commit()
+    }
+
     /// Brief body tap — play-lite Feeling bump without consuming inventory.
     func petTap() {
         lastUsedFavorite = false

@@ -150,6 +150,15 @@ struct Pet: Identifiable, Equatable, Codable {
         touch()
     }
 
+    /// Wake from a nap — sleep dock / shake can tuck back in.
+    mutating func wake() {
+        guard isSleeping else { return }
+        isSleeping = false
+        pose = .idle
+        lastAction = "\(name) woke up"
+        touch()
+    }
+
     /// Apply Grow to the next stage (Nubby line only). User copy: Grow / All grown — never Evolve.
     @discardableResult
     mutating func applyGrow() -> Bool {

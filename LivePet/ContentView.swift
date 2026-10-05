@@ -602,6 +602,17 @@ struct ContentView: View {
 
     private func performSleep() {
         careBusy = true
+        if store.pet.isSleeping {
+            brain.reactSleep(on: false)
+            store.wake()
+            PetSound.shared.play(.meow)
+            syncActivity()
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 900_000_000)
+                careBusy = false
+            }
+            return
+        }
         brain.reactSleep(on: true)
         store.sleep()
         PetSound.shared.play(.sleep)

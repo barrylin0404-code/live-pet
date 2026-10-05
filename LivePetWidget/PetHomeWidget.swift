@@ -50,9 +50,19 @@ struct PetHomeWidgetView: View {
                     .position(x: geo.size.width / 2, y: geo.size.height / 2)
                 TimelineView(.animation(minimumInterval: 1.0 / 6.0, paused: false)) { context in
                     let tick = Int(context.date.timeIntervalSinceReferenceDate * 6)
+                    // Projected mood (hungry/sad/happy) — same bands as WidgetPetForeground.
+                    let anim: PetAnim = {
+                        if sleeping { return .sleeping }
+                        switch snap.mood {
+                        case .hungry: return .hungry
+                        case .low: return .sad
+                        case .playful, .happy: return .happy
+                        default: return .idle
+                        }
+                    }()
                     ClipPetView(
                         speciesId: snap.petGlyph == "pip" ? "pip" : "nubby",
-                        anim: sleeping ? .sleeping : .idle,
+                        anim: anim,
                         frame: tick,
                         facingLeft: false,
                         displaySize: petSide,

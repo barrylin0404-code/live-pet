@@ -670,7 +670,12 @@ struct ContentView: View {
 
     private func performPetTap() {
         wakeFromNapIfNeeded()
-        brain.reactPet()
+        // Mid-meal / toy / bath: a soft purr only. No clip, Feeling, pose, or blurb change, so
+        // the bath sheet and "Got a soapy bath" are not cut short by a pat.
+        guard brain.reactPet() else {
+            softCareTap()
+            return
+        }
         store.petTap()
         PetSound.shared.play(.pet)
         PetSound.shared.play(.meow)
@@ -688,7 +693,8 @@ struct ContentView: View {
     /// ~0.9s counts as petting (bob, sound, Feeling) so a long stroke reads as one cuddle.
     private func performPetStroke() {
         wakeFromNapIfNeeded()
-        brain.reactGrab()
+        // Drag repeats fire fast — stay quiet while busy (no purr machine-gun).
+        guard brain.reactGrab() else { return }
         let now = Date()
         guard now.timeIntervalSince(lastStrokeBeat) >= 0.9 else {
             schedulePoseClear(holdMs: 1200)
@@ -725,6 +731,14 @@ struct ContentView: View {
 
 
     // MARK: - Feedback helpers
+
+    /// Pat while the pet is busy with care: acknowledge the touch, change nothing.
+    private func softCareTap() {
+        PetSound.shared.play(.pet)
+        #if canImport(UIKit)
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        #endif
+    }
 
     private func bouncePet() {
         withAnimation(.spring(response: 0.25, dampingFraction: 0.55)) {

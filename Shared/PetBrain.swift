@@ -42,17 +42,29 @@ public struct PetBrain: Equatable {
         self.petBurstUntil = 0
     }
 
+    /// Mid-meal, mid-toy, or mid-bath. A tap or grab must not hijack the clip: it used to cut the
+    /// bath chain after one frame and restart the eat sheet on every pat.
+    public var isBusyWithCare: Bool {
+        foodX != nil || toyX != nil || Self.bathChain.contains(player.anim)
+    }
+
+    private static let bathChain: Set<PetAnim> = [.bathStart, .bathing, .wet, .shakeWater, .bathHappy]
+
     /// Drag: pickup, then held while the stroke continues, then drop.
-    public mutating func reactGrab() {
+    /// Returns false (and leaves the clip alone) while the pet is busy with care.
+    @discardableResult
+    public mutating func reactGrab() -> Bool {
+        guard !isBusyWithCare else { return false }
         wanderTarget = nil
         if player.anim == .held {
             commandedUntil = max(commandedUntil, clock + 0.5)
-            return
+            return true
         }
         if player.anim != .pickup && player.anim != .drop {
             player.request(.pickup, force: true)
         }
         commandedUntil = max(commandedUntil, clock + 0.85)
+        return true
     }
 
     public mutating func noticeFood(at fraction: CGFloat) {
@@ -118,7 +130,11 @@ public struct PetBrain: Equatable {
         player.request(walk, facingLeft: facingLeft, force: player.anim != walk)
     }
 
-    public mutating func reactPet() {
+    /// Single tap. Returns false (no clip change) while the pet is eating, playing with a
+    /// dropped toy, or in the bath — the care beat finishes first.
+    @discardableResult
+    public mutating func reactPet() -> Bool {
+        guard !isBusyWithCare else { return false }
         if clock > petBurstUntil {
             petBurstCount = 0
         }
@@ -135,6 +151,7 @@ public struct PetBrain: Equatable {
             player.request(.petHappy, force: true)
             commandedUntil = clock + 1.1
         }
+        return true
     }
 
     /// Double-tap: jump or curious glance — not another petHappy.
@@ -142,6 +159,7 @@ public struct PetBrain: Equatable {
     /// snapping back to frame 0. A fresh double-tap right after landing chains cleanly.
     @discardableResult
     public mutating func reactDoubleTap() -> Bool {
+        guard !isBusyWithCare else { return false }
         if (player.anim == .jump || player.anim == .curious),
            !player.finishedOneShot, clock < commandedUntil {
             return false

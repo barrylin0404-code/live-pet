@@ -30,8 +30,8 @@ public struct IslandWalkPetView: View {
     private static let travelPeriod: TimeInterval = 2.0
     /// Occasional idle hop only — App Lead bounce: constant hop rejected vs clip.
     private static let hopFrames: Int = 4
-    /// Quiet walk between hops (~4.5s at 8fps).
-    private static let hopIntervalFrames: Int = 36
+    /// Quiet walk between hops (~3.25s at 8fps). Slightly denser than sparse ~4.5s.
+    private static let hopIntervalFrames: Int = 26
 
     public init(
         mood: PetMood,

@@ -7,6 +7,8 @@ struct GrowCelebrationSheet: View {
 
     private let cream = Color(red: 1.0, green: 0.98, blue: 0.94)
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
+    // Match Meet Pip / Scenes — ink stroke card, not bare cream (no beige leftover).
+    private let border = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
 
     var body: some View {
         VStack(spacing: 0) {
@@ -28,22 +30,31 @@ struct GrowCelebrationSheet: View {
 
             Spacer(minLength: 8)
             // Happy sheet alone — no forever scale pulse (leftover chrome vs Meet Pip / cream sheets).
-            TimelineView(.animation(minimumInterval: 1.0 / 8.0)) { context in
-                let frame = Int(context.date.timeIntervalSinceReferenceDate * 8)
-                ClipPetView(
-                    speciesId: pet.petGlyph,
-                    anim: .happy,
-                    frame: frame,
-                    facingLeft: false,
-                    displaySize: 140,
-                    growthStage: pet.growthStage
-                )
+            VStack(spacing: 10) {
+                TimelineView(.animation(minimumInterval: 1.0 / 8.0)) { context in
+                    let frame = Int(context.date.timeIntervalSinceReferenceDate * 8)
+                    ClipPetView(
+                        speciesId: pet.petGlyph,
+                        anim: .happy,
+                        frame: frame,
+                        facingLeft: false,
+                        displaySize: 140,
+                        growthStage: pet.growthStage
+                    )
+                }
+                .frame(height: 160)
+                Text(pet.speciesDisplayName)
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
             }
-            .frame(height: 190)
-            Text(pet.speciesDisplayName)
-                .font(.title3)
-                .foregroundStyle(.secondary)
-                .padding(.top, 8)
+            .padding(16)
+            .frame(maxWidth: .infinity)
+            .background(Color.clear, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(border, lineWidth: 2)
+            )
+            .padding(.horizontal, 20)
             Spacer(minLength: 8)
             Button(action: onDone) {
                 Text("Back to room")

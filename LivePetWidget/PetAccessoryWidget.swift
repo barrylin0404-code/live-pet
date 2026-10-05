@@ -121,7 +121,7 @@ struct PetAccessoryRectangularView: View {
     }
 }
 
-/// Vibrant-grayscale Nubby — Designer mono crops from `12-lock-screen-mono.md`.
+/// Vibrant-grayscale pet — Designer mono crops (`lock-*-mono`, plus uses shipped plus sheet).
 private struct AccessorySilhouette: View {
     var compact: Bool = false
     var speciesId: String = "nubby"
@@ -187,7 +187,7 @@ struct PetAccessoryWidget: Widget {
             }
         }
         .configurationDisplayName("Live Pet Lock Screen")
-        .description("Grayscale Nubby with Feeling dots on your Lock Screen.")
+        .description("Grayscale pet with Feeling dots on your Lock Screen.")
         .supportedFamilies([.accessoryCircular, .accessoryRectangular])
     }
 }

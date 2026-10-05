@@ -105,11 +105,13 @@ extension View {
 
 /// Which sheet + frame a widget pet shows for a (projected) snapshot at a 6 fps tick.
 /// Hungry / sad hold their sheets. A real nap (`isSleeping`) breathes via `PetSleepClip`
-/// (sleeping ↔ sleepBreathing on shipped sheets). Sleepy-but-awake still holds sleeping.
+/// (sleeping ↔ sleepBreathing on shipped sheets). Sleepy-but-awake yawns then idles
+/// (same shipped idleYawn sheets the room uses before a nap) — never a frozen sleeping
+/// sheet, so Wake / low-energy awake pets match Island stroll + room, not a fake nap.
 /// Happy / playful play one happy beat, then idle (blinks) a couple of seconds: the happy
 /// sheet is a one-shot, and looped nonstop it read as a pet bouncing in place on the Home Screen.
 enum WidgetMoodClip {
-    /// 6 fps ticks per happy cycle (~3 s): 4 happy frames, then the 6-frame idle twice.
+    /// 6 fps ticks per happy / sleepy-awake cycle (~3 s): one-shot then idle.
     static let happyCycle = 16
 
     static func clip(for snapshot: PetSnapshot, tick: Int) -> (anim: PetAnim, frame: Int) {
@@ -121,14 +123,16 @@ enum WidgetMoodClip {
         if isSleeping {
             return PetSleepClip.clip(tick: tick)
         }
-        if mood == .sleepy {
-            return (.sleeping, tick)
-        }
         switch mood {
         case .hungry:
             return (.hungry, tick)
         case .low:
             return (.sad, tick)
+        case .sleepy:
+            // Awake but drowsy — one yawn then idle blinks (not sleeping).
+            let phase = ((tick % happyCycle) + happyCycle) % happyCycle
+            let yawnFrames = PetAnimCatalog.clip(for: .idleYawn).frameCount
+            return phase < yawnFrames ? (.idleYawn, phase) : (.idle, phase - yawnFrames)
         case .playful, .happy:
             let phase = ((tick % happyCycle) + happyCycle) % happyCycle
             let happyFrames = PetAnimCatalog.clip(for: .happy).frameCount

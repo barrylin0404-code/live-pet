@@ -280,13 +280,17 @@ struct PetsSheet: View {
             #endif
         } label: {
             VStack(spacing: 8) {
-                ClipPetView(
-                    speciesId: p.petGlyph,
-                    anim: .idle,
-                    frame: 0,
-                    facingLeft: false,
-                    displaySize: 72
-                )
+                TimelineView(.animation(minimumInterval: 1.0 / 6.0)) { context in
+                    let frame = Int(context.date.timeIntervalSinceReferenceDate * 6)
+                    ClipPetView(
+                        speciesId: p.petGlyph,
+                        anim: .idle,
+                        frame: frame,
+                        facingLeft: false,
+                        displaySize: 72
+                    )
+                }
+                .frame(height: 72)
                 Text(p.name)
                     .font(.subheadline.weight(.bold))
                 Text(p.petGlyph == "pip" ? "Pip" : p.growthStage.displayName)
@@ -306,7 +310,11 @@ struct PetsSheet: View {
 
     private var lockedPipCard: some View {
         VStack(spacing: 8) {
-            ClipPetView(speciesId: "pip", anim: .idle, frame: 0, facingLeft: false, displaySize: 72)
+            TimelineView(.animation(minimumInterval: 1.0 / 6.0)) { context in
+                let frame = Int(context.date.timeIntervalSinceReferenceDate * 6)
+                ClipPetView(speciesId: "pip", anim: .idle, frame: frame, facingLeft: false, displaySize: 72)
+            }
+            .frame(height: 72)
             Text("Pip")
                 .font(.subheadline.weight(.bold))
             Text("Grows with Nubby")

@@ -334,6 +334,7 @@ struct ScenesSheet: View {
     var onShop: (() -> Void)? = nil
     var onInventory: (() -> Void)? = nil
     var onSettings: (() -> Void)? = nil
+    @EnvironmentObject private var activityManager: PetLiveActivityManager
     @Environment(\.dismiss) private var dismiss
 
     private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
@@ -429,7 +430,7 @@ struct ScenesSheet: View {
                     .padding(.horizontal, 16)
                 }
 
-                                if let onInventory {
+                if let onInventory {
                     Button {
                         PetSound.shared.play(.uiTick)
                         onInventory()
@@ -444,6 +445,27 @@ struct ScenesSheet: View {
                     .buttonStyle(.plain)
                     .padding(.horizontal, 16)
                 }
+
+                Toggle(
+                    "Dynamic Island",
+                    isOn: Binding(
+                        get: { activityManager.isActivityActive },
+                        set: { on in
+                            PetSound.shared.play(.uiTick)
+                            if on {
+                                activityManager.start(pet: store.pet)
+                            } else {
+                                activityManager.end()
+                            }
+                        }
+                    )
+                )
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
+                .tint(coral)
+                .disabled(!activityManager.areActivitiesEnabled && !activityManager.isActivityActive)
+                .padding(.horizontal, 32)
+                .padding(.vertical, 8)
 
                 if let onSettings {
                     Button {
@@ -773,7 +795,7 @@ struct InfoHowToSheet: View {
                     labelRow("Feed", "Pick food from the dock — your pet walks over and eats.")
                     labelRow("Play", "Play Ball, Follow the wand, or Hit the Island.")
                     labelRow("Inventory", "Tap fish, berry, ball, wand, or island goods above the dock.")
-                    labelRow("Island", "Start Dynamic Island from Sound and name in More.")
+                    labelRow("Island", "Turn on Dynamic Island from More.")
                     Text("Bath and Sleep are on the dock. Shake to sleep too.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)

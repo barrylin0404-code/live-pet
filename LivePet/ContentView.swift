@@ -48,6 +48,8 @@ struct ContentView: View {
     @State private var pendingFoodId: String?
     /// Toy play applies once on consume / fail-safe (same idea as pendingFoodId) — never bump Feeling at drop and again at end.
     @State private var pendingToyId: String?
+    /// Retires Soft Square / Bounce / Ball Tasks so a pet-switch mid-lure cannot clear a later careBusy or bump Feeling twice.
+    @State private var toySessionGeneration = 0
     /// Last stroke beat that counted as petting (sound + Feeling). Drag repeats in between
     /// only keep the held clip alive so a long stroke is not a meow machine-gun.
     @State private var lastStrokeBeat: Date = .distantPast
@@ -217,6 +219,9 @@ struct ContentView: View {
             .sheet(isPresented: $store.showGrowCelebration, onDismiss: {
                 // Done, Back to room, or a swipe: one happy beat in the room + Grow cue.
                 PetSound.shared.play(.meow)
+                // Mid-bath Grow used to force happy and cut bath short — bathReady never fired and
+                // Feed stayed locked until the 7s fail-safe. Release the hold, then react.
+                releaseBathOrSleepHoldForOverlay()
                 if !store.pet.isSleeping {
                     brain.reactGrown()
                 }
@@ -385,7 +390,7 @@ struct ContentView: View {
                 if brain.consumePlayReady() {
                     ballVisible = false
                     droppedSymbol = nil
-                    applyPendingToyPlay()
+                    applyPendingToyPlay(session: toySessionGeneration)
                     pulseHeart(crumbs: false)
                     spawnPlayBurst()
                     careBusy = false
@@ -467,6 +472,7 @@ struct ContentView: View {
         guard !careBusy else { return }
         wakeFromNapIfNeeded()
         careBusy = true
+        let session = beginToySession()
         pendingToyId = item.id
         let dropX: CGFloat = brain.x < 0.5 ? 0.68 : 0.32
         // Soft Square must land as prop-soft (never wand / bounce fallback).
@@ -488,10 +494,11 @@ struct ContentView: View {
             // consumePlayReady clears the toy and careBusy as soon as the play beat ends.
             // Fail-safe is sized to this walk + the 1.15s play beat if that never fires.
             try? await Task.sleep(nanoseconds: failSafe)
+            guard toySessionGeneration == session else { return }
             guard careBusy, pendingToyId == toyId, droppedSymbol == toySprite else { return }
             brain.abandonToy()
             droppedSymbol = nil
-            applyPendingToyPlay()
+            applyPendingToyPlay(session: session)
             careBusy = false
             syncActivity()
         }
@@ -504,6 +511,7 @@ struct ContentView: View {
         wakeFromNapIfNeeded()
         careBusy = true
         // Pending only after the busy gate — ribbon re-taps mid-chase must not steal Feeling.
+        let session = beginToySession()
         pendingToyId = "twinkle_ball"
         let dropX: CGFloat = brain.x < 0.5 ? 0.70 : 0.30
         ballX = dropX
@@ -524,10 +532,11 @@ struct ContentView: View {
             // Fail-safe if playReady never fires; consumePlayReady usually clears earlier.
             // Sized to this chase at this room's pace + the 1.15s play beat.
             try? await Task.sleep(nanoseconds: failSafe > 280_000_000 ? failSafe - 280_000_000 : 0)
+            guard toySessionGeneration == session else { return }
             guard ballVisible else { return }
             brain.abandonToy()
             ballVisible = false
-            applyPendingToyPlay()
+            applyPendingToyPlay(session: session)
             careBusy = false
             syncActivity()
         }
@@ -553,6 +562,7 @@ struct ContentView: View {
         careBusy = true
         // Soft Square only — wand lure leaves pending nil and ends on playWand once.
         // Assign after the busy gate so ribbon re-taps mid-play cannot rewrite Feeling.
+        let session = beginToySession()
         if showSoftSquare {
             pendingToyId = "soft_square"
             droppedSymbol = nil
@@ -576,6 +586,7 @@ struct ContentView: View {
             var elapsed: Double = 0
             while elapsed < duration {
                 if Task.isCancelled { break }
+                guard toySessionGeneration == session else { return }
                 let dx = wandX - brain.x
                 let next = min(0.88, max(0.12, brain.x + dx * 0.22))
                 brain.place(at: next, facingLeft: wandX < brain.x)
@@ -586,9 +597,10 @@ struct ContentView: View {
                 try? await Task.sleep(nanoseconds: tick)
                 elapsed += Double(tick) / 1_000_000_000
             }
+            guard toySessionGeneration == session else { return }
             wandInteractive = false
             if showSoftSquare {
-                applyPendingToyPlay()
+                applyPendingToyPlay(session: session)
             } else {
                 store.playWand()
             }
@@ -600,6 +612,7 @@ struct ContentView: View {
             schedulePoseClear(holdMs: 1100)
             syncActivity()
             try? await Task.sleep(nanoseconds: 220_000_000)
+            guard toySessionGeneration == session else { return }
             withAnimation { wandVisible = false }
             wandSpriteName = "prop-wand"
             careBusy = false
@@ -610,6 +623,9 @@ struct ContentView: View {
 
     private func finishHitIsland(catches: Int?) {
         showHitIsland = false
+        // Mid-bath Grow/Hit used to force a room beat, cut the bath chain, and leave Feed locked
+        // until the fail-safe — release the hold (and abort bath) before any room reaction.
+        releaseBathOrSleepHoldForOverlay()
         // Backed out of the intro: no run, no Feeling, keep the last blurb.
         guard let catches else { return }
         // Catch count drives Feeling + Island blurb — not a generic toy play.
@@ -626,6 +642,7 @@ struct ContentView: View {
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: 450_000_000)
             guard !showHitIsland, !store.pet.isSleeping else { return }
+            // Bath already aborted above; gate still blocks meal/toy so Feeling once stays clean.
             brain.reactPlayResult(happy: won)
         }
     }
@@ -851,6 +868,20 @@ struct ContentView: View {
         careBusy = false
     }
 
+    /// True while a bath/sleep beginCareHold is current (food/toy set careBusy without bumping gen).
+    private var isBathOrSleepHoldActive: Bool {
+        careBusy && careHoldGeneration == careGeneration && careGeneration > 0
+    }
+
+    /// Grow dismiss / Hit Island finish: retire a live bath/sleep hold and abort the bath chain so
+    /// Feed unlocks now — not after a fail-safe waiting on a bathReady that will never fire.
+    private func releaseBathOrSleepHoldForOverlay() {
+        if isBathOrSleepHoldActive {
+            cancelCareHold()
+        }
+        brain.abortBathIfNeeded()
+    }
+
     /// Fail-safe for a food / toy walk: notice glance + the walk at this room's pace (same
     /// 0.16 speed and pace clamp as PetBrain) + the eat or play beat + a second of slack.
     /// Never shorter than the old flat 5.2s.
@@ -863,10 +894,22 @@ struct ContentView: View {
 
     /// One Feeling bump per toy session. No pending id = already applied (fail-safe beat the
     /// brain's playReady) — never fall back to another toy and bump twice.
-    private func applyPendingToyPlay() {
+    private func applyPendingToyPlay(session: Int) {
+        guard toySessionGeneration == session else { return }
         guard let id = pendingToyId else { return }
         pendingToyId = nil
         store.play(itemID: id)
+    }
+
+    @discardableResult
+    private func beginToySession() -> Int {
+        toySessionGeneration += 1
+        return toySessionGeneration
+    }
+
+    private func retireToySession() {
+        toySessionGeneration += 1
+        pendingToyId = nil
     }
 
     /// Fresh brain so a switch (Pets sheet or Meet Pip) does not keep the prior pet's clip / x.
@@ -875,8 +918,9 @@ struct ContentView: View {
         petX = brain.x
         facingLeft = brain.player.facingLeft
         pendingFoodId = nil
-        pendingToyId = nil
         droppedSymbol = nil
+        // Retire Soft Square / Bounce / Ball Tasks so they cannot clear careBusy or bump Feeling on the new pet.
+        retireToySession()
         // Retire bath/sleep unlock so a prior timer cannot clear careBusy mid-walk on the new pet.
         cancelCareHold()
         ballVisible = false

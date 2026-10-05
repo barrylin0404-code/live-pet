@@ -64,7 +64,7 @@ public enum PetRoomScene: String, Codable, CaseIterable, Identifiable, Sendable 
     /// Idle park linger after a short walk (1 = Sun Nook). Calm scenes rest longer between scoots.
     public var roamIdleHold: Double {
         switch self {
-        case .meadowWalk: return 0.78
+        case .meadowWalk: return 0.72
         case .tideGlass, .coralShelf: return 1.08
         case .moonPorch, .skylineDusk, .snowPorch: return 1.22
         case .sunNook: return 1.0

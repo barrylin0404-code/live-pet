@@ -139,6 +139,10 @@ struct HitIslandGameView: View {
                         if abs(dx) > 0.004 {
                             paddleFacingLeft = dx < 0
                             paddleMovedAt = elapsed
+                            // Catch/miss beat was holding the run clip — cut it so drag run resumes.
+                            if elapsed < reactionUntil {
+                                reactionUntil = elapsed
+                            }
                         }
                         paddleX = next
                     }

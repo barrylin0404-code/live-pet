@@ -203,9 +203,9 @@ public struct PetBrain: Equatable {
     }
 
     /// End of a lure / game the app drove (wand, Soft Square, Hit the Island): one happy or sad
-    /// beat on its sheet, then the usual idle linger. Never during a nap, meal, or toy walk.
+    /// beat on its sheet, then the usual idle linger. Never during a nap, meal, toy walk, or bath.
     public mutating func reactPlayResult(happy: Bool) {
-        guard !wasSleeping, foodX == nil, toyX == nil else { return }
+        guard !wasSleeping, !isBusyWithCare else { return }
         wanderTarget = nil
         player.request(happy ? .happy : .sad, force: true)
         commandedUntil = max(commandedUntil, clock + (happy ? 1.25 : 1.0))
@@ -213,12 +213,24 @@ public struct PetBrain: Equatable {
     }
 
     /// After the Grow celebration closes: one happy beat, then the usual idle linger.
+    /// Same care gate as reactPlayResult — must not cut a bath short (that left Feed locked).
     public mutating func reactGrown() {
-        guard !wasSleeping, foodX == nil, toyX == nil else { return }
+        guard !wasSleeping, !isBusyWithCare else { return }
         wanderTarget = nil
         player.request(.happy, force: true)
         commandedUntil = max(commandedUntil, clock + 1.25)
         idleHold = max(idleHold, 1.0)
+    }
+
+    /// Grow dismiss / Hit Island finish interrupted a bath: leave the chain without bathReady so a
+    /// cancelled care hold is not waiting on a ready that will never fire.
+    public mutating func abortBathIfNeeded() {
+        guard Self.bathChain.contains(player.anim) else { return }
+        bathReady = false
+        wanderTarget = nil
+        player.request(.idle, force: true)
+        idleHold = max(idleHold, 0.45)
+        commandedUntil = clock
     }
 
     public mutating func reactFavoriteFood() {
@@ -598,10 +610,10 @@ public struct PetBrain: Equatable {
         default:
             break
         }
-        // ~40% short walks; rest denser idle flavors (blink/stretch/groom/yawn/curious/ear/tail/scratch).
-        // Rare stays on idle — do not pick idleRare* here.
+        // ~35% short walks; denser idle flavors (blink/stretch/groom/yawn/look/curious toy-glance).
+        // Rare stays on idle — do not pick idleRare* here. idleScale (Meadow ~0.72) keeps parks snappy.
         let roll = Int.random(in: 0..<20)
-        if roll < 8 {
+        if roll < 7 {
             let delta = CGFloat.random(in: 0.07...0.20) * (Bool.random() ? 1 : -1)
             let target = min(0.76, max(0.24, x + delta))
             wanderTarget = target
@@ -613,8 +625,9 @@ public struct PetBrain: Equatable {
                 player.request(left ? .walkLeft : .walkRight, facingLeft: left, force: true)
             }
         } else if roll < 11 {
+            // Blink is the densest idle beat.
             player.request(.idleBlink, force: true)
-            idleHold = 0.32 * idleScale
+            idleHold = 0.28 * idleScale
         } else if roll < 13 {
             player.request(Bool.random() ? .idleYawn : .idleStretch, force: true)
             idleHold = 0.12 * idleScale
@@ -622,28 +635,24 @@ public struct PetBrain: Equatable {
             player.request(Bool.random() ? .idleGroom : .idleScratch, force: true)
             idleHold = 0.12 * idleScale
         } else if roll < 17 {
-            let fidgets: [PetAnim] = [.idleEarMovement, .idleTailMovement, .idleCurious]
+            // Toy-glance flavor on idleCurious; ear/tail keep fidget variety.
+            let fidgets: [PetAnim] = [.idleCurious, .idleCurious, .idleEarMovement, .idleTailMovement]
             player.request(fidgets.randomElement() ?? .idleCurious, force: true)
-            idleHold = 0.12 * idleScale
-        } else if roll < 18 {
+            idleHold = 0.14 * idleScale
+        } else if roll < 19 {
             let looks: [PetAnim] = [.idleLookLeft, .idleLookRight, .idleLookUp, .idleLookDown]
             player.request(looks.randomElement() ?? .idleLookLeft, force: true)
-            idleHold = 0.4 * idleScale
-        } else if roll < 19 {
-            switch Int.random(in: 0..<3) {
-            case 0:
-                player.request(.hop, force: true)
-            case 1:
-                player.request(.jump, force: true)
-            default:
-                let left = Bool.random()
-                player.request(left ? .turnLeft : .turnRight, facingLeft: left, force: true)
-            }
-            idleHold = 0.1 * idleScale
+            idleHold = 0.36 * idleScale
         } else {
-            let rests: [PetAnim] = [.idleSit, .idleLay, .idleBreathing]
-            player.request(rests.randomElement() ?? .idleSit, force: true)
-            idleHold = 0.22 * idleScale
+            // Occasional hop / sit — keep rare, not another walk.
+            if Int.random(in: 0..<2) == 0 {
+                player.request(Bool.random() ? .hop : .jump, force: true)
+                idleHold = 0.1 * idleScale
+            } else {
+                let rests: [PetAnim] = [.idleSit, .idleLay, .idleBreathing]
+                player.request(rests.randomElement() ?? .idleSit, force: true)
+                idleHold = 0.2 * idleScale
+            }
         }
     }
 }

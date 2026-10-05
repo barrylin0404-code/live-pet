@@ -25,14 +25,21 @@ struct PetLiveActivityWidget: Widget {
                     )
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text(context.state.mood.label)
+                    Text(IslandCareCopy.blurb(for: context.state))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.trailing)
                         .padding(.trailing, 4)
                 }
                 DynamicIslandExpandedRegion(.center) {
-                    Text(context.attributes.petName)
-                        .font(.headline)
+                    VStack(spacing: 2) {
+                        Text(context.attributes.petName)
+                            .font(.headline)
+                        Text(context.state.mood.label)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     islandBottom()
@@ -143,13 +150,41 @@ private struct LockScreenPetView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(context.attributes.petName)
                     .font(.headline)
-                Text(context.state.mood.label + (context.state.isSleeping ? " · Sleeping" : ""))
+                Text(IslandCareCopy.blurb(for: context.state))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
             Spacer(minLength: 0)
         }
         .padding()
+    }
+}
+
+/// Dense Island / Lock Screen care copy — pose first, then App Group lastAction.
+enum IslandCareCopy {
+    static func blurb(for state: PetActivityAttributes.ContentState) -> String {
+        if state.isSleeping || state.petPose == .sleep {
+            return "Sleeping"
+        }
+        // Prefer App Group lastAction so Feed/Pet/Lull and in-app care share copy.
+        if let snap = PetSnapshot.load(), !snap.lastAction.isEmpty {
+            switch state.petPose {
+            case .eat, .play, .clean:
+                return snap.lastAction
+            default:
+                break
+            }
+        }
+        switch state.petPose {
+        case .eat: return "Eating"
+        case .play: return "Playing"
+        case .clean: return "Bath time"
+        default: break
+        }
+        if let snap = PetSnapshot.load(), !snap.lastAction.isEmpty {
+            return snap.lastAction
+        }
+        return state.mood.label
     }
 }

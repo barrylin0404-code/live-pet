@@ -125,7 +125,7 @@ struct Pet: Identifiable, Equatable, Codable {
         moodScore = Self.clamp(moodScore + Int.random(in: 4...8))
         // Small energy lift so playful (mood≥70, energy≥40) stays reachable after toys.
         energy = Self.clamp(energy + Int.random(in: 1...3))
-        lastAction = "Got pets"
+        lastAction = "Feeling warmer"
         touch()
     }
 
@@ -146,7 +146,7 @@ struct Pet: Identifiable, Equatable, Codable {
         pose = .sleep
         energy = Self.clamp(energy + 35)
         moodScore = Self.clamp(moodScore + 6)
-        lastAction = "\(name) took a nap"
+        lastAction = "\(name) tucked in"
         touch()
     }
 

@@ -20,6 +20,16 @@ struct SelectFoodSheet: View {
         GridItem(.fixed(96), spacing: 10)
     ]
 
+    /// Favorite food first — same lead as the inventory ribbon.
+    private var foodsFavoriteFirst: [InventoryItem] {
+        store.foods.filter { $0.pixelSpriteName != nil }.sorted { a, b in
+            let af = store.pet.isFavoriteFood(a.id)
+            let bf = store.pet.isFavoriteFood(b.id)
+            if af != bf { return af && !bf }
+            return false
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             HStack {
@@ -42,7 +52,7 @@ struct SelectFoodSheet: View {
             .padding(.bottom, 10)
 
             LazyVGrid(columns: columns, spacing: 10) {
-                ForEach(store.foods.filter { $0.pixelSpriteName != nil }) { item in
+                ForEach(foodsFavoriteFirst) { item in
                     foodCell(item)
                 }
             }
@@ -539,8 +549,14 @@ struct InventorySheet: View {
     private let favoriteGold = Color(red: 0xE8 / 255.0, green: 0xC5 / 255.0, blue: 0x47 / 255.0)
 
     private var items: [InventoryItem] {
-        store.foods.filter { $0.pixelSpriteName != nil }
+        let raw = store.foods.filter { $0.pixelSpriteName != nil }
             + store.toys.filter { $0.pixelSpriteName != nil }
+        return raw.sorted { a, b in
+            let af = a.isFood ? store.pet.isFavoriteFood(a.id) : store.pet.isFavoriteToy(a.id)
+            let bf = b.isFood ? store.pet.isFavoriteFood(b.id) : store.pet.isFavoriteToy(b.id)
+            if af != bf { return af && !bf }
+            return false
+        }
     }
 
     var body: some View {

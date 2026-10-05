@@ -21,7 +21,15 @@ struct InventoryPanel: View {
         list.append(contentsOf: store.toys.filter { $0.pixelSpriteName != nil })
         // Care without pixel art (bubble_soap) stays internal — bath dock uses ctrl-bath.
         list.append(contentsOf: store.careItems.filter { $0.pixelSpriteName != nil })
-        return list
+        // Favorites lead so Feed / Play favorites are one tap away.
+        return list.sorted { a, b in
+            let af = a.isFood ? store.pet.isFavoriteFood(a.id)
+                : (a.isToy ? store.pet.isFavoriteToy(a.id) : false)
+            let bf = b.isFood ? store.pet.isFavoriteFood(b.id)
+                : (b.isToy ? store.pet.isFavoriteToy(b.id) : false)
+            if af != bf { return af && !bf }
+            return false
+        }
     }
 
     var body: some View {

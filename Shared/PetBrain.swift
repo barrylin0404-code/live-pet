@@ -211,8 +211,9 @@ public struct PetBrain: Equatable {
         return false
     }
 
-    public mutating func tick(dt: Double, sleeping: Bool, mood: PetMood = .content) {
+    public mutating func tick(dt: Double, sleeping: Bool, mood: PetMood = .content, roamPace: Double = 1.0) {
         moodHint = mood
+        let pace = min(1.45, max(0.7, roamPace))
         let dt = min(0.05, max(0, dt))
         clock += dt
         player.advance(dt: dt)
@@ -256,7 +257,7 @@ public struct PetBrain: Equatable {
                 if player.anim != .walkToFood {
                     player.request(.walkToFood, facingLeft: dirLeft, force: true)
                 }
-                x += (dirLeft ? -1 : 1) * CGFloat(dt) * 0.16
+                x += (dirLeft ? -1 : 1) * CGFloat(dt) * 0.16 * CGFloat(pace)
                 x = min(0.82, max(0.18, x))
                 return
             }
@@ -281,7 +282,7 @@ public struct PetBrain: Equatable {
                 if player.anim != walk {
                     player.request(walk, facingLeft: left, force: true)
                 }
-                x += (left ? -1 : 1) * CGFloat(dt) * 0.16
+                x += (left ? -1 : 1) * CGFloat(dt) * 0.16 * CGFloat(pace)
                 x = min(0.82, max(0.18, x))
                 return
             }
@@ -387,7 +388,7 @@ public struct PetBrain: Equatable {
             if abs(dx) > 0.03 {
                 let left = dx < 0
                 player.request(left ? .walkLeft : .walkRight, facingLeft: left)
-                x += (left ? -1 : 1) * CGFloat(dt) * 0.09
+                x += (left ? -1 : 1) * CGFloat(dt) * 0.09 * CGFloat(pace)
                 x = min(0.80, max(0.20, x))
                 return
             }
@@ -413,10 +414,10 @@ public struct PetBrain: Equatable {
             let left = dx < 0
             if running {
                 player.request(left ? .runLeft : .runRight, facingLeft: left)
-                x += (left ? -1 : 1) * CGFloat(dt) * 0.22
+                x += (left ? -1 : 1) * CGFloat(dt) * 0.22 * CGFloat(pace)
             } else {
                 player.request(left ? .walkLeft : .walkRight, facingLeft: left)
-                x += (left ? -1 : 1) * CGFloat(dt) * 0.11
+                x += (left ? -1 : 1) * CGFloat(dt) * 0.11 * CGFloat(pace)
             }
             x = min(0.80, max(0.20, x))
             return

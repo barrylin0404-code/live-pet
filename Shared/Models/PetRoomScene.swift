@@ -51,6 +51,16 @@ public enum PetRoomScene: String, Codable, CaseIterable, Identifiable, Sendable 
     /// Ball rests just below the pet centerline so Meadow (~58%) and indoor (~62%) match.
     public var ballFloorYFraction: Double { petFeetYFraction + 0.08 }
 
+    /// Walk / scoot speed multiplier for room roam (1 = Sun Nook). Meadow is denser; night and cold are calmer.
+    public var roamPace: Double {
+        switch self {
+        case .meadowWalk: return 1.28
+        case .tideGlass, .coralShelf: return 0.92
+        case .moonPorch, .skylineDusk, .snowPorch: return 0.84
+        case .sunNook: return 1.0
+        }
+    }
+
     /// Pixel plate for this room. Each room uses its own plate.
     public var plateImageName: String? {
         switch self {

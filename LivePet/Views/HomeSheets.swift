@@ -648,6 +648,7 @@ struct ShopSheet: View {
 
     private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
     private let border = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
+    private let favoriteGold = Color(red: 0xE8 / 255.0, green: 0xC5 / 255.0, blue: 0x47 / 255.0)
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
 
     var body: some View {
@@ -673,14 +674,18 @@ struct ShopSheet: View {
             ScrollView {
                 VStack(spacing: 10) {
                     ForEach(store.foods.filter { $0.pixelSpriteName != nil }) { item in
-                        row(title: item.name, sprite: item.pixelSpriteName ?? "prop-fish") {
+                        row(
+                            title: item.name,
+                            sprite: item.pixelSpriteName ?? "prop-fish",
+                            isFavorite: store.pet.isFavoriteFood(item.id)
+                        ) {
                             onFood(item)
                         }
                     }
                     // Toys with pixel art — Soft Square / Bounce Block / ball (wand + island are games).
-                    row(title: "Play Ball", sprite: "prop-ball", action: onPlayBall)
-                    row(title: "Soft Square", sprite: "prop-soft", action: onSoftSquare)
-                    row(title: "Bounce Block", sprite: "prop-bounce", action: onBounceBlock)
+                    row(title: "Play Ball", sprite: "prop-ball", isFavorite: store.pet.isFavoriteToy("twinkle_ball"), action: onPlayBall)
+                    row(title: "Soft Square", sprite: "prop-soft", isFavorite: store.pet.isFavoriteToy("soft_square"), action: onSoftSquare)
+                    row(title: "Bounce Block", sprite: "prop-bounce", isFavorite: store.pet.isFavoriteToy("bounce_block"), action: onBounceBlock)
                     row(title: "Follow the wand", sprite: "prop-wand", action: onFollowWand)
                     row(title: "Hit the Island", sprite: "prop-island", action: onHitIsland)
                 }
@@ -698,17 +703,27 @@ struct ShopSheet: View {
         .presentationCornerRadius(24)
     }
 
-    private func row(title: String, sprite: String, action: @escaping () -> Void) -> some View {
+    private func row(title: String, sprite: String, isFavorite: Bool = false, action: @escaping () -> Void) -> some View {
         Button {
             PetSound.shared.play(.uiTick)
             action()
         } label: {
             HStack(spacing: 12) {
-                Image(sprite)
-                    .resizable()
-                    .interpolation(.none)
-                    .scaledToFit()
-                    .frame(width: 36, height: 36)
+                ZStack(alignment: .topTrailing) {
+                    Image(sprite)
+                        .resizable()
+                        .interpolation(.none)
+                        .scaledToFit()
+                        .frame(width: 36, height: 36)
+                    if isFavorite {
+                        Image("prop-star")
+                            .resizable()
+                            .interpolation(.none)
+                            .scaledToFit()
+                            .frame(width: 14, height: 14)
+                            .offset(x: 6, y: -4)
+                    }
+                }
                 Text(title)
                     .font(.subheadline.weight(.bold))
                     .foregroundStyle(ink)
@@ -721,10 +736,11 @@ struct ShopSheet: View {
             .background(Color.clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(border, lineWidth: 2)
+                    .strokeBorder(isFavorite ? favoriteGold : border, lineWidth: isFavorite ? 2.5 : 2)
             )
         }
         .buttonStyle(PressScaleButtonStyle())
+        .accessibilityLabel(isFavorite ? "\(title), favorite, free" : "\(title), free")
     }
 }
 

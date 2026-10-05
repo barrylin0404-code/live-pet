@@ -3,8 +3,9 @@ import SwiftUI
 struct StatusStripView: View {
     let pet: Pet
 
-    private let mint = Color(red: 0xE8 / 255.0, green: 0xF5 / 255.0, blue: 0xE4 / 255.0)
-    private let mintBorder = Color(red: 0xC5 / 255.0, green: 0xD9 / 255.0, blue: 0xC0 / 255.0)
+    // Cream card chrome — same family as Scenes / Shop / Inventory sheets (not mint LCD).
+    private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
+    private let creamBorder = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
     private let ageInk = Color(red: 0.55, green: 0.45, blue: 0.33)
 
@@ -51,12 +52,12 @@ struct StatusStripView: View {
             .accessibilityLabel("Satiety, \(pet.satiety) percent, \(filledSatiety) of 3")
         }
         .padding(14)
-        .background(mint.opacity(0.95), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(mintBorder, lineWidth: 2.5)
+                .strokeBorder(creamBorder, lineWidth: 2)
         )
-        .shadow(color: .black.opacity(0.08), radius: 8, y: 3)
+        .shadow(color: cream.opacity(0.9), radius: 6, y: 2)
     }
 
     private var avatar: some View {
@@ -73,12 +74,14 @@ struct StatusStripView: View {
         }
     }
 
+    /// Empty hearts when Feeling is 0 — never force a partial fill at rock bottom.
     private var filledHearts: Int {
         switch pet.moodScore {
         case 75...100: return 4
         case 50..<75: return 3
         case 25..<50: return 2
         case 1..<25: return 1
+        case 0: return 0
         default: return 0
         }
     }

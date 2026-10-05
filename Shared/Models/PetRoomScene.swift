@@ -1,16 +1,16 @@
 import Foundation
 
 /// In-app room backdrop. Widget / Island stay pet-forward and ignore scene.
-/// Wave 2–3 indoor ids preserved; pass 18 adds Meadow Walk (+ Snow/Coral stubs).
+/// Wave 2–3 indoor ids preserved; Meadow Walk, Snow Porch, and Coral Shelf ship with plates.
 public enum PetRoomScene: String, Codable, CaseIterable, Identifiable, Sendable {
     case sunNook
     case moonPorch
     case tideGlass = "tide_glass"
     case skylineDusk = "skyline_dusk"
     case meadowWalk = "meadow_walk"
-    /// Placeholder — Holiday outdoor; not in sheet until art ships.
+    /// Holiday outdoor — snow-porch-plate.
     case snowPorch = "snow_porch"
-    /// Placeholder — clearer water / undersea; not in sheet until art ships.
+    /// Clearer water / undersea — coral-shelf-plate.
     case coralShelf = "coral_shelf"
 
     public var id: String { rawValue }
@@ -27,7 +27,7 @@ public enum PetRoomScene: String, Codable, CaseIterable, Identifiable, Sendable 
         }
     }
 
-    /// Free day-1 scenes shown in the Scenes sheet. Stubs stay false until designed.
+    /// Free day-1 scenes shown in the Scenes sheet (all seven plates available).
     public var isAvailable: Bool {
         switch self {
         case .sunNook, .moonPorch, .tideGlass, .skylineDusk, .meadowWalk, .snowPorch, .coralShelf:
@@ -35,7 +35,7 @@ public enum PetRoomScene: String, Codable, CaseIterable, Identifiable, Sendable 
         }
     }
 
-    /// Scenes sheet 2×3 order: Sun | Moon | Meadow / Tide | Skyline | (empty).
+    /// Scenes sheet order: Sun | Moon | Meadow / Tide | Skyline | Snow / Coral.
     public static var availableInDisplayOrder: [PetRoomScene] {
         [.sunNook, .moonPorch, .meadowWalk, .tideGlass, .skylineDusk, .snowPorch, .coralShelf]
     }

@@ -112,10 +112,15 @@ enum WidgetMoodClip {
     static let happyCycle = 16
 
     static func clip(for snapshot: PetSnapshot, tick: Int) -> (anim: PetAnim, frame: Int) {
-        if snapshot.isSleeping == true || snapshot.mood == .sleepy {
+        clip(mood: snapshot.mood, isSleeping: snapshot.isSleeping == true, tick: tick)
+    }
+
+    /// Scenes StatusStrip + widgets share this so happy/playful never loop the one-shot forever.
+    static func clip(mood: PetMood, isSleeping: Bool, tick: Int) -> (anim: PetAnim, frame: Int) {
+        if isSleeping || mood == .sleepy {
             return (.sleeping, tick)
         }
-        switch snapshot.mood {
+        switch mood {
         case .hungry:
             return (.hungry, tick)
         case .low:

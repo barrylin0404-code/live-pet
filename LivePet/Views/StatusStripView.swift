@@ -60,23 +60,15 @@ struct StatusStripView: View {
     }
 
     /// Mood band on the Scenes strip — hungry/sad read without room-plate meters.
-    private var statusAnim: PetAnim {
-        if pet.isSleeping { return .sleeping }
-        switch pet.mood {
-        case .hungry: return .hungry
-        case .low: return .sad
-        case .playful, .happy: return .happy
-        default: return .idle
-        }
-    }
-
+    /// Happy / playful: one happy beat then idle (same `WidgetMoodClip` as Home widgets).
     private var avatar: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 6.0)) { context in
-            let frame = Int(context.date.timeIntervalSinceReferenceDate * 6)
+            let tick = Int(context.date.timeIntervalSinceReferenceDate * 6)
+            let shown = WidgetMoodClip.clip(mood: pet.mood, isSleeping: pet.isSleeping, tick: tick)
             ClipPetView(
                 speciesId: pet.petGlyph,
-                anim: statusAnim,
-                frame: frame,
+                anim: shown.anim,
+                frame: shown.frame,
                 facingLeft: false,
                 displaySize: 36,
                 growthStage: pet.growthStage

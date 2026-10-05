@@ -25,6 +25,10 @@ public struct PetBrain: Equatable {
     /// Taps inside a short window — 3+ → annoyed (sad sheet).
     private var petBurstCount: Int
     private var petBurstUntil: Double
+    /// After a playful scoot parks, the next chooseNext should hop/play — not scoot forever.
+    private var afterPlayfulScoot: Bool
+    /// Species for idle weighting (`nubby` cat vs `pip` dog). Set each tick from the app.
+    private var speciesHint: String
 
     public init(x: CGFloat = 0.48) {
         self.x = x
@@ -46,6 +50,8 @@ public struct PetBrain: Equatable {
         self.toyPlayLeft = 0
         self.petBurstCount = 0
         self.petBurstUntil = 0
+        self.afterPlayfulScoot = false
+        self.speciesHint = "nubby"
     }
 
     /// Mid-meal, mid-toy, or mid-bath. A tap or grab must not hijack the clip: it used to cut the
@@ -80,6 +86,7 @@ public struct PetBrain: Equatable {
         toyX = nil
         playReady = false
         wanderTarget = nil
+        afterPlayfulScoot = false
         // Brief eatNotice glance (aliases eat sheets) before walking over.
         player.request(.eatNotice, facingLeft: foodX! < x, force: true)
         commandedUntil = max(commandedUntil, clock + 0.35)
@@ -94,6 +101,7 @@ public struct PetBrain: Equatable {
         foodX = nil
         feedReady = false
         wanderTarget = nil
+        afterPlayfulScoot = false
         // Glance toward the toy before pathfinding (mirrors eatNotice on food drops).
         player.request(.curious, facingLeft: toyX! < x, force: true)
         commandedUntil = max(commandedUntil, clock + 0.35)
@@ -211,6 +219,7 @@ public struct PetBrain: Equatable {
         // Cover bathStart frames; later stages extend commandedUntil / resume below.
         commandedUntil = clock + 0.85
         wanderTarget = nil
+        afterPlayfulScoot = false
         foodX = nil
         toyX = nil
         bathReady = false
@@ -261,6 +270,7 @@ public struct PetBrain: Equatable {
             // Start clip first when art exists; playback falls back to idle until sleepStart sheets ship.
             player.request(.sleepStart, force: true)
             wanderTarget = nil
+            afterPlayfulScoot = false
             commandedUntil = clock + 0.9
             sleepPhase = 0
             sleepSettleReady = false
@@ -269,6 +279,7 @@ public struct PetBrain: Equatable {
             player.request(.wakeUp, force: true)
             commandedUntil = clock + 0.6
             sleepSettleReady = false
+            afterPlayfulScoot = false
         }
     }
 
@@ -319,10 +330,13 @@ public struct PetBrain: Equatable {
         return false
     }
 
-    public mutating func tick(dt: Double, sleeping: Bool, mood: PetMood = .content, roamPace: Double = 1.0, roamIdleHold: Double = 1.0, restX: Double = 0.39) {
+    public mutating func tick(dt: Double, sleeping: Bool, mood: PetMood = .content, roamPace: Double = 1.0, roamIdleHold: Double = 1.0, restX: Double = 0.39, speciesId: String = "nubby") {
         moodHint = mood
+        speciesHint = speciesId == "pip" ? "pip" : "nubby"
         let pace = min(1.45, max(0.7, roamPace))
-        let idleScale = min(1.45, max(0.7, roamIdleHold))
+        // Pip (dog) parks shorter than Nubby (cat) — more horizontal energy between walks.
+        let speciesPark: Double = speciesHint == "pip" ? 0.82 : 1.0
+        let idleScale = min(1.45, max(0.7, roamIdleHold)) * speciesPark
         let dt = min(0.05, max(0, dt))
         clock += dt
         player.advance(dt: dt)
@@ -507,6 +521,7 @@ public struct PetBrain: Equatable {
         // Tired: walk to the room's rest spot (sofa / rug / door), yawn a beat, then ask the
         // app to tuck in. Food and care holds win. Meadow's shorter idleScale keeps the linger snappy.
         if moodHint == .sleepy, foodX == nil {
+            afterPlayfulScoot = false
             let sofa = CGFloat(min(0.78, max(0.22, restX)))
             let dx = sofa - x
             if abs(dx) > 0.03 {
@@ -594,28 +609,47 @@ public struct PetBrain: Equatable {
 
     /// Only reached after sleep / care / food / toy holds clear — never interrupts those.
     private mutating func chooseNext(idleScale: Double = 1.0) {
+        let isPip = speciesHint == "pip"
         switch moodHint {
         case .hungry:
             player.request(.hungry, force: true)
             idleHold = 0.3 * idleScale
+            afterPlayfulScoot = false
             return
         case .low:
             player.request(.sad, force: true)
             idleHold = 0.3 * idleScale
+            afterPlayfulScoot = false
             return
         case .playful:
-            // Commercial bar: playful pets scoot then play — not only stand-in-place.
-            if Int.random(in: 0..<5) < 3 {
+            // Scoot then hop/play — never chain scoots forever (Shimeji density).
+            if afterPlayfulScoot {
+                afterPlayfulScoot = false
+                wanderTarget = nil
+                if Int.random(in: 0..<2) == 0 {
+                    player.request(.hop, force: true)
+                    idleHold = 0.08 * idleScale
+                } else {
+                    player.request(.playing, force: true)
+                    commandedUntil = clock + 1.35
+                }
+                return
+            }
+            // Pip (eager) scoots more often; Nubby still scoots ~60%.
+            let scootChance = isPip ? 4 : 3
+            if Int.random(in: 0..<5) < scootChance {
                 let delta = CGFloat.random(in: 0.10...0.22) * (Bool.random() ? 1 : -1)
                 let target = min(0.76, max(0.24, x + delta))
                 wanderTarget = target
+                afterPlayfulScoot = true
                 let left = target < x
-                if Int.random(in: 0..<3) == 0 {
+                // Pip runs the scoot more often; Nubby mostly walks.
+                let runBias = isPip ? 2 : 3
+                if Int.random(in: 0..<runBias) == 0 {
                     player.request(left ? .runLeft : .runRight, facingLeft: left, force: true)
                 } else {
                     player.request(left ? .walkLeft : .walkRight, facingLeft: left, force: true)
                 }
-                // After the short walk parks, chooseNext will fire playing.
                 return
             }
             if Int.random(in: 0..<2) == 0 {
@@ -628,24 +662,25 @@ public struct PetBrain: Equatable {
             wanderTarget = nil
             return
         default:
+            afterPlayfulScoot = false
             break
         }
-        // ~35% short walks; denser idle flavors (blink/stretch/groom/yawn/look/curious toy-glance).
-        // Rare stays on idle — do not pick idleRare* here. idleScale (Meadow ~0.72) keeps parks snappy.
+        // Idle roam. Pip (dog): more walks / hop / curious / tail / breath; less groom / sit / lay.
+        // Nubby (cat): denser blink/groom/look. Rare stays on idle — do not pick idleRare*.
+        // idleScale (Meadow ~0.72 × Pip park) keeps parks snappy.
         let roll = Int.random(in: 0..<20)
+        if isPip {
+            chooseNextPip(roll: roll, idleScale: idleScale)
+        } else {
+            chooseNextNubby(roll: roll, idleScale: idleScale)
+        }
+    }
+
+    /// Cat: stop-start, blink/groom/look heavy (~35% short walks).
+    private mutating func chooseNextNubby(roll: Int, idleScale: Double) {
         if roll < 7 {
-            let delta = CGFloat.random(in: 0.07...0.20) * (Bool.random() ? 1 : -1)
-            let target = min(0.76, max(0.24, x + delta))
-            wanderTarget = target
-            let left = target < x
-            // Mostly walk; occasional short run.
-            if Int.random(in: 0..<5) == 0 {
-                player.request(left ? .runLeft : .runRight, facingLeft: left, force: true)
-            } else {
-                player.request(left ? .walkLeft : .walkRight, facingLeft: left, force: true)
-            }
+            startShortWander(runChanceIn: 5)
         } else if roll < 11 {
-            // Blink is the densest idle beat.
             player.request(.idleBlink, force: true)
             idleHold = 0.28 * idleScale
         } else if roll < 13 {
@@ -655,7 +690,6 @@ public struct PetBrain: Equatable {
             player.request(Bool.random() ? .idleGroom : .idleScratch, force: true)
             idleHold = 0.12 * idleScale
         } else if roll < 17 {
-            // Toy-glance flavor on idleCurious; ear/tail keep fidget variety.
             let fidgets: [PetAnim] = [.idleCurious, .idleCurious, .idleEarMovement, .idleTailMovement]
             player.request(fidgets.randomElement() ?? .idleCurious, force: true)
             idleHold = 0.14 * idleScale
@@ -663,16 +697,62 @@ public struct PetBrain: Equatable {
             let looks: [PetAnim] = [.idleLookLeft, .idleLookRight, .idleLookUp, .idleLookDown]
             player.request(looks.randomElement() ?? .idleLookLeft, force: true)
             idleHold = 0.36 * idleScale
+        } else if Int.random(in: 0..<2) == 0 {
+            player.request(Bool.random() ? .hop : .jump, force: true)
+            idleHold = 0.1 * idleScale
         } else {
-            // Occasional hop / sit — keep rare, not another walk.
-            if Int.random(in: 0..<2) == 0 {
-                player.request(Bool.random() ? .hop : .jump, force: true)
-                idleHold = 0.1 * idleScale
+            let rests: [PetAnim] = [.idleSit, .idleLay, .idleBreathing]
+            player.request(rests.randomElement() ?? .idleSit, force: true)
+            idleHold = 0.2 * idleScale
+        }
+    }
+
+    /// Dog: eager horizontal energy — more walks/runs, sniff/curious, pant-breath, hop; rare loaf.
+    private mutating func chooseNextPip(roll: Int, idleScale: Double) {
+        if roll < 9 {
+            // ~45% short walks; run more often than Nubby.
+            startShortWander(runChanceIn: 3)
+        } else if roll < 12 {
+            player.request(.idleBlink, force: true)
+            idleHold = 0.22 * idleScale
+        } else if roll < 14 {
+            // Sniff / alert stand-in on existing curious + ear sheets.
+            let sniffs: [PetAnim] = [.idleCurious, .idleCurious, .idleEarMovement, .idleLookDown]
+            player.request(sniffs.randomElement() ?? .idleCurious, force: true)
+            idleHold = 0.16 * idleScale
+        } else if roll < 16 {
+            // Pant stand-in: breathing + tail wag life.
+            let pants: [PetAnim] = [.idleBreathing, .idleBreathing, .idleTailMovement, .idleTailMovement]
+            player.request(pants.randomElement() ?? .idleBreathing, force: true)
+            idleHold = 0.18 * idleScale
+        } else if roll < 18 {
+            player.request(Bool.random() ? .hop : .jump, force: true)
+            idleHold = 0.1 * idleScale
+        } else if roll < 19 {
+            player.request(Bool.random() ? .idleScratch : .idleStretch, force: true)
+            idleHold = 0.12 * idleScale
+        } else {
+            // Occasional sit / look — keep loaf rare for Pip.
+            if Int.random(in: 0..<3) == 0 {
+                player.request(.idleSit, force: true)
+                idleHold = 0.16 * idleScale
             } else {
-                let rests: [PetAnim] = [.idleSit, .idleLay, .idleBreathing]
-                player.request(rests.randomElement() ?? .idleSit, force: true)
-                idleHold = 0.2 * idleScale
+                let looks: [PetAnim] = [.idleLookLeft, .idleLookRight, .idleLookUp]
+                player.request(looks.randomElement() ?? .idleLookLeft, force: true)
+                idleHold = 0.28 * idleScale
             }
+        }
+    }
+
+    private mutating func startShortWander(runChanceIn: Int) {
+        let delta = CGFloat.random(in: 0.07...0.20) * (Bool.random() ? 1 : -1)
+        let target = min(0.76, max(0.24, x + delta))
+        wanderTarget = target
+        let left = target < x
+        if Int.random(in: 0..<max(1, runChanceIn)) == 0 {
+            player.request(left ? .runLeft : .runRight, facingLeft: left, force: true)
+        } else {
+            player.request(left ? .walkLeft : .walkRight, facingLeft: left, force: true)
         }
     }
 }

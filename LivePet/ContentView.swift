@@ -368,7 +368,7 @@ struct ContentView: View {
                 let now = Date()
                 let dt = now.timeIntervalSince(last)
                 last = now
-                brain.tick(dt: dt, sleeping: store.pet.isSleeping, mood: store.pet.mood, roamPace: store.selectedScene.roamPace, roamIdleHold: store.selectedScene.roamIdleHold, restX: store.selectedScene.restXFraction)
+                brain.tick(dt: dt, sleeping: store.pet.isSleeping, mood: store.pet.mood, roamPace: store.selectedScene.roamPace, roamIdleHold: store.selectedScene.roamIdleHold, restX: store.selectedScene.restXFraction, speciesId: store.pet.petGlyph)
                 petX = brain.x
                 facingLeft = brain.player.facingLeft
                 if brain.consumeFeedReady(), let id = pendingFoodId {

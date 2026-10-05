@@ -683,7 +683,8 @@ public struct PetRoomSceneView: View {
 }
 
 /// Scales the pet on press and forwards taps (heart/bob without inventory).
-/// Single tap pets; a second tap within ~0.32s becomes a jump/curious double-tap.
+/// Single tap pets; a second tap within `doubleTapWindow` becomes a jump/curious double-tap.
+/// The single tap waits exactly that window, so one gesture never fires both.
 private struct TappablePetHost<Content: View>: View {
     var onTap: (() -> Void)?
     var onDoubleTap: (() -> Void)?
@@ -693,6 +694,8 @@ private struct TappablePetHost<Content: View>: View {
     @State private var lastDragFire: Date = .distantPast
     @State private var lastTapAt: Date = .distantPast
     @State private var pendingSingle: DispatchWorkItem?
+    private let doubleTapWindow: TimeInterval = 0.26
+    private let strokeRepeat: TimeInterval = 0.22
 
     var body: some View {
         content()
@@ -710,10 +713,10 @@ private struct TappablePetHost<Content: View>: View {
                             pendingSingle?.cancel()
                             pendingSingle = nil
                             let now = Date()
-                            if now.timeIntervalSince(lastDragFire) > 0.28 {
+                            if now.timeIntervalSince(lastDragFire) > strokeRepeat {
                                 lastDragFire = now
                                 #if canImport(UIKit)
-                                UIImpactFeedbackGenerator(.light).impactOccurred()
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 #endif
                                 onDrag?()
                             }
@@ -726,7 +729,7 @@ private struct TappablePetHost<Content: View>: View {
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             #endif
                             let now = Date()
-                            if now.timeIntervalSince(lastTapAt) < 0.32, onDoubleTap != nil {
+                            if now.timeIntervalSince(lastTapAt) < doubleTapWindow, onDoubleTap != nil {
                                 pendingSingle?.cancel()
                                 pendingSingle = nil
                                 lastTapAt = .distantPast
@@ -736,11 +739,11 @@ private struct TappablePetHost<Content: View>: View {
                                 pendingSingle?.cancel()
                                 let work = DispatchWorkItem { onTap?() }
                                 pendingSingle = work
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.28, execute: work)
+                                DispatchQueue.main.asyncAfter(deadline: .now() + doubleTapWindow, execute: work)
                             }
                         }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
-                            withAnimation(.spring(response: 0.32, dampingFraction: 0.58)) { pressed = false }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                            withAnimation(.spring(response: 0.30, dampingFraction: 0.55)) { pressed = false }
                         }
                     }
             )

@@ -42,6 +42,9 @@ struct ContentView: View {
     @State private var showHitIsland = false
     @State private var brain = PetBrain()
     @State private var pendingFoodId: String?
+    /// Last stroke beat that counted as petting (sound + Feeling). Drag repeats in between
+    /// only keep the held clip alive so a long stroke is not a meow machine-gun.
+    @State private var lastStrokeBeat: Date = .distantPast
 
     var body: some View {
         NavigationStack {
@@ -354,6 +357,7 @@ struct ContentView: View {
                     if store.lastUsedFavorite {
                         brain.reactFavoriteFood()
                     }
+                    careBusy = false
                     syncActivity()
                 }
                 if brain.consumeNapReady(), !store.pet.isSleeping, !careBusy, pendingFoodId == nil {
@@ -415,23 +419,17 @@ struct ContentView: View {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         #endif
 
+        let foodId = item.id
         Task { @MainActor in
-            // Brain walks to the food and calls feed when the eat clip finishes.
-            try? await Task.sleep(nanoseconds: 4_000_000_000)
-            if pendingFoodId != nil {
-                // Fail-safe if the clip never completes.
-                if let id = pendingFoodId {
-                    pendingFoodId = nil
-                    store.feed(itemID: id)
-                    droppedSymbol = nil
-                    syncActivity()
-                }
-            }
+            // Brain walks to the food and calls feed when the eat clip finishes (careBusy clears there).
+            // Fail-safe covers a cross-room walk (~3.5s) + notice + eat if that never happens.
+            try? await Task.sleep(nanoseconds: 5_200_000_000)
+            guard pendingFoodId == foodId else { return }
+            pendingFoodId = nil
+            store.feed(itemID: foodId)
+            droppedSymbol = nil
             careBusy = false
-            spawnPlayBurst()
-
-            try? await Task.sleep(nanoseconds: 1_300_000_000)
-            careBusy = false
+            syncActivity()
         }
     }
 
@@ -454,13 +452,15 @@ struct ContentView: View {
         #if canImport(UIKit)
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         #endif
+        let toySprite = droppedSymbol
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 3_600_000_000)
-            if droppedSymbol != nil {
-                droppedSymbol = nil
-                syncActivity()
-            }
+            // consumePlayReady clears the toy and careBusy as soon as the play beat ends.
+            // Fail-safe covers a cross-room walk (~3.5s) + 1.15s play if that never fires.
+            try? await Task.sleep(nanoseconds: 5_200_000_000)
+            guard careBusy, droppedSymbol == toySprite, toySprite != nil else { return }
+            droppedSymbol = nil
             careBusy = false
+            syncActivity()
         }
     }
 
@@ -485,13 +485,13 @@ struct ContentView: View {
             try? await Task.sleep(nanoseconds: 280_000_000)
             PetSound.shared.play(.ballBounce)
             // Fail-safe if playReady never fires; consumePlayReady usually clears earlier.
-            try? await Task.sleep(nanoseconds: 3_600_000_000)
-            if ballVisible {
-                ballVisible = false
-                store.playDefault()
-                syncActivity()
-            }
+            // Long enough for a cross-room chase (~3.5s) + the 1.15s play beat.
+            try? await Task.sleep(nanoseconds: 4_900_000_000)
+            guard ballVisible else { return }
+            ballVisible = false
+            store.playDefault()
             careBusy = false
+            syncActivity()
         }
     }
 
@@ -600,18 +600,15 @@ struct ContentView: View {
     }
 
     private func performSleep() {
-        careBusy = true
         if store.pet.isSleeping {
+            // Waking needs no busy hold — toys and food right after a wake should just work.
             brain.reactSleep(on: false)
             store.wake()
             PetSound.shared.play(.meow)
             syncActivity()
-            Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 900_000_000)
-                careBusy = false
-            }
             return
         }
+        careBusy = true
         brain.reactSleep(on: true)
         store.sleep()
         PetSound.shared.play(.sleep)
@@ -639,10 +636,17 @@ struct ContentView: View {
         syncActivity()
     }
 
-    /// Drag/stroke petting — denser bob + hearts, longer reaction ≥0.8–1.2s
+    /// Drag/stroke petting. Every drag repeat keeps the held clip alive; one beat per
+    /// ~0.9s counts as petting (bob, sound, Feeling) so a long stroke reads as one cuddle.
     private func performPetStroke() {
         wakeFromNapIfNeeded()
         brain.reactGrab()
+        let now = Date()
+        guard now.timeIntervalSince(lastStrokeBeat) >= 0.9 else {
+            schedulePoseClear(holdMs: 1200)
+            return
+        }
+        lastStrokeBeat = now
         store.petTap()
         PetSound.shared.play(.pet)
         PetSound.shared.play(.meow)
@@ -656,7 +660,8 @@ struct ContentView: View {
     /// Double-tap — jump or curious glance (brain picks).
     private func performPetDoubleTap() {
         wakeFromNapIfNeeded()
-        brain.reactDoubleTap()
+        // Mid-jump double-taps let the jump land instead of restarting it.
+        guard brain.reactDoubleTap() else { return }
         store.petTap()
         PetSound.shared.play(.pet)
         PetSound.shared.play(.meow)

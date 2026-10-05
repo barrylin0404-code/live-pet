@@ -114,16 +114,27 @@ public struct PetBrain: Equatable {
     }
 
     /// Double-tap: jump or curious glance — not another petHappy.
-    public mutating func reactDoubleTap() {
+    /// Returns false while a jump or glance is still mid-clip, so it lands instead of
+    /// snapping back to frame 0. A fresh double-tap right after landing chains cleanly.
+    @discardableResult
+    public mutating func reactDoubleTap() -> Bool {
+        if (player.anim == .jump || player.anim == .curious),
+           !player.finishedOneShot, clock < commandedUntil {
+            return false
+        }
         wanderTarget = nil
         petBurstCount = 0
         petBurstUntil = clock + 0.6
         if Bool.random() {
+            // 5 frames @ 12 fps ≈ 0.42s, then a short landed beat before roaming.
             player.request(.jump, force: true)
+            commandedUntil = clock + 0.75
         } else {
+            // 6 frames @ 10 fps = 0.6s glance, then a short beat.
             player.request(.curious, force: true)
+            commandedUntil = clock + 0.95
         }
-        commandedUntil = clock + 1.05
+        return true
     }
 
     public mutating func reactPlay() {

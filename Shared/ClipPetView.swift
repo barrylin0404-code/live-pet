@@ -11,13 +11,22 @@ public struct ClipPetView: View {
     public var frame: Int
     public var facingLeft: Bool
     public var displaySize: CGFloat
+    public var growthStage: GrowthStage
 
-    public init(speciesId: String, anim: PetAnim, frame: Int, facingLeft: Bool, displaySize: CGFloat = 168) {
+    public init(
+        speciesId: String,
+        anim: PetAnim,
+        frame: Int,
+        facingLeft: Bool,
+        displaySize: CGFloat = 168,
+        growthStage: GrowthStage = .nubby
+    ) {
         self.speciesId = speciesId
         self.anim = anim
         self.frame = frame
         self.facingLeft = facingLeft
         self.displaySize = displaySize
+        self.growthStage = growthStage
     }
 
     public var body: some View {
@@ -26,12 +35,23 @@ public struct ClipPetView: View {
         let index = ((frame % count) + count) % count
         let name = PetAnimCatalog.assetName(speciesId: speciesId, anim: shown, frame: index)
         let idleFallback = PetAnimCatalog.assetName(speciesId: speciesId, anim: .idle, frame: index % 6)
+        let stageName = Self.stageAssetName(
+            speciesId: speciesId,
+            growthStage: growthStage,
+            anim: shown,
+            frame: index
+        )
         // walkLeft sheets already face left. Flipping them again turns the cat around.
         let bakedLeft = shown == .walkLeft || shown == .runLeft || shown == .turnLeft
             || shown == .idleLookLeft || shown == .idleLookRight
         Group {
             #if canImport(UIKit)
-            if UIImage(named: name) != nil {
+            if let stageName, UIImage(named: stageName) != nil {
+                Image(stageName)
+                    .interpolation(.none)
+                    .resizable()
+                    .scaledToFit()
+            } else if UIImage(named: name) != nil {
                 Image(name)
                     .interpolation(.none)
                     .resizable()
@@ -56,6 +76,32 @@ public struct ClipPetView: View {
         .frame(width: displaySize, height: displaySize)
         .scaleEffect(x: (facingLeft && !bakedLeft) ? -1 : 1, y: 1)
         .accessibilityLabel(speciesId == "pip" ? "Pip" : "Nubby")
+    }
+
+
+    /// Kit / Big Nubby only have short idle (and plus sleep) sheets — prefer them when present.
+    private static func stageAssetName(
+        speciesId: String,
+        growthStage: GrowthStage,
+        anim: PetAnim,
+        frame: Int
+    ) -> String? {
+        guard speciesId != "pip" else { return nil }
+        switch growthStage {
+        case .kit:
+            guard anim == .idle || anim == .idleBreathing || anim == .idleBlink else { return nil }
+            return "nubby-kit-idle-\(frame % 4)"
+        case .nubbyPlus:
+            if anim == .sleeping || anim == .sleepBreathing || anim == .sleepStart {
+                return "nubby-nubby_plus-sleep-\(frame % 2)"
+            }
+            if anim == .idle || anim == .idleBreathing || anim == .idleBlink {
+                return "nubby-nubby_plus-idle-\(frame % 4)"
+            }
+            return nil
+        case .nubby:
+            return nil
+        }
     }
 
     private var drawn: some View {

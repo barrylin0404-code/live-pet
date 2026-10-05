@@ -526,28 +526,40 @@ struct InventorySheet: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Inventory")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(ink)
+                Spacer(minLength: 0)
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Done")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(ink)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
+
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 88), spacing: 10)], spacing: 10) {
                     ForEach(items) { item in
                         cell(item)
                     }
                 }
-                .padding(16)
+                .padding(.horizontal, 16)
                 Text("Owned goods with pixel art.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+                    .padding(.top, 8)
                     .padding(.bottom, 12)
             }
-            .background(cream.ignoresSafeArea())
-            .navigationTitle("Inventory")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
         }
+        .background(cream.ignoresSafeArea())
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(24)
@@ -619,7 +631,25 @@ struct ShopSheet: View {
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Shop")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(ink)
+                Spacer(minLength: 0)
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Done")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(ink)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
+
             ScrollView {
                 VStack(spacing: 10) {
                     ForEach(store.foods.filter { $0.pixelSpriteName != nil }) { item in
@@ -631,21 +661,15 @@ struct ShopSheet: View {
                     row(title: "Follow the wand", sprite: "prop-wand", action: onFollowWand)
                     row(title: "Hit the Island", sprite: "prop-island", action: onHitIsland)
                 }
-                .padding(16)
+                .padding(.horizontal, 16)
                 Text("Free. No upgrade.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+                    .padding(.top, 8)
                     .padding(.bottom, 12)
             }
-            .background(cream.ignoresSafeArea())
-            .navigationTitle("Shop")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
         }
+        .background(cream.ignoresSafeArea())
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(24)

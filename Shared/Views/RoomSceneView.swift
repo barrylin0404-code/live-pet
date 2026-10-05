@@ -81,10 +81,7 @@ public struct RoomSceneView<PetContent: View>: View {
                 }
                 let feetY = CGFloat(scene.petFeetYFraction)
                 if let symbol = droppedSymbol {
-                    Image(symbol)
-                        .resizable()
-                        .interpolation(.none)
-                        .frame(width: 48, height: 48)
+                    DroppedPropView(symbol: symbol)
                         .position(x: geo.size.width * droppedXFraction, y: geo.size.height * (feetY + 0.06))
                         .transition(.scale.combined(with: .opacity))
                 }
@@ -543,6 +540,34 @@ public struct RoomSceneView<PetContent: View>: View {
 }
 
 /// Convenience scene host with animated Nubby.
+
+/// Food / toy prop that drops in from above, then settles on the floor line.
+private struct DroppedPropView: View {
+    var symbol: String
+    @State private var settled = false
+
+    var body: some View {
+        Image(symbol)
+            .resizable()
+            .interpolation(.none)
+            .frame(width: 48, height: 48)
+            .offset(y: settled ? 0 : -56)
+            .opacity(settled ? 1 : 0.35)
+            .onAppear {
+                settled = false
+                withAnimation(.spring(response: 0.34, dampingFraction: 0.62)) {
+                    settled = true
+                }
+            }
+            .onChange(of: symbol) { _ in
+                settled = false
+                withAnimation(.spring(response: 0.34, dampingFraction: 0.62)) {
+                    settled = true
+                }
+            }
+    }
+}
+
 public struct PetRoomSceneView: View {
     public var scene: PetRoomScene
     public var mood: PetMood

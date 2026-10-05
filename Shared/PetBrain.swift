@@ -461,8 +461,27 @@ public struct PetBrain: Equatable {
             idleHold = 0.3
             return
         case .playful:
-            player.request(.playing, force: true)
-            commandedUntil = clock + 1.6
+            // Commercial bar: playful pets scoot then play — not only stand-in-place.
+            if Int.random(in: 0..<5) < 3 {
+                let delta = CGFloat.random(in: 0.10...0.22) * (Bool.random() ? 1 : -1)
+                let target = min(0.76, max(0.24, x + delta))
+                wanderTarget = target
+                let left = target < x
+                if Int.random(in: 0..<3) == 0 {
+                    player.request(left ? .runLeft : .runRight, facingLeft: left, force: true)
+                } else {
+                    player.request(left ? .walkLeft : .walkRight, facingLeft: left, force: true)
+                }
+                // After the short walk parks, chooseNext will fire playing.
+                return
+            }
+            if Int.random(in: 0..<2) == 0 {
+                player.request(.hop, force: true)
+                idleHold = 0.08
+            } else {
+                player.request(.playing, force: true)
+                commandedUntil = clock + 1.35
+            }
             wanderTarget = nil
             return
         default:

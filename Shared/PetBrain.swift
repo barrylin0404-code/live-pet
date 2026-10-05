@@ -231,13 +231,19 @@ public struct PetBrain: Equatable {
         if clock < commandedUntil {
             if player.finishedOneShot && player.anim == .pickup {
                 player.request(.held, force: true)
+            } else if player.finishedOneShot && player.anim == .wakeUp {
+                player.request(.morningStretch, force: true)
+                commandedUntil = clock + 0.8
             } else if player.finishedOneShot && player.anim == .sleepStart {
                 player.request(.sleeping, force: true)
                 commandedUntil = clock + 8
                 sleepPhase = 0
             } else if player.finishedOneShot && player.anim == .wet {
                 player.request(.shakeWater, force: true)
-                commandedUntil = clock + 0.8
+                commandedUntil = clock + 0.9
+            } else if player.finishedOneShot && player.anim == .shakeWater {
+                player.request(.bathHappy, force: true)
+                commandedUntil = clock + 0.7
             } else if player.finishedOneShot && player.anim != .held {
                 player.request(.idle, force: true)
             }

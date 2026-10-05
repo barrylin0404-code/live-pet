@@ -72,6 +72,8 @@ public enum PetAnimCatalog {
             return PetAnimClip(anim: anim, frameCount: 5, fps: 8, mode: .once, priority: 5, interruptible: false)
         case .happy, .petHappy, .excited, .veryHappy, .loveReaction, .playExcited:
             return PetAnimClip(anim: anim, frameCount: 4, fps: 10, mode: .once, priority: 5, interruptible: false)
+        case .sleepStart:
+            return PetAnimClip(anim: anim, frameCount: 2, fps: 6, mode: .once, priority: 5, interruptible: false)
         case .playing, .bathing, .sleeping, .sleepBreathing, .held:
             return PetAnimClip(anim: anim, frameCount: 4, fps: 6, mode: .loop, priority: 4, interruptible: true)
         default:
@@ -85,6 +87,15 @@ public enum PetAnimCatalog {
         switch anim {
         case .eating, .eatStart, .eatFinish, .eatNotice, .favoriteFoodReaction:
             return "eat"
+        case .sleepStart:
+            // Designer ships short `*-sleep-*` lead-in sheets.
+            return "sleep"
+        case .bathStart, .bathFinish, .bathHappy:
+            return "bathing"
+        case .morningStretch:
+            return "idleStretch"
+        case .playStart, .playFinish, .playExcited:
+            return "playing"
         default:
             return anim.rawValue
         }
@@ -98,6 +109,12 @@ public enum PetAnimCatalog {
             return facingLeft ? .walkLeft : .walkRight
         case .eating, .eatStart, .eatFinish, .eatNotice, .favoriteFoodReaction:
             return .eating
+        case .bathStart, .bathFinish, .bathHappy:
+            return .bathing
+        case .playStart, .playFinish:
+            return .playing
+        case .morningStretch:
+            return .idleStretch
         case .happy, .petHappy, .excited, .veryHappy, .loveReaction, .playExcited, .petReaction:
             return .happy
         case .idleRare1, .idleRare2, .idleRare3:

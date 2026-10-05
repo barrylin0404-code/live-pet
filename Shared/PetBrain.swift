@@ -81,6 +81,29 @@ public struct PetBrain: Equatable {
         commandedUntil = max(commandedUntil, clock + 0.35)
     }
 
+    /// The app's fail-safe already served the food — drop the walk so the pet does not
+    /// cross the room and eat a prop that is no longer there.
+    public mutating func abandonFood() {
+        guard foodX != nil else { return }
+        foodX = nil
+        feedReady = false
+        if [.eatNotice, .walkToFood, .eating].contains(player.anim) {
+            player.request(.idle, force: true)
+            idleHold = max(idleHold, 0.6)
+        }
+    }
+
+    /// Same for a toy / ball the fail-safe already cleared.
+    public mutating func abandonToy() {
+        guard toyX != nil else { return }
+        toyX = nil
+        playReady = false
+        if [.curious, .walkLeft, .walkRight, .playing].contains(player.anim) {
+            player.request(.idle, force: true)
+            idleHold = max(idleHold, 0.6)
+        }
+    }
+
     /// Games and the wand set position. Tick will not wander while a hold is active.
     public mutating func hold(_ seconds: Double) {
         commandedUntil = max(commandedUntil, clock + seconds)

@@ -436,12 +436,14 @@ struct ContentView: View {
         #endif
 
         let foodId = item.id
+        let failSafe = careFailSafeNanos(to: droppedX, beat: 0.65)
         Task { @MainActor in
             // Brain walks to the food and calls feed when the eat clip finishes (careBusy clears there).
-            // Fail-safe covers a cross-room walk (~3.5s) + notice + eat if that never happens.
-            try? await Task.sleep(nanoseconds: 5_200_000_000)
+            // Fail-safe is sized to this walk at this room's pace, so calm rooms are not cut short.
+            try? await Task.sleep(nanoseconds: failSafe)
             guard pendingFoodId == foodId else { return }
             pendingFoodId = nil
+            brain.abandonFood()
             store.feed(itemID: foodId)
             droppedSymbol = nil
             careBusy = false
@@ -470,11 +472,13 @@ struct ContentView: View {
         #endif
         let toyId = item.id
         let toySprite = droppedSymbol
+        let failSafe = careFailSafeNanos(to: dropX, beat: 1.15)
         Task { @MainActor in
             // consumePlayReady clears the toy and careBusy as soon as the play beat ends.
-            // Fail-safe covers a cross-room walk (~3.5s) + 1.15s play if that never fires.
-            try? await Task.sleep(nanoseconds: 5_200_000_000)
+            // Fail-safe is sized to this walk + the 1.15s play beat if that never fires.
+            try? await Task.sleep(nanoseconds: failSafe)
             guard careBusy, pendingToyId == toyId, droppedSymbol == toySprite else { return }
+            brain.abandonToy()
             droppedSymbol = nil
             applyPendingToyPlay()
             careBusy = false
@@ -501,14 +505,16 @@ struct ContentView: View {
         #endif
 
         let floorY = CGFloat(store.selectedScene.ballFloorYFraction)
+        let failSafe = careFailSafeNanos(to: dropX, beat: 1.15)
         Task { @MainActor in
             withAnimation(.easeIn(duration: 0.28)) { ballY = floorY }
             try? await Task.sleep(nanoseconds: 280_000_000)
             PetSound.shared.play(.ballBounce)
             // Fail-safe if playReady never fires; consumePlayReady usually clears earlier.
-            // Long enough for a cross-room chase (~3.5s) + the 1.15s play beat.
-            try? await Task.sleep(nanoseconds: 4_900_000_000)
+            // Sized to this chase at this room's pace + the 1.15s play beat.
+            try? await Task.sleep(nanoseconds: failSafe > 280_000_000 ? failSafe - 280_000_000 : 0)
             guard ballVisible else { return }
+            brain.abandonToy()
             ballVisible = false
             applyPendingToyPlay()
             careBusy = false
@@ -791,6 +797,16 @@ struct ContentView: View {
                 syncActivity()
             }
         }
+    }
+
+    /// Fail-safe for a food / toy walk: notice glance + the walk at this room's pace (same
+    /// 0.16 speed and pace clamp as PetBrain) + the eat or play beat + a second of slack.
+    /// Never shorter than the old flat 5.2s.
+    private func careFailSafeNanos(to target: CGFloat, beat: Double) -> UInt64 {
+        let pace = min(1.45, max(0.7, store.selectedScene.roamPace))
+        let walk = Double(abs(target - brain.x)) / (0.16 * pace)
+        let seconds = max(5.2, 0.35 + walk + beat + 1.0)
+        return UInt64(seconds * 1_000_000_000)
     }
 
     /// One Feeling bump per toy session. No pending id = already applied (fail-safe beat the

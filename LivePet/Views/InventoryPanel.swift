@@ -15,9 +15,8 @@ struct InventoryPanel: View {
 
     private var ribbonItems: [InventoryItem] {
         var list: [InventoryItem] = []
-        list.append(contentsOf: store.foods)
-        list.append(contentsOf: store.toys)
-        list.append(contentsOf: store.careItems)
+        list.append(contentsOf: store.foods.filter { $0.pixelSpriteName != nil })
+        list.append(contentsOf: store.toys.filter { $0.pixelSpriteName != nil })
         return list
     }
 
@@ -36,19 +35,12 @@ struct InventoryPanel: View {
         .accessibilityLabel("Inventory")
     }
 
-    @ViewBuilder
-    private func inventoryGlyph(_ item: InventoryItem, tint: Color) -> some View {
-        if let sprite = item.pixelSpriteName {
-            Image(sprite)
-                .resizable()
-                .interpolation(.none)
-                .scaledToFit()
-                .frame(width: 28, height: 28)
-        } else {
-            Image(systemName: item.symbolName)
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(tint)
-        }
+    private func inventoryGlyph(_ item: InventoryItem) -> some View {
+        Image(item.pixelSpriteName ?? "prop-fish")
+            .resizable()
+            .interpolation(.none)
+            .scaledToFit()
+            .frame(width: 28, height: 28)
     }
 
     @ViewBuilder
@@ -56,8 +48,6 @@ struct InventoryPanel: View {
         let isFavorite = item.isFood
             ? store.pet.isFavoriteFood(item.id)
             : (item.isToy ? store.pet.isFavoriteToy(item.id) : false)
-        let tint: Color = item.isFood ? .orange : (item.isToy ? Color(red: 0.45, green: 0.55, blue: 0.90) : .cyan)
-
         Button {
             #if canImport(UIKit)
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -75,7 +65,7 @@ struct InventoryPanel: View {
         } label: {
             ZStack(alignment: .topTrailing) {
                 VStack(spacing: 2) {
-                    inventoryGlyph(item, tint: tint)
+                    inventoryGlyph(item)
                     if item.isFood || item.isCare {
                         Text("×\(item.quantity)")
                             .font(.system(size: 9, weight: .bold).monospacedDigit())

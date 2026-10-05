@@ -25,6 +25,7 @@ struct ContentView: View {
     @State private var showScenes = false
     @State private var showWidgets = false
     @State private var showShop = false
+    @State private var showInventory = false
     @State private var showInfo = false
     @State private var comingSoonText: String?
 
@@ -135,6 +136,9 @@ struct ContentView: View {
                 }, onShop: {
                     showScenes = false
                     showShop = true
+                }, onInventory: {
+                    showScenes = false
+                    showInventory = true
                 }, onSettings: {
                     showScenes = false
                     showSettings = true
@@ -160,6 +164,24 @@ struct ContentView: View {
                     showShop = false
                     PetSound.shared.play(.islandStart)
                     showHitIsland = true
+                })
+            }
+            .sheet(isPresented: $showInventory) {
+                InventorySheet(store: store, onFood: { item in
+                    showInventory = false
+                    dropFoodAndEat(item)
+                }, onToy: { item in
+                    showInventory = false
+                    store.play(itemID: item.id)
+                    switch item.id {
+                    case "twinkle_ball":
+                        startPlayBall()
+                    case "soft_square":
+                        startFollowWand()
+                    default:
+                        PetSound.shared.play(.islandStart)
+                        showHitIsland = true
+                    }
                 })
             }
             .sheet(isPresented: $store.showGrowCelebration) {

@@ -346,6 +346,7 @@ struct ScenesSheet: View {
     var onPets: (() -> Void)? = nil
     var onWidgets: (() -> Void)? = nil
     var onShop: (() -> Void)? = nil
+    var onInventory: (() -> Void)? = nil
     var onSettings: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
 
@@ -442,6 +443,22 @@ struct ScenesSheet: View {
                     .padding(.horizontal, 16)
                 }
 
+                                if let onInventory {
+                    Button {
+                        PetSound.shared.play(.uiTick)
+                        onInventory()
+                    } label: {
+                        Text("Inventory")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 16)
+                }
+
                 if let onSettings {
                     Button {
                         PetSound.shared.play(.uiTick)
@@ -491,6 +508,103 @@ struct SceneThumbView: View {
             }
         }
         .allowsHitTesting(false)
+    }
+}
+
+// MARK: - Inventory (pixel goods only)
+
+struct InventorySheet: View {
+    @ObservedObject var store: PetStore
+    var onFood: (InventoryItem) -> Void
+    var onToy: (InventoryItem) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
+    private let border = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
+    private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
+    private let favoriteGold = Color(red: 0xE8 / 255.0, green: 0xC5 / 255.0, blue: 0x47 / 255.0)
+
+    private var items: [InventoryItem] {
+        store.foods.filter { $0.pixelSpriteName != nil }
+            + store.toys.filter { $0.pixelSpriteName != nil }
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 88), spacing: 10)], spacing: 10) {
+                    ForEach(items) { item in
+                        cell(item)
+                    }
+                }
+                .padding(16)
+                Text("Owned goods with pixel art.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .padding(.bottom, 12)
+            }
+            .background(cream.ignoresSafeArea())
+            .navigationTitle("Inventory")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(24)
+    }
+
+    private func cell(_ item: InventoryItem) -> some View {
+        let isFavorite = item.isFood
+            ? store.pet.isFavoriteFood(item.id)
+            : store.pet.isFavoriteToy(item.id)
+        return Button {
+            PetSound.shared.play(.uiTick)
+            if item.isFood {
+                onFood(item)
+            } else {
+                onToy(item)
+            }
+        } label: {
+            ZStack(alignment: .topTrailing) {
+                VStack(spacing: 6) {
+                    Image(item.pixelSpriteName ?? "prop-fish")
+                        .resizable()
+                        .interpolation(.none)
+                        .scaledToFit()
+                        .frame(width: 40, height: 40)
+                    Text(item.name)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(ink)
+                        .lineLimit(1)
+                    if item.isFood {
+                        Text("×\(item.quantity)")
+                            .font(.system(size: 10, weight: .bold).monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(isFavorite ? favoriteGold : border, lineWidth: isFavorite ? 2.5 : 2)
+                )
+                if isFavorite {
+                    Image("prop-star")
+                        .resizable()
+                        .interpolation(.none)
+                        .scaledToFit()
+                        .frame(width: 14, height: 14)
+                        .offset(x: -4, y: 4)
+                }
+            }
+        }
+        .buttonStyle(PressScaleButtonStyle())
+        .disabled(item.isFood && item.quantity <= 0)
     }
 }
 

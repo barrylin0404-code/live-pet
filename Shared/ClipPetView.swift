@@ -79,9 +79,9 @@ public struct ClipPetView: View {
     }
 
 
-    /// Designer side-view kit / plus sheets are in the catalog (idle×6, plus sleep×4).
-    /// App Lead keeps this off until they clear the new art — kit/plus still read via size only.
-    static let stageSheetsMatchSideView = false
+    /// App Lead cleared Designer side-view kit / plus sheets (idle×6, plus sleep×4).
+    /// Kit / plus idle+sleep use those sheets; other anims stay on rebuild Nubby clips + body scale.
+    static let stageSheetsMatchSideView = true
 
     /// Prefer stage idle/sleep sheets when App Lead flips the flag. Frame counts: idle % 6, sleep % 4.
     private static func stageAssetName(

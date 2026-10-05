@@ -207,10 +207,13 @@ final class PetStore: ObservableObject {
         defaults.set(on, forKey: AppGroup.showFirefliesKey)
     }
 
+    /// Parked pets rest — the roster only decays the active pet. Stamp the incoming pet so the
+    /// time it sat parked is not charged later by background catch-up or an Island tap.
     func setActivePet(id: UUID) {
-        guard let match = pets.first(where: { $0.id == id }) else { return }
+        guard id != pet.id, let match = pets.first(where: { $0.id == id }) else { return }
         syncActiveIntoPets()
         pet = match
+        pet.touch()
         defaults.set(id.uuidString, forKey: AppGroup.activePetIdKey)
         commit()
     }

@@ -258,7 +258,8 @@ struct PetsSheet: View {
                 Spacer()
 
                 Button {
-                    if let id = pendingId ?? Optional(store.pet.id) {
+                    // Same pet: just close — don't reset the room brain mid-walk.
+                    if let id = pendingId, id != store.pet.id {
                         store.setActivePet(id: id)
                         onSwitch()
                     }
@@ -293,9 +294,10 @@ struct PetsSheet: View {
             VStack(spacing: 8) {
                 TimelineView(.animation(minimumInterval: 1.0 / 6.0)) { context in
                     let frame = Int(context.date.timeIntervalSinceReferenceDate * 6)
+                    // A napping pet naps on its card too.
                     ClipPetView(
                         speciesId: p.petGlyph,
-                        anim: .idle,
+                        anim: p.isSleeping ? .sleeping : .idle,
                         frame: frame,
                         facingLeft: false,
                         displaySize: 72,
@@ -305,7 +307,7 @@ struct PetsSheet: View {
                 .frame(height: 72)
                 Text(p.name)
                     .font(.subheadline.weight(.bold))
-                Text(p.petGlyph == "pip" ? "Pip" : p.growthStage.displayName)
+                Text((p.petGlyph == "pip" ? "Pip" : p.growthStage.displayName) + (p.isSleeping ? " · napping" : ""))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }

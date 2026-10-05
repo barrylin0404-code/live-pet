@@ -585,8 +585,10 @@ struct ContentView: View {
 
     // MARK: - Hit the Island finish
 
-    private func finishHitIsland(catches: Int) {
+    private func finishHitIsland(catches: Int?) {
         showHitIsland = false
+        // Backed out of the intro: no run, no Feeling, keep the last blurb.
+        guard let catches else { return }
         // Catch count drives Feeling + Island blurb — not a generic toy play.
         store.playHitIsland(catches: catches)
         bouncePet()

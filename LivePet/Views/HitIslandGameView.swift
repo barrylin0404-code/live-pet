@@ -9,7 +9,8 @@ struct HitIslandGameView: View {
     var speciesId: String
     var growthStage: GrowthStage
     var mood: PetMood
-    var onFinished: (_ catches: Int) -> Void
+    /// `nil` = backed out of the intro before playing — no Feeling, no blurb.
+    var onFinished: (_ catches: Int?) -> Void
     @Environment(\.dismiss) private var dismiss
 
     private let gameDuration: Double = 15
@@ -28,6 +29,9 @@ struct HitIslandGameView: View {
     @State private var loopTask: Task<Void, Never>?
     @State private var showIntro = true
     @State private var paddleFlash = false
+    /// Short reaction sheet on the paddle pet — happy on a catch, sad on a miss (no floaters).
+    @State private var reaction: PetAnim = .playing
+    @State private var reactionUntil: Double = 0
 
     var body: some View {
         ZStack {
@@ -106,13 +110,14 @@ struct HitIslandGameView: View {
                 VStack(spacing: 2) {
                     ClipPetView(
                         speciesId: speciesId,
-                        anim: .playing,
+                        anim: elapsed < reactionUntil ? reaction : .playing,
                         frame: Int(elapsed * 6),
                         facingLeft: false,
                         displaySize: 96,
                         growthStage: growthStage
                     )
-                    .scaleEffect(paddleFlash ? 1.06 : 1.0)
+                    // Kit / plus read the same size as in the room.
+                    .scaleEffect(CGFloat(growthStage.bodyScaleMultiplier) * (paddleFlash ? 1.06 : 1.0))
                 }
                 .position(
                     x: geo.size.width * paddleX,
@@ -145,7 +150,8 @@ struct HitIslandGameView: View {
                     Spacer(minLength: 0)
                     Button {
                         PetSound.shared.play(.uiTick)
-                        onFinished(0)
+                        // Backing out before Play is not a run — no "Missed every island".
+                        onFinished(nil)
                         dismiss()
                     } label: {
                         Text("Done")
@@ -222,14 +228,18 @@ struct HitIslandGameView: View {
                 .padding(.bottom, 10)
 
                 VStack(spacing: 12) {
-                    ClipPetView(
-                        speciesId: speciesId,
-                        anim: .playing,
-                        frame: 0,
-                        facingLeft: false,
-                        displaySize: 96,
-                        growthStage: growthStage
-                    )
+                    TimelineView(.animation(minimumInterval: 1.0 / 6.0, paused: false)) { context in
+                        ClipPetView(
+                            speciesId: speciesId,
+                            anim: catches > 0 ? .happy : .sad,
+                            frame: Int(context.date.timeIntervalSinceReferenceDate * 6),
+                            facingLeft: false,
+                            displaySize: 96,
+                            growthStage: growthStage
+                        )
+                        .scaleEffect(CGFloat(growthStage.bodyScaleMultiplier))
+                    }
+                    .frame(width: 96, height: 96)
                     Text(resultHeadline)
                         .font(.title3.weight(.heavy))
                         .foregroundStyle(ink)
@@ -292,6 +302,8 @@ struct HitIslandGameView: View {
         catches = 0
         misses = 0
         elapsed = 0
+        reaction = .playing
+        reactionUntil = 0
         orbs = []
         loopTask?.cancel()
         loopTask = Task { @MainActor in
@@ -360,17 +372,20 @@ struct HitIslandGameView: View {
                 }
                 if orb.bounces >= 2 {
                     catches += 1
+                    react(.happy)
                     PetSound.shared.play(.heartPop)
                     continue
                 }
             }
             if orb.y > 1.08 {
                 misses += 1
+                react(.sad)
                 PetSound.shared.play(.uiTick)
                 continue
             }
             if orb.y < -0.12, orb.bounces > 0 {
                 catches += 1
+                react(.happy)
                 continue
             }
             next.append(orb)
@@ -378,12 +393,19 @@ struct HitIslandGameView: View {
         orbs = next
     }
 
+    /// Happy beats a pending sad (a catch right after a miss should read as a win).
+    private func react(_ anim: PetAnim) {
+        if anim == .sad, reaction == .happy, elapsed < reactionUntil { return }
+        reaction = anim
+        reactionUntil = elapsed + (anim == .happy ? 0.6 : 0.45)
+    }
+
     private func endGame(early: Bool) {
         guard !finished else { return }
         running = false
         loopTask?.cancel()
         if early && catches == 0 && elapsed < 1 {
-            onFinished(0)
+            onFinished(nil)
             dismiss()
             return
         }

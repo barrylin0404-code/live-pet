@@ -13,6 +13,8 @@ final class PetLiveActivityManager: ObservableObject {
 
     private var currentActivity: Activity<PetActivityAttributes>?
     private var renewTask: Task<Void, Never>?
+    /// Sparse projected mood-band / nap-flip Activity updates (main app only).
+    private var moodFlipTask: Task<Void, Never>?
     /// Soft Island ambient meow while Live Activity is desired (main app only).
     private var ambientMeowTask: Task<Void, Never>?
 
@@ -39,6 +41,8 @@ final class PetLiveActivityManager: ObservableObject {
         }
         renewTask?.cancel()
         renewTask = nil
+        moodFlipTask?.cancel()
+        moodFlipTask = nil
         Task { await endThenRequest(pet: pet) }
     }
 
@@ -57,6 +61,7 @@ final class PetLiveActivityManager: ObservableObject {
         Task {
             await activity.update(content)
         }
+        scheduleMoodFlips()
     }
 
     func renewIfNeeded(pet: Pet) {
@@ -105,6 +110,7 @@ final class PetLiveActivityManager: ObservableObject {
                     await existing.update(content)
                 }
                 scheduleRenew(pet: pet)
+                scheduleMoodFlips()
             }
             return
         }
@@ -123,6 +129,8 @@ final class PetLiveActivityManager: ObservableObject {
             renewTask?.cancel()
             renewTask = nil
         }
+        moodFlipTask?.cancel()
+        moodFlipTask = nil
         ambientMeowTask?.cancel()
         ambientMeowTask = nil
         guard let activity = currentActivity else {
@@ -211,6 +219,7 @@ final class PetLiveActivityManager: ObservableObject {
             PetSound.shared.play(.islandStart)
             scheduleAmbientMeow()
             scheduleRenew(pet: pet)
+            scheduleMoodFlips()
         } catch {
             lastError = error.localizedDescription
             isActivityActive = false
@@ -237,6 +246,61 @@ final class PetLiveActivityManager: ObservableObject {
                 }
                 self?.start(pet: latest)
             }
+        }
+    }
+
+    /// Arm Activity updates at the next projected mood-band / nap flips (same boundaries
+    /// widgets use). Flip-only, capped (≤4 / 2h) — never the 15-min step grid.
+    /// Runs in the main app process only; a fully suspended app will not fire until it wakes
+    /// (no ActivityKit push token). Re-armed on every start / update / foreground sync.
+    private func scheduleMoodFlips() {
+        moodFlipTask?.cancel()
+        moodFlipTask = nil
+        guard isActivityActive || currentActivity != nil else { return }
+        guard let saved = PetSnapshot.loadSaved() else { return }
+        let flips = saved.moodFlips(from: .now, throughMinutes: 120, limit: 4)
+        guard !flips.isEmpty else { return }
+        moodFlipTask = Task { [weak self] in
+            for (date, _) in flips {
+                let delay = date.timeIntervalSinceNow
+                if delay > 0.05 {
+                    try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                }
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    self?.applyProjectedMoodFlip()
+                }
+            }
+        }
+    }
+
+    /// Write projected mood / wake into the live Activity (pose + recentered walkEpoch).
+    /// Skips care oneshots and no-op band matches so we never spam or clobber Feed/Pet sheets.
+    private func applyProjectedMoodFlip() {
+        let activity = currentActivity ?? Activity<PetActivityAttributes>.activities.first
+        guard let activity else { return }
+        currentActivity = activity
+        isActivityActive = true
+        switch activity.content.state.petPose {
+        case .eat, .play, .clean:
+            return
+        default:
+            break
+        }
+        guard let saved = PetSnapshot.loadSaved() else { return }
+        // Re-project at fire time — a Feed/Pet since arming moves lastUpdated.
+        let snap = saved.projected(to: .now)
+        let previous = activity.content.state
+        let next = snap.islandContentState(previous: previous)
+        if next.moodBand == previous.moodBand,
+           next.isSleeping == previous.isSleeping,
+           next.pose == previous.pose {
+            return
+        }
+        let stale = renewDeadline ?? Date().addingTimeInterval(Self.staleLeeway)
+        let content = ActivityContent(state: next, staleDate: stale)
+        Task {
+            await activity.update(content)
         }
     }
 

@@ -87,6 +87,48 @@ struct PetSnapshot: Codable, Hashable, Sendable {
         return saved.timeline(from: start, stepMinutes: stepMinutes, throughMinutes: throughMinutes)
     }
 
+    /// Sparse mood-band / nap flips only — for Live Activity ContentState updates.
+    /// Skips the 15-min widget step grid so the Island is not spammed; capped so a long
+    /// absence cannot queue dozens of writes. Same 90 s unit boundaries as `timeline`.
+    func moodFlips(
+        from start: Date = .now,
+        throughMinutes: Int = 120,
+        limit: Int = 4
+    ) -> [(date: Date, snapshot: PetSnapshot)] {
+        let end = start.addingTimeInterval(TimeInterval(max(0, throughMinutes) * 60))
+        let unit = PetDecay.unitSeconds
+        var k = max(1, Int(start.timeIntervalSince(lastUpdated) / unit) + 1)
+        var previous = projected(to: start)
+        var out: [(date: Date, snapshot: PetSnapshot)] = []
+        while out.count < max(0, limit) {
+            let flip = lastUpdated.addingTimeInterval(Double(k) * unit + 0.5)
+            if flip > end { break }
+            let snap = projected(to: flip)
+            if flip > start, snap.moodRaw != previous.moodRaw || snap.isSleeping != previous.isSleeping {
+                out.append((flip, snap))
+            }
+            previous = snap
+            k += 1
+        }
+        return out
+    }
+
+    /// Island ContentState for a projected snapshot (wake / hungry / sad / band flip).
+    /// Pose is sleep while napping, otherwise walk; `islandUpdate` recenters walkEpoch when needed.
+    func islandContentState(
+        previous: PetActivityAttributes.ContentState?
+    ) -> PetActivityAttributes.ContentState {
+        let sleeping = isSleeping == true
+        let petState = PetActivityAttributes.ContentState(
+            speciesId: petGlyph,
+            pose: (sleeping ? PetPose.sleep : PetPose.walk).rawValue,
+            moodBand: mood.rawValue,
+            isSleeping: sleeping,
+            growthStage: growthStage
+        )
+        return .islandUpdate(from: petState, previous: previous)
+    }
+
     /// Step entries plus band-flip entries, sorted, one per moment.
     func timeline(from start: Date, stepMinutes: Int = 15, throughMinutes: Int = 120) -> [(date: Date, snapshot: PetSnapshot)] {
         let end = start.addingTimeInterval(TimeInterval(max(0, throughMinutes) * 60))

@@ -158,6 +158,10 @@ private struct LockScreenPetView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(context.attributes.petName)
                     .font(.headline)
+                // Same mood word as expanded Island center — advances with ContentState flips.
+                Text(look.mood.label)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
                 Text(IslandCareCopy.blurb(for: look))
                     .font(.caption)
                     .foregroundStyle(.secondary)

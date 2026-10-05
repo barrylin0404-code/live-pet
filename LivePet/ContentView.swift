@@ -403,6 +403,9 @@ struct ContentView: View {
     private func dockButton(_ image: String, _ label: String, action: @escaping () -> Void) -> some View {
         Button {
             PetSound.shared.play(.uiTick)
+            #if canImport(UIKit)
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            #endif
             action()
         } label: {
             Image(image)

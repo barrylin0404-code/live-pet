@@ -237,18 +237,28 @@ final class PetStore: ObservableObject {
         commit()
     }
 
+    /// Favorite first (Island Feed parity), then any food — still free.
     func feedDefault() {
-        let id = foods.first(where: { $0.quantity > 0 })?.id
+        let id = foods.first(where: { pet.isFavoriteFood($0.id) })?.id
+            ?? foods.first(where: { $0.quantity > 0 })?.id
             ?? InventoryItem.catalog.first(where: \.isFood)?.id
         guard let id else { return }
         feed(itemID: id)
     }
 
     func playDefault() {
-        let id = toys.first(where: { $0.quantity > 0 })?.id
+        let id = toys.first(where: { pet.isFavoriteToy($0.id) && $0.quantity > 0 })?.id
+            ?? toys.first(where: { $0.quantity > 0 })?.id
             ?? InventoryItem.catalog.first(where: \.isToy)?.id
         guard let id else { return }
         play(itemID: id)
+    }
+
+    /// Follow the wand finish — one Feeling bump with its own blurb (never "Played with Bounce Block").
+    func playWand() {
+        lastUsedFavorite = false
+        pet.chaseWand()
+        commit()
     }
 
     /// Hit the Island finish — Feeling scales with catches; lastAction names the game for Island blurbs.
@@ -274,10 +284,11 @@ final class PetStore: ObservableObject {
         commit()
     }
 
+    /// Free forever: Bubble Soap is reusable like the toys — every bath stays soapy.
     func clean() {
         var usedSoap = false
-        if let index = items.firstIndex(where: { $0.id == "bubble_soap" && $0.quantity > 0 }) {
-            items[index].quantity -= 1
+        if let index = items.firstIndex(where: { $0.id == "bubble_soap" }) {
+            items[index].quantity = max(1, items[index].quantity)
             usedSoap = true
         }
         lastUsedFavorite = false
@@ -506,6 +517,8 @@ final class PetStore: ObservableObject {
                 }
             }
             if item.isFood { item.quantity = max(item.quantity, 99) }
+            // Older saves spent soap down to 0 — care items never run out now.
+            if item.isCare { item.quantity = max(item.quantity, 1) }
             remapped.append(item)
         }
         for item in InventoryItem.catalog where !remapped.contains(where: { $0.id == item.id }) {

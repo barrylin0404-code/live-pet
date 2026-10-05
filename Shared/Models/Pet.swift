@@ -118,6 +118,17 @@ struct Pet: Identifiable, Equatable, Codable {
         touch()
     }
 
+    /// Follow the wand — free lure, not an inventory toy. Lighter than a toy, own blurb.
+    mutating func chaseWand() {
+        isSleeping = false
+        pose = .play
+        moodScore = Self.clamp(moodScore + 12)
+        energy = Self.clamp(energy - 6)
+        satiety = Self.clamp(satiety - 4)
+        lastAction = "Chased the wand!"
+        touch()
+    }
+
     /// Island "Pet" / play-lite — Feeling bump, pose play.
     mutating func pet() {
         isSleeping = false

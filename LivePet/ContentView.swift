@@ -534,7 +534,7 @@ struct ContentView: View {
         guard !careBusy else { return }
         wakeFromNapIfNeeded()
         careBusy = true
-        // Soft Square only — wand lure leaves pending nil so end uses playDefault once.
+        // Soft Square only — wand lure leaves pending nil and ends on playWand once.
         // Assign after the busy gate so ribbon re-taps mid-play cannot rewrite Feeling.
         if showSoftSquare {
             pendingToyId = "soft_square"
@@ -570,7 +570,11 @@ struct ContentView: View {
                 elapsed += Double(tick) / 1_000_000_000
             }
             wandInteractive = false
-            applyPendingToyPlay()
+            if showSoftSquare {
+                applyPendingToyPlay()
+            } else {
+                store.playWand()
+            }
             bouncePetPlay()
             pulseHeart(crumbs: false)
             spawnPlayBurst()
@@ -779,14 +783,12 @@ struct ContentView: View {
         }
     }
 
-    /// One Feeling bump per toy session — pending id when known, else first catalog toy.
+    /// One Feeling bump per toy session. No pending id = already applied (fail-safe beat the
+    /// brain's playReady) — never fall back to another toy and bump twice.
     private func applyPendingToyPlay() {
-        if let id = pendingToyId {
-            pendingToyId = nil
-            store.play(itemID: id)
-        } else {
-            store.playDefault()
-        }
+        guard let id = pendingToyId else { return }
+        pendingToyId = nil
+        store.play(itemID: id)
     }
 
     /// Fresh brain so a switch (Pets sheet or Meet Pip) does not keep the prior pet's clip / x.

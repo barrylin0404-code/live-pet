@@ -66,7 +66,10 @@ struct ContentView: View {
                                 case "twinkle_ball":
                                     store.play(itemID: item.id)
                                     startPlayBall()
-                                case "soft_square", "bounce_block":
+                                case "soft_square":
+                                    store.play(itemID: item.id)
+                                    startFollowWand(showSoftSquare: true)
+                                case "bounce_block":
                                     dropToyAndPlay(item)
                                 default:
                                     dropToyAndPlay(item)
@@ -479,7 +482,7 @@ struct ContentView: View {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         #endif
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 5_500_000_000)
+            try? await Task.sleep(nanoseconds: 3_600_000_000)
             if droppedSymbol != nil {
                 droppedSymbol = nil
                 syncActivity()
@@ -508,8 +511,8 @@ struct ContentView: View {
             withAnimation(.easeIn(duration: 0.28)) { ballY = 0.70 }
             try? await Task.sleep(nanoseconds: 280_000_000)
             PetSound.shared.play(.ballBounce)
-            // The brain walks to the ball. This only covers a clip that never finishes.
-            try? await Task.sleep(nanoseconds: 6_000_000_000)
+            // Fail-safe if playReady never fires; consumePlayReady usually clears earlier.
+            try? await Task.sleep(nanoseconds: 3_600_000_000)
             if ballVisible {
                 ballVisible = false
                 store.playDefault()
@@ -520,13 +523,14 @@ struct ContentView: View {
     }
 
     private func bounceBallHit() {
-        guard ballVisible, !careBusy else { return }
+        // Hits stay live during the chase hold — careBusy alone must not soft-lock the ball.
+        guard ballVisible else { return }
         bouncePetPlay()
         pulseHeart(crumbs: false)
         spawnPlayBurst()
         PetSound.shared.play(.ballBoing)
         store.playDefault()
-        schedulePoseClear(holdMs: 1100)
+        schedulePoseClear(holdMs: 900)
         syncActivity()
     }
 
@@ -536,9 +540,10 @@ struct ContentView: View {
         guard !careBusy else { return }
         wakeFromNapIfNeeded()
         careBusy = true
-        brain.hold(3.2)
+        brain.hold(2.55)
         wandX = 0.50
         wandY = 0.36
+        // Soft Square lure = prop-soft; Follow the wand = prop-wand.
         wandSpriteName = showSoftSquare ? "prop-soft" : "prop-wand"
         if showSoftSquare {
             droppedSymbol = nil
@@ -572,9 +577,9 @@ struct ContentView: View {
             bouncePetPlay()
             pulseHeart(crumbs: false)
             spawnPlayBurst()
-            schedulePoseClear(holdMs: 1600)
+            schedulePoseClear(holdMs: 1100)
             syncActivity()
-            try? await Task.sleep(nanoseconds: 350_000_000)
+            try? await Task.sleep(nanoseconds: 220_000_000)
             withAnimation { wandVisible = false }
             wandSpriteName = "prop-wand"
             careBusy = false

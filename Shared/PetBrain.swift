@@ -71,7 +71,7 @@ public struct PetBrain: Equatable {
     public mutating func noticeToy(at fraction: CGFloat) {
         toyX = min(0.78, max(0.22, fraction))
         playReady = false
-        toyPlayLeft = 1.6
+        toyPlayLeft = 1.15
         napReady = false
         foodX = nil
         feedReady = false
@@ -283,9 +283,9 @@ public struct PetBrain: Equatable {
                 playReady = true
                 toyX = nil
                 player.request(.happy, force: true)
-                // Same satisfied linger as post-eat before wander resumes.
-                commandedUntil = clock + 1.1
-                idleHold = max(idleHold, 0.9)
+                // Snappy satisfied beat — resume roam sooner after Bounce / Ball drops.
+                commandedUntil = clock + 0.85
+                idleHold = max(idleHold, 0.65)
             }
             return
         }

@@ -25,7 +25,7 @@ struct CareTrayView: View {
         HStack(spacing: 10) {
             CareChunkButton(
                 title: "Feed",
-                systemImage: "fish.fill",
+                pixelImage: "ctrl-feed",
                 fill: feedFill,
                 border: feedBorder,
                 pulse: satiety < 34,
@@ -33,7 +33,7 @@ struct CareTrayView: View {
             )
             CareChunkButton(
                 title: "Play",
-                systemImage: "circle.fill",
+                pixelImage: "ctrl-play",
                 fill: playFill,
                 border: playBorder,
                 pulse: feelingScore < 34 && satiety >= 34,
@@ -41,7 +41,7 @@ struct CareTrayView: View {
             )
             CareChunkButton(
                 title: "Clean",
-                systemImage: "bubble.fill",
+                pixelImage: "ctrl-bath",
                 fill: cleanFill,
                 border: cleanBorder,
                 pulse: false,
@@ -49,7 +49,7 @@ struct CareTrayView: View {
             )
             CareChunkButton(
                 title: "Sleep",
-                systemImage: "moon.zzz.fill",
+                pixelImage: "ctrl-sleep",
                 fill: sleepFill,
                 border: sleepBorder,
                 pulse: false,
@@ -65,7 +65,7 @@ struct CareTrayView: View {
 
 private struct CareChunkButton: View {
     let title: String
-    let systemImage: String
+    let pixelImage: String
     let fill: Color
     let border: Color
     var pulse: Bool
@@ -81,10 +81,11 @@ private struct CareChunkButton: View {
             action()
         } label: {
             VStack(spacing: 6) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 28, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .shadow(color: .black.opacity(0.15), radius: 1, y: 1)
+                Image(pixelImage)
+                    .resizable()
+                    .interpolation(.none)
+                    .scaledToFit()
+                    .frame(width: 28, height: 28)
                 Text(title)
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(Color(red: 0.22, green: 0.18, blue: 0.16))

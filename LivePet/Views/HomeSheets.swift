@@ -716,13 +716,16 @@ struct WidgetsGallerySheet: View {
                 LazyVGrid(columns: columns, spacing: 12) {
                     ForEach(widgets, id: \.0) { title, blurb in
                         VStack(alignment: .leading, spacing: 8) {
-                            ClipPetView(
-                                speciesId: store.pet.petGlyph,
-                                anim: .idle,
-                                frame: 0,
-                                facingLeft: false,
-                                displaySize: 48
-                            )
+                            TimelineView(.animation(minimumInterval: 1.0 / 6.0)) { context in
+                                let frame = Int(context.date.timeIntervalSinceReferenceDate * 6)
+                                ClipPetView(
+                                    speciesId: store.pet.petGlyph,
+                                    anim: .idle,
+                                    frame: frame,
+                                    facingLeft: false,
+                                    displaySize: 48
+                                )
+                            }
                             Text(title)
                                 .font(.subheadline.weight(.bold))
                                 .foregroundStyle(ink)

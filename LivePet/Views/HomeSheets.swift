@@ -382,107 +382,52 @@ struct ScenesSheet: View {
                 }
                 .padding(16)
 
-                if let onPets {
-                    Button {
-                        PetSound.shared.play(.uiTick)
-                        onPets()
-                    } label: {
-                        Text("Pets")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
+                VStack(spacing: 10) {
+                    if let onPets {
+                        scenesLinkRow("Pets", pixel: nil, action: onPets)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 16)
-                }
-
-                if let onWidgets {
-                    Button {
-                        PetSound.shared.play(.uiTick)
-                        onWidgets()
-                    } label: {
-                        Text("Widgets")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
+                    if let onWidgets {
+                        scenesLinkRow("Widgets", pixel: nil, action: onWidgets)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 16)
-                }
-
-                if let onShop {
-                    Button {
-                        PetSound.shared.play(.uiTick)
-                        onShop()
-                    } label: {
-                        Text("Shop")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
+                    if let onShop {
+                        scenesLinkRow("Shop", pixel: "prop-fish", action: onShop)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 16)
-                }
-
-                if let onInventory {
-                    Button {
-                        PetSound.shared.play(.uiTick)
-                        onInventory()
-                    } label: {
-                        Text("Inventory")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
+                    if let onInventory {
+                        scenesLinkRow("Inventory", pixel: "prop-ball", action: onInventory)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 16)
-                }
 
-                Toggle(
-                    "Dynamic Island",
-                    isOn: Binding(
-                        get: { activityManager.isActivityActive },
-                        set: { on in
-                            PetSound.shared.play(.uiTick)
-                            if on {
-                                activityManager.start(pet: store.pet)
-                            } else {
-                                activityManager.end()
+                    Toggle(
+                        "Dynamic Island",
+                        isOn: Binding(
+                            get: { activityManager.isActivityActive },
+                            set: { on in
+                                PetSound.shared.play(.uiTick)
+                                if on {
+                                    activityManager.start(pet: store.pet)
+                                } else {
+                                    activityManager.end()
+                                }
                             }
-                        }
+                        )
                     )
-                )
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
-                .tint(coral)
-                .disabled(!activityManager.areActivitiesEnabled && !activityManager.isActivityActive)
-                .padding(.horizontal, 32)
-                .padding(.vertical, 8)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
+                    .tint(coral)
+                    .disabled(!activityManager.areActivitiesEnabled && !activityManager.isActivityActive)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0), lineWidth: 2)
+                    )
 
-                if let onSettings {
-                    Button {
-                        PetSound.shared.play(.uiTick)
-                        onSettings()
-                    } label: {
-                        Text("Sound and name")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
+                    if let onSettings {
+                        scenesLinkRow("Sound and name", pixel: nil, action: onSettings)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 16)
                 }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
             }
             .background(cream.ignoresSafeArea())
             .navigationTitle("Scenes")
@@ -496,6 +441,36 @@ struct ScenesSheet: View {
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(24)
+    }
+
+    private func scenesLinkRow(_ title: String, pixel: String?, action: @escaping () -> Void) -> some View {
+        Button {
+            PetSound.shared.play(.uiTick)
+            action()
+        } label: {
+            HStack(spacing: 12) {
+                if let pixel {
+                    Image(pixel)
+                        .resizable()
+                        .interpolation(.none)
+                        .scaledToFit()
+                        .frame(width: 28, height: 28)
+                }
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0), lineWidth: 2)
+            )
+        }
+        .buttonStyle(PressScaleButtonStyle())
     }
 }
 
@@ -764,19 +739,6 @@ struct WidgetsGallerySheet: View {
     }
 }
 
-/// Lightweight coming-soon toast for stub games.
-struct ComingSoonBanner: View {
-    let title: String
-
-    var body: some View {
-        Text(title)
-            .font(.subheadline.weight(.bold))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(Color.black.opacity(0.78), in: Capsule())
-    }
-}
 
 
 // MARK: - Info / how-to (room [i] — never a paywall)

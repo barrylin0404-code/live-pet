@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-05 (MT)  
 **Repo:** https://github.com/barrylin0404-code/live-pet  
-**`main` tip (this ship):** Scenes hub + StatusStrip ink stroke; Hit Island timer cream stroke (on tip past `01d2bc2` Grow/Meet Pip cream + Pets sleep-breath)
+**`main` tip (this ship):** Island careCrop (hungry/sad feet); Food/Play ink cells; Hit Island orb size (on tip past `2b6655e` Scenes hub + Hit Island timer cream)
 
 ## Product locks
 
@@ -18,31 +18,29 @@
 
 ## This eng ship
 
-- **Scenes hub cream consistency:** StatusStrip + Scenes scene cards / Island toggle / link rows drop leftover beige `E8D4C4` borders for ink stroke `4A3F35` (clear fills kept). Selected scene stays coral accent. Matches App Lead cream + ink stroke lock (Food outer chrome / Hit Island cards).
-- **Hit Island leftover chrome:** Game timer capsule gets the same ink stroke over cream (intro/result cards already had it).
-- Grow/Meet Pip / Pets / care aliases / dock PressScale / stageSheetsMatchSideView / Island schedule untouched.
-- Sims: typecheck OK; missing-return 0; islandlook / roam / carehold OK.
+- **Island compact care/hungry/sad crop:** `IslandWalkPetView.careCrop` (taller/wider than stroll `walkCrop`) so nubby sad feet (y≈59) and hungry ear tip (x≈63), plus pip bath/sleep feet, stay in the pill. Stroll / parked idle still use `walkCrop`. Feed/Pet settle path unchanged (prior tips).
+- **Food/Play cream consistency:** Select Food cells + Play game rows drop leftover beige `E8D4C4` for ink stroke `4A3F35` (clear fills kept; favorite gold unchanged). Matches Scenes hub / Food outer chrome.
+- **Hit Island leftover jank:** Falling island orbs honor spawn `size` (draw ~2× → ~36–52px) instead of a fixed 48 — paddle catch/miss path untouched.
+- Sims: typecheck OK; missing-return 0; islandlook (careCrop asserts) / roam / carehold OK.
 
 ## Recent eng (prior tips)
 
+- `2b6655e` — Scenes hub ink stroke; Hit Island timer cream stroke
 - `01d2bc2` — Grow/Meet Pip cream chrome; Pets sleep-breath + PressScale
 - `7ca89b9` — Sleep-breath widgets/Island; care alias frame counts; dock/ribbon PressScale
 - `47be37c` — Playful scoot→play; Pip idle variety; StatusStrip happy one-shot
-- `b2a3422` — Shop/Inventory favorites-first + soap; Pets/Meet Pip polish; denser lure
-- `4da04a3` — Fix bath cut short on Grow/Hit Island; denser roam; toy Feeling session
-- `0528154`…`874c30e` — prop-soap / kit walks; careBusy unlock; Island rename — see prior handoff.bak detail
+- `b2a3422`…`874c30e` — favorites/soap, bath unlock, Island rename — see prior handoff detail
 
 ## Still-open polish (if next session)
 
-- Confirm on device: Scenes StatusStrip + cards / toggle / links read as ink stroke on cream (no beige leftover); selected scene still coral.
-- Confirm Hit Island timer capsule matches intro/result ink stroke.
-- Confirm on device: Grow / Meet Pip sheets match Pets cream detents + corner; Grow no longer pulses scale.
-- Confirm Pets cards: napping pet breathes; happy/playful one-shot then idle; Use this pet press-scales.
-- Confirm eatNotice glance + bathStart→…→bathHappy still pace right with corrected frame counts.
-- Confirm dock + ribbon press scale feel; haptics still one tick per tap.
-- Confirm Island compact care/hungry/sad + Feed/Pet settle if any leftover remains after prior tips.
-- Confirm Wand leftover jank if any remains after `914ec4f` / denser lure.
-- Shop / Inventory / Pets unselected cards still use beige cell borders — cream ink pass only if App Lead asks (Scenes hub done this tip).
+- Confirm on device: Island hungry/sad/eat/play/bath/sleep fill the compact/Lock pill with feet on the floor (no sad foot clip).
+- Confirm Food/Play sheets: cell/row ink stroke on cream; favorites still gold.
+- Confirm Hit Island: island sizes vary slightly; catch/miss + paddle run still feel right.
+- Confirm on device: Scenes StatusStrip + cards / Hit Island timer cream from `2b6655e`.
+- Confirm Grow / Meet Pip / Pets sleep-breath / dock PressScale from prior tips.
+- Wand leftover jank if any remains after `914ec4f` / denser lure — no new wand change this tip.
+- Wet→shake + yawn-before-nap already wired with shipped sheets — no new invent.
+- Shop / Inventory / Pets unselected cards still use beige cell borders — cream ink pass only if App Lead asks (Food/Play done this tip).
 - Device confirms from older handoff still apply (rename Island restart, Sleep→Wake→Feed, projected flips, kit one-size, etc.).
 - Do **not** chase ActivityKit pushType / suspended flip delivery — parked.
 - No new PNGs / floaters / DONE. Eng never DONE.
@@ -53,8 +51,8 @@ App Lead compares home + Island to Shimeji reference. Reviewer quality only afte
 
 ## Eng status
 
-Tip past `01d2bc2` on `main` (this push). Scenes hub + StatusStrip ink stroke; Hit Island timer cream stroke. Shared typecheck OK; sims OK. SwiftUI/ActivityKit not compiled for real here (Linux stubs) — confirm on Mac. **Not DONE.**
+Tip past `2b6655e` on `main` (this push). Island careCrop; Food/Play ink cells; Hit Island orb size. Shared typecheck OK; sims OK. SwiftUI/ActivityKit not compiled for real here (Linux stubs) — confirm on Mac. **Not DONE.**
 
 **Waiting on**
 1. App Lead: compare a running build on a device or Mac against Shimeji for DONE (Eng does not call DONE).
-2. App Lead: confirm Scenes ink stroke + Hit Island timer chrome on device.
+2. App Lead: confirm Island care crop + Food/Play ink cells + Hit Island orb sizes on device.

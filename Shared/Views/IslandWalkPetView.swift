@@ -102,12 +102,13 @@ public struct IslandWalkPetView: View {
 
     /// Eat, play, bath, sleep, hungry, and sad use the same side-view sheets as the room.
     /// Kit / plus scale lives in ClipPetView (stage sheets are drawn at stage size) — do not
-    /// scale again here. Compact / Lock Screen slots crop to the walk window so hungry/sad
-    /// (full 64-px canvas) fill the pill like the stroll and keep feet on the floor.
+    /// scale again here. Compact / Lock Screen slots crop with `careCrop` so hungry/sad
+    /// (full 64-px canvas) fill the pill like the stroll and keep feet on the floor —
+    /// the stroll crop alone clipped nubby sad feet and the hungry ear tip.
     private func careBody(_ anim: PetAnim) -> some View {
         let height = slotHeight
         let petWidth = height * 1.35
-        let crop = Self.walkCrop(speciesId: speciesId, facingRight: true)
+        let crop = Self.careCrop(speciesId: speciesId)
         let unit = min(petWidth / crop.w, height / crop.h)
         let sheetSide = 64 * unit
         let cropX = (petWidth - crop.w * unit) / 2
@@ -253,6 +254,16 @@ public struct IslandWalkPetView: View {
             return (facingRight ? 16 : 4, 20, 44, 36)
         }
         return (facingRight ? 8 : 2, 14, 54, 42)
+    }
+
+    /// Care / mood-hold sheets (hungry, sad, eat, play, bath, sleep) — same family as walkCrop
+    /// but taller/wider so nubby sad feet (y≈59) and hungry ear (x≈63) are not clipped, and
+    /// pip bath/sleep feet (y≈61) stay in the pill. Stroll / parked idle keep `walkCrop`.
+    private static func careCrop(speciesId: String) -> (x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat) {
+        if speciesId == "pip" {
+            return (16, 20, 44, 42)
+        }
+        return (8, 14, 56, 48)
     }
 
     /// Room idle sheet (6 frames, blink on 3–4) placed so its pixels sit exactly where the walk

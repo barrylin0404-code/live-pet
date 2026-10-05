@@ -101,10 +101,12 @@ struct HitIslandGameView: View {
                 .frame(maxHeight: .infinity, alignment: .top)
 
                 ForEach(orbs) { orb in
+                    // Spawn picks size 18…26 — draw ~2× so islands vary around the old 48px.
+                    let side = orb.size * 2
                     Image("prop-island")
                         .resizable()
                         .interpolation(.none)
-                        .frame(width: 48, height: 48)
+                        .frame(width: side, height: side)
                         .position(
                             x: geo.size.width * orb.x,
                             y: geo.size.height * orb.y

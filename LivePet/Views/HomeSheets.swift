@@ -12,7 +12,8 @@ struct SelectFoodSheet: View {
 
     private let cream = Color(red: 0xF7 / 255.0, green: 0xF0 / 255.0, blue: 0xE6 / 255.0)
     private let stroke = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
-    private let cellBorder = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
+    /// Food cells match outer chrome / Scenes hub — ink stroke, clear fill (no beige leftover).
+    private let cellBorder = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
     private let favoriteGold = Color(red: 0xE8 / 255.0, green: 0xC5 / 255.0, blue: 0x47 / 255.0)
     private let columns = [
         GridItem(.fixed(96), spacing: 10),
@@ -133,7 +134,8 @@ struct SelectGameSheet: View {
 
     private let cream = Color(red: 0xF7 / 255.0, green: 0xF0 / 255.0, blue: 0xE6 / 255.0)
     private let stroke = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
-    private let border = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
+    /// Play rows match Food / Scenes ink stroke (no beige leftover).
+    private let border = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
 
 
     var body: some View {

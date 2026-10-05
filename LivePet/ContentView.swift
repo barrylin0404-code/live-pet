@@ -44,6 +44,7 @@ struct ContentView: View {
     @State private var wandVisible = false
     @State private var wandInteractive = false
     @State private var playParticles: [CareParticle] = []
+    @State private var crumbParticles: [CareParticle] = []
     @State private var wandX: CGFloat = 0.55
     @State private var wandY: CGFloat = 0.38
     @State private var showHitIsland = false
@@ -58,6 +59,13 @@ struct ContentView: View {
                 // Rebuild: the room is the app. No console dashboard.
                 ZStack(alignment: .bottom) {
                     roomViewport
+                    VStack(spacing: 0) {
+                        careMetersBar
+                            .padding(.horizontal, 14)
+                            .padding(.top, 10)
+                        Spacer(minLength: 0)
+                    }
+                    .allowsHitTesting(false)
                     careFeedbackOverlay
                         .allowsHitTesting(false)
                     VStack(spacing: 0) {
@@ -354,6 +362,58 @@ struct ContentView: View {
         }
     }
 
+    private var filledFeelingHearts: Int {
+        switch store.pet.moodScore {
+        case 75...100: return 4
+        case 50..<75: return 3
+        case 25..<50: return 2
+        case 1..<25: return 1
+        default: return 0
+        }
+    }
+
+    private var filledSatietyBowls: Int {
+        switch store.pet.satiety {
+        case 67...100: return 3
+        case 34..<67: return 2
+        case 1..<34: return 1
+        default: return 0
+        }
+    }
+
+    /// Small Feeling + Satiety readouts on the room — not a dashboard card.
+    private var careMetersBar: some View {
+        HStack(alignment: .center, spacing: 10) {
+            HStack(spacing: 3) {
+                ForEach(0..<4, id: \.self) { i in
+                    PixelHeartView(filled: i < filledFeelingHearts, size: 14)
+                }
+            }
+            .accessibilityLabel("Feeling, \(store.pet.moodScore) percent")
+
+            HStack(spacing: 4) {
+                ForEach(0..<3, id: \.self) { i in
+                    Image(i < filledSatietyBowls ? "satiety-bowl-full" : "satiety-bowl-empty")
+                        .resizable()
+                        .interpolation(.none)
+                        .scaledToFit()
+                        .frame(width: 14, height: 14)
+                }
+            }
+            .accessibilityLabel("Satiety, \(store.pet.satiety) percent")
+
+            Spacer(minLength: 0)
+
+            Text("\(store.pet.ageDays)d")
+                .font(.system(size: 12, weight: .heavy, design: .rounded))
+                .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21).opacity(0.55))
+                .accessibilityLabel("\(store.pet.ageDays) days old")
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Color(red: 1.0, green: 0.97, blue: 0.92).opacity(0.82), in: Capsule())
+    }
+
     private var careFeedbackOverlay: some View {
         GeometryReader { geo in
             let petX = geo.size.width * brain.x
@@ -386,6 +446,12 @@ struct ContentView: View {
                         .frame(width: p.size, height: p.size)
                         .opacity(p.opacity)
                         .offset(x: petX - geo.size.width / 2 + p.x, y: petY - geo.size.height / 2 + p.y - 48)
+                }
+                ForEach(crumbParticles) { p in
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(Color(red: 0.72, green: 0.48, blue: 0.28).opacity(p.opacity))
+                        .frame(width: p.size, height: p.size * 0.7)
+                        .offset(x: petX - geo.size.width / 2 + p.x, y: petY - geo.size.height / 2 + p.y - 20)
                 }
                 if showZzz {
                     Text("Zz")
@@ -717,6 +783,9 @@ struct ContentView: View {
         withAnimation(.easeOut(duration: 0.6)) {
             heartRise = -48
         }
+        if crumbs {
+            spawnCrumbs()
+        }
         Task {
             try? await Task.sleep(nanoseconds: 650_000_000)
             await MainActor.run {
@@ -725,6 +794,27 @@ struct ContentView: View {
                     showFloatingStar = false
                 }
             }
+        }
+    }
+
+    private func spawnCrumbs() {
+        crumbParticles = (0..<5).map { i in
+            CareParticle(
+                id: UUID(),
+                x: CGFloat([-10, 4, 14, -16, 8][i]),
+                y: CGFloat([6, 2, 10, 0, 8][i]),
+                size: CGFloat([5, 4, 6, 3, 5][i]),
+                opacity: 0.95
+            )
+        }
+        withAnimation(.easeOut(duration: 0.55)) {
+            crumbParticles = crumbParticles.map {
+                CareParticle(id: $0.id, x: $0.x * 1.4, y: $0.y + 18, size: $0.size, opacity: 0.05)
+            }
+        }
+        Task {
+            try? await Task.sleep(nanoseconds: 600_000_000)
+            await MainActor.run { crumbParticles = [] }
         }
     }
 

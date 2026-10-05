@@ -106,9 +106,11 @@ public struct PetBrain: Equatable {
 
     public mutating func reactSleep(on: Bool) {
         if on {
-            player.request(.sleeping, force: true)
+            // Start clip first when art exists; playback falls back to idle until sleepStart sheets ship.
+            player.request(.sleepStart, force: true)
             wanderTarget = nil
-            commandedUntil = clock + 8
+            commandedUntil = clock + 0.9
+            sleepPhase = 0
         } else {
             player.request(.wakeUp, force: true)
             commandedUntil = clock + 0.6
@@ -153,6 +155,13 @@ public struct PetBrain: Equatable {
         if sleeping {
             wasSleeping = true
             sleepPhase += dt
+            if player.anim == .sleepStart {
+                if player.finishedOneShot {
+                    player.request(.sleeping, force: true)
+                    sleepPhase = 0
+                }
+                return
+            }
             if player.anim != .sleeping && player.anim != .sleepBreathing {
                 player.request(.sleeping, force: true)
                 sleepPhase = 0
@@ -222,6 +231,10 @@ public struct PetBrain: Equatable {
         if clock < commandedUntil {
             if player.finishedOneShot && player.anim == .pickup {
                 player.request(.held, force: true)
+            } else if player.finishedOneShot && player.anim == .sleepStart {
+                player.request(.sleeping, force: true)
+                commandedUntil = clock + 8
+                sleepPhase = 0
             } else if player.finishedOneShot && player.anim == .wet {
                 player.request(.shakeWater, force: true)
                 commandedUntil = clock + 0.8

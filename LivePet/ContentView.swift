@@ -575,6 +575,8 @@ struct ContentView: View {
             } else {
                 store.playWand()
             }
+            // Caught the lure: happy sheet in the room, not the walk clip cycling in place.
+            brain.reactPlayResult(happy: true)
             bouncePetPlay()
             pulseHeart(crumbs: false)
             spawnPlayBurst()

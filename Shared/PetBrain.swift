@@ -153,6 +153,16 @@ public struct PetBrain: Equatable {
         toyX = nil
     }
 
+    /// End of a lure / game the app drove (wand, Soft Square, Hit the Island): one happy or sad
+    /// beat on its sheet, then the usual idle linger. Never during a nap, meal, or toy walk.
+    public mutating func reactPlayResult(happy: Bool) {
+        guard !wasSleeping, foodX == nil, toyX == nil else { return }
+        wanderTarget = nil
+        player.request(happy ? .happy : .sad, force: true)
+        commandedUntil = max(commandedUntil, clock + (happy ? 1.25 : 1.0))
+        idleHold = max(idleHold, 0.9)
+    }
+
     /// After the Grow celebration closes: one happy beat, then the usual idle linger.
     public mutating func reactGrown() {
         guard !wasSleeping, foodX == nil, toyX == nil else { return }
@@ -408,6 +418,13 @@ public struct PetBrain: Equatable {
 
         let running = player.anim == .runLeft || player.anim == .runRight
         let moving = running || player.anim == .walkRight || player.anim == .walkLeft || player.anim == .walkSlow
+        // A loop nothing is driving any more (wand walk once the lure is gone, playful `playing`
+        // after its hold) would cycle in place forever — hand it back to idle and roam on.
+        if wanderTarget == nil, moving || player.anim == .playing {
+            player.request(.idle, force: true)
+            idleHold = 0.5 * idleScale
+            return
+        }
         if let target = wanderTarget, moving {
             let dx = target - x
             if abs(dx) < 0.025 {

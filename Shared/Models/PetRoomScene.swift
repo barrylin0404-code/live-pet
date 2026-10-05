@@ -48,6 +48,9 @@ public enum PetRoomScene: String, Codable, CaseIterable, Identifiable, Sendable 
         }
     }
 
+    /// Ball rests just below the pet centerline so Meadow (~58%) and indoor (~62%) match.
+    public var ballFloorYFraction: Double { petFeetYFraction + 0.08 }
+
     /// Pixel plate for this room. Each room uses its own plate.
     public var plateImageName: String? {
         switch self {

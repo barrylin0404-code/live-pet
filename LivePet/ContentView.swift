@@ -492,8 +492,9 @@ struct ContentView: View {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         #endif
 
+        let floorY = CGFloat(store.selectedScene.ballFloorYFraction)
         Task { @MainActor in
-            withAnimation(.easeIn(duration: 0.28)) { ballY = 0.70 }
+            withAnimation(.easeIn(duration: 0.28)) { ballY = floorY }
             try? await Task.sleep(nanoseconds: 280_000_000)
             PetSound.shared.play(.ballBounce)
             // Fail-safe if playReady never fires; consumePlayReady usually clears earlier.

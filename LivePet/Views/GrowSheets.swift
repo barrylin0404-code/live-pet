@@ -30,10 +30,16 @@ struct GrowCelebrationSheet: View {
                     .font(.title3)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Button("Back to room", action: onDone)
-                    .buttonStyle(.borderedProminent)
-                    .tint(Color(red: 0.98, green: 0.52, blue: 0.42))
-                    .padding(.bottom, 28)
+                Button(action: onDone) {
+                    Text("Back to room")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color(red: 0.98, green: 0.52, blue: 0.42), in: Capsule())
+                }
+                .buttonStyle(PressScaleButtonStyle())
+                .padding(.bottom, 28)
             }
             .padding()
         }
@@ -71,9 +77,16 @@ struct MeetPipSheet: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
-                Button("Meet Pip", action: onMeet)
-                    .buttonStyle(.borderedProminent)
-                    .tint(Color(red: 0x7E/255.0, green: 0xC8/255.0, blue: 0xE3/255.0))
+                Button(action: onMeet) {
+                    Text("Meet Pip")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color(red: 0x7E/255.0, green: 0xC8/255.0, blue: 0xE3/255.0), in: Capsule())
+                }
+                .buttonStyle(PressScaleButtonStyle())
+                .padding(.horizontal)
                 Button("Skip for now", action: onSkip)
                     .foregroundStyle(.secondary)
                 Spacer()

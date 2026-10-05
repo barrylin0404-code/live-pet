@@ -42,7 +42,7 @@ struct PetLiveActivityWidget: Widget {
                     }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    islandBottom()
+                    islandBottom(isSleeping: context.state.isSleeping || context.state.petPose == .sleep)
                 }
             } compactLeading: {
                 // Dense walk + edge flip (TimelineView) — not a static island crop.
@@ -88,7 +88,7 @@ struct PetLiveActivityWidget: Widget {
     }
 
     @ViewBuilder
-    private func islandBottom() -> some View {
+    private func islandBottom(isSleeping: Bool) -> some View {
         if #available(iOSApplicationExtension 17.0, *) {
             HStack(spacing: 16) {
                 Button(intent: FeedPetIntent()) {
@@ -107,7 +107,7 @@ struct PetLiveActivityWidget: Widget {
                     islandTile("ctrl-sleep")
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Sleep")
+                .accessibilityLabel(isSleeping ? "Wake" : "Sleep")
             }
             .padding(.horizontal, 8)
             .padding(.bottom, 4)

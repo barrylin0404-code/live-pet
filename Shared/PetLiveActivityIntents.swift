@@ -33,10 +33,14 @@ enum PetIntentMutator {
         await pushActivity(pet: model)
     }
 
-    /// Sleep / tuck-in (Island “Lull”).
+    /// Sleep / tuck-in (Island “Lull”). Matches the dock: wake a napping pet instead of tucking in again.
     static func lull() async {
         var model = loadPet() ?? Pet()
-        model.sleep()
+        if model.isSleeping {
+            model.wake()
+        } else {
+            model.sleep()
+        }
         persist(pet: model, items: nil)
         await pushActivity(pet: model)
     }

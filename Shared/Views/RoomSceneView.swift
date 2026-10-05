@@ -791,16 +791,19 @@ struct FirefliesOverlay: View {
     var count: Int
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 0.45, paused: false)) { context in
+        TimelineView(.animation(minimumInterval: 0.35, paused: false)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             GeometryReader { geo in
                 ZStack {
-                    ForEach(0..<min(count, 2), id: \.self) { i in
-                        let phase = t * (0.7 + Double(i) * 0.35) + Double(i)
-                        let x = geo.size.width * (0.78 + 0.08 * CGFloat(sin(phase)))
-                        let y = geo.size.height * (0.22 + 0.10 * CGFloat(cos(phase * 1.3)))
+                    // Up to six soft motes when Fireflies B is unlocked.
+                    ForEach(0..<min(max(count, 0), 6), id: \.self) { i in
+                        let phase = t * (0.55 + Double(i) * 0.22) + Double(i) * 1.7
+                        let baseX: CGFloat = [0.72, 0.84, 0.64, 0.90, 0.76, 0.58][i]
+                        let baseY: CGFloat = [0.18, 0.28, 0.24, 0.16, 0.34, 0.22][i]
+                        let x = geo.size.width * (baseX + 0.05 * CGFloat(sin(phase)))
+                        let y = geo.size.height * (baseY + 0.06 * CGFloat(cos(phase * 1.25)))
                         RoundedRectangle(cornerRadius: 1)
-                            .fill(Color(red: 1.0, green: 0.92, blue: 0.55).opacity(0.75 + 0.2 * sin(phase)))
+                            .fill(Color(red: 1.0, green: 0.92, blue: 0.55).opacity(0.55 + 0.35 * abs(sin(phase))))
                             .frame(width: 4, height: 4)
                             .position(x: x, y: y)
                     }

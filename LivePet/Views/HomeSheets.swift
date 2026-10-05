@@ -514,19 +514,11 @@ struct SceneThumbView: View {
     let scene: PetRoomScene
 
     var body: some View {
-        Group {
-            if let name = scene.thumbImageName {
-                Image(name)
-                    .interpolation(.none)
-                    .resizable()
-                    .scaledToFill()
-            } else {
-                RoomSceneView(scene: scene, mood: .content, firefliesUnlocked: 0, showFireflies: false) {
-                    EmptyView()
-                }
-            }
-        }
-        .allowsHitTesting(false)
+        Image(scene.thumbImageName ?? scene.plateImageName ?? "sun-nook-plate")
+            .interpolation(.none)
+            .resizable()
+            .scaledToFill()
+            .allowsHitTesting(false)
     }
 }
 

@@ -61,11 +61,11 @@ public enum PetRoomScene: String, Codable, CaseIterable, Identifiable, Sendable 
         }
     }
 
-    /// Optional Assets.xcassets thumb (nearest-neighbor at display time).
+    /// Assets.xcassets thumb. Meadow has a dedicated crop; others use the room plate.
     public var thumbImageName: String? {
         switch self {
         case .meadowWalk: return "thumb-meadow-walk"
-        default: return nil
+        default: return plateImageName
         }
     }
 }

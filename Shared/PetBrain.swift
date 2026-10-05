@@ -395,7 +395,8 @@ public struct PetBrain: Equatable {
             if abs(dx) < 0.025 {
                 wanderTarget = nil
                 player.request(.idle, force: true)
-                idleHold = Double.random(in: 0.7...1.8)
+                // Shorter park so idle variety / short walks fire sooner (Shimeji density).
+                idleHold = Double.random(in: 0.4...1.15)
                 return
             }
             let left = dx < 0
@@ -437,6 +438,7 @@ public struct PetBrain: Equatable {
         }
     }
 
+    /// Only reached after sleep / care / food / toy holds clear — never interrupts those.
     private mutating func chooseNext() {
         switch moodHint {
         case .hungry:
@@ -455,24 +457,38 @@ public struct PetBrain: Equatable {
         default:
             break
         }
-        let roll = Int.random(in: 0..<12)
-        if roll < 4 {
-            let target = CGFloat.random(in: 0.24...0.76)
+        // ~40% short walks; rest denser idle flavors (blink/stretch/groom/yawn/curious/ear/tail/scratch).
+        // Rare stays on idle — do not pick idleRare* here.
+        let roll = Int.random(in: 0..<20)
+        if roll < 8 {
+            let delta = CGFloat.random(in: 0.07...0.20) * (Bool.random() ? 1 : -1)
+            let target = min(0.76, max(0.24, x + delta))
             wanderTarget = target
             let left = target < x
-            if Int.random(in: 0..<3) == 0 {
+            // Mostly walk; occasional short run.
+            if Int.random(in: 0..<5) == 0 {
                 player.request(left ? .runLeft : .runRight, facingLeft: left, force: true)
             } else {
                 player.request(left ? .walkLeft : .walkRight, facingLeft: left, force: true)
             }
-        } else if roll < 6 {
+        } else if roll < 11 {
             player.request(.idleBlink, force: true)
-            idleHold = 0.4
-        } else if roll == 6 {
+            idleHold = 0.32
+        } else if roll < 13 {
+            player.request(Bool.random() ? .idleYawn : .idleStretch, force: true)
+            idleHold = 0.12
+        } else if roll < 15 {
+            player.request(Bool.random() ? .idleGroom : .idleScratch, force: true)
+            idleHold = 0.12
+        } else if roll < 17 {
+            let fidgets: [PetAnim] = [.idleEarMovement, .idleTailMovement, .idleCurious]
+            player.request(fidgets.randomElement() ?? .idleCurious, force: true)
+            idleHold = 0.12
+        } else if roll < 18 {
             let looks: [PetAnim] = [.idleLookLeft, .idleLookRight, .idleLookUp, .idleLookDown]
             player.request(looks.randomElement() ?? .idleLookLeft, force: true)
-            idleHold = 0.5
-        } else if roll == 7 {
+            idleHold = 0.4
+        } else if roll < 19 {
             switch Int.random(in: 0..<3) {
             case 0:
                 player.request(.hop, force: true)
@@ -482,17 +498,11 @@ public struct PetBrain: Equatable {
                 let left = Bool.random()
                 player.request(left ? .turnLeft : .turnRight, facingLeft: left, force: true)
             }
-            idleHold = 0.15
-        } else if roll == 8 {
-            player.request(Bool.random() ? .idleYawn : .idleStretch, force: true)
-            idleHold = 0.2
-        } else if roll == 9 {
-            player.request(.idleGroom, force: true)
-            idleHold = 0.2
+            idleHold = 0.1
         } else {
-            let rests: [PetAnim] = [.idleSit, .idleEarMovement, .idleTailMovement, .idleScratch, .idleLay, .idleCurious, .idleBreathing]
+            let rests: [PetAnim] = [.idleSit, .idleLay, .idleBreathing]
             player.request(rests.randomElement() ?? .idleSit, force: true)
-            idleHold = 0.2
+            idleHold = 0.22
         }
     }
 }

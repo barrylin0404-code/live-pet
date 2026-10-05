@@ -347,7 +347,7 @@ struct ScenesSheet: View {
 
     private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
     private let coral = Color(red: 0xFA / 255.0, green: 0x85 / 255.0, blue: 0x6B / 255.0)
-    /// 2×3-ready: three columns (slot 6 empty — Snow/Coral stubbed out).
+    /// Three columns — Sun/Moon/Meadow, Tide/Skyline/Snow, Coral (+ next empty).
     private let columns = [
         GridItem(.flexible(), spacing: 12),
         GridItem(.flexible(), spacing: 12),
@@ -357,6 +357,11 @@ struct ScenesSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
+                // Feeling + Satiety + age — console meters live here (More), not on the room plate.
+                StatusStripView(pet: store.pet)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+
                 LazyVGrid(columns: columns, spacing: 14) {
                     ForEach(PetRoomScene.availableInDisplayOrder) { scene in
                         Button {

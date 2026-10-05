@@ -1,5 +1,5 @@
 import SwiftUI
-/// Floating Feeling / Satiety / age pill — 13-playable-home + 08-premium-chrome values.
+/// Feeling / Satiety / age card — shown in Scenes (More), not over the room plate.
 struct StatusStripView: View {
     let pet: Pet
 

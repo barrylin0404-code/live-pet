@@ -61,19 +61,12 @@ struct SelectFoodSheet: View {
         .padding(.bottom, 120) // keep console silhouette readable
     }
 
-    @ViewBuilder
     private func foodGlyph(_ item: InventoryItem) -> some View {
-        if let sprite = item.pixelSpriteName {
-            Image(sprite)
-                .resizable()
-                .interpolation(.none)
-                .scaledToFit()
-                .frame(width: 40, height: 40)
-        } else {
-            Image(systemName: item.symbolName)
-                .font(.system(size: 34, weight: .semibold))
-                .foregroundStyle(Color.orange)
-        }
+        Image(item.pixelSpriteName ?? "prop-fish")
+            .resizable()
+            .interpolation(.none)
+            .scaledToFit()
+            .frame(width: 40, height: 40)
     }
 
     private func foodCell(_ item: InventoryItem) -> some View {
@@ -175,19 +168,12 @@ struct SelectGameSheet: View {
         .padding(.bottom, 120)
     }
 
-    @ViewBuilder
     private func gameGlyph(icon: String?, pixel: String?) -> some View {
-        if let pixel {
-            Image(pixel)
-                .resizable()
-                .interpolation(.none)
-                .scaledToFit()
-                .frame(width: 40, height: 40)
-        } else if let icon {
-            Image(systemName: icon)
-                .font(.system(size: 40, weight: .semibold))
-                .foregroundStyle(Color(red: 0x7E / 255.0, green: 0xC8 / 255.0, blue: 0xE3 / 255.0))
-        }
+        Image(pixel ?? "prop-ball")
+            .resizable()
+            .interpolation(.none)
+            .scaledToFit()
+            .frame(width: 40, height: 40)
     }
 
     private func gameRow(title: String, icon: String? = nil, pixel: String? = nil, action: @escaping () -> Void) -> some View {
@@ -784,11 +770,11 @@ struct InfoHowToSheet: View {
                     Text("Live Pet is free forever — no Upgrade, Unlock, or IAP.")
                         .font(.body.weight(.semibold))
                         .foregroundStyle(ink)
-                    labelRow("F", "Pick food — your pet walks over and eats.")
-                    labelRow("P", "Play Ball, Follow the wand, or Hit the Island.")
-                    labelRow("Island", "Pink Dynamic Island toggle on the console starts the Live Activity.")
-                    labelRow("♥", "Feeling hearts and Satiety bowls live on the mint LCD.")
-                    Text("Long-press F to clean, long-press P to tuck in. Shake to sleep.")
+                    labelRow("Feed", "Pick food from the dock — your pet walks over and eats.")
+                    labelRow("Play", "Play Ball, Follow the wand, or Hit the Island.")
+                    labelRow("Inventory", "Tap fish, berry, ball, wand, or island goods above the dock.")
+                    labelRow("Island", "Start Dynamic Island from Sound and name in More.")
+                    Text("Bath and Sleep are on the dock. Shake to sleep too.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }

@@ -63,6 +63,16 @@ struct ContentView: View {
                         if store.isGrowEligible {
                             growChip.padding(.bottom, 8)
                         }
+                        InventoryPanel(
+                            store: store,
+                            onFeed: { syncActivity() },
+                            onPlay: { syncActivity() },
+                            onClean: {
+                                performClean()
+                            }
+                        )
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 6)
                         toyDock
                     }
                 }

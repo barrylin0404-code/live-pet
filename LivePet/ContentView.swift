@@ -69,10 +69,8 @@ struct ContentView: View {
                             onToy: { item in
                                 switch item.id {
                                 case "twinkle_ball":
-                                    pendingToyId = item.id
                                     startPlayBall()
                                 case "soft_square":
-                                    pendingToyId = item.id
                                     startFollowWand(showSoftSquare: true)
                                 case "bounce_block":
                                     dropToyAndPlay(item)
@@ -179,7 +177,6 @@ struct ContentView: View {
                     startFollowWand()
                 }, onSoftSquare: {
                     showShop = false
-                    pendingToyId = "soft_square"
                     startFollowWand(showSoftSquare: true)
                 }, onBounceBlock: {
                     showShop = false
@@ -201,10 +198,8 @@ struct ContentView: View {
                     showInventory = false
                     switch item.id {
                     case "twinkle_ball":
-                        pendingToyId = item.id
                         startPlayBall()
                     case "soft_square":
-                        pendingToyId = item.id
                         startFollowWand(showSoftSquare: true)
                     case "bounce_block":
                         dropToyAndPlay(item)
@@ -487,6 +482,8 @@ struct ContentView: View {
         guard !careBusy else { return }
         wakeFromNapIfNeeded()
         careBusy = true
+        // Pending only after the busy gate — ribbon re-taps mid-chase must not steal Feeling.
+        pendingToyId = "twinkle_ball"
         let dropX: CGFloat = brain.x < 0.5 ? 0.70 : 0.30
         ballX = dropX
         ballY = 0.22
@@ -520,7 +517,7 @@ struct ContentView: View {
         pulseHeart(crumbs: false)
         spawnPlayBurst()
         PetSound.shared.play(.ballBoing)
-        store.playDefault()
+        // Feeling once when the chase ends (applyPendingToyPlay) — not on every bounce.
         schedulePoseClear(holdMs: 900)
         syncActivity()
     }
@@ -531,14 +528,17 @@ struct ContentView: View {
         guard !careBusy else { return }
         wakeFromNapIfNeeded()
         careBusy = true
+        // Soft Square only — wand lure leaves pending nil so end uses playDefault once.
+        // Assign after the busy gate so ribbon re-taps mid-play cannot rewrite Feeling.
+        if showSoftSquare {
+            pendingToyId = "soft_square"
+            droppedSymbol = nil
+        }
         brain.hold(2.55)
         wandX = 0.50
         wandY = 0.36
         // Soft Square lure = prop-soft; Follow the wand = prop-wand.
         wandSpriteName = showSoftSquare ? "prop-soft" : "prop-wand"
-        if showSoftSquare {
-            droppedSymbol = nil
-        }
         wandVisible = true
         wandInteractive = true
         PetSound.shared.play(.play)

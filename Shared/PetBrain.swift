@@ -100,8 +100,14 @@ public struct PetBrain: Equatable {
     }
 
     public mutating func reactBath() {
-        player.request(.bathing, force: true)
-        commandedUntil = clock + 2.2
+        player.request(.bathStart, force: true)
+        commandedUntil = clock + 0.7
+    }
+
+    public mutating func reactFavoriteFood() {
+        player.request(.favoriteFoodReaction, force: true)
+        commandedUntil = max(commandedUntil, clock + 1.0)
+        wanderTarget = nil
     }
 
     public mutating func reactSleep(on: Bool) {
@@ -231,6 +237,9 @@ public struct PetBrain: Equatable {
         if clock < commandedUntil {
             if player.finishedOneShot && player.anim == .pickup {
                 player.request(.held, force: true)
+            } else if player.finishedOneShot && player.anim == .bathStart {
+                player.request(.bathing, force: true)
+                commandedUntil = clock + 1.6
             } else if player.finishedOneShot && player.anim == .wakeUp {
                 player.request(.morningStretch, force: true)
                 commandedUntil = clock + 0.8

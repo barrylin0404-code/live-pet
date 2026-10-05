@@ -342,6 +342,9 @@ struct ContentView: View {
                     PetSound.shared.play(.eatCrunch)
                     PetSound.shared.play(.meow)
                     pulseHeart(crumbs: true)
+                    if store.lastUsedFavorite {
+                        brain.reactFavoriteFood()
+                    }
                     syncActivity()
                 }
                 if brain.consumeNapReady(), !store.pet.isSleeping, !careBusy, pendingFoodId == nil {
@@ -658,10 +661,10 @@ struct ContentView: View {
         store.clean()
         PetSound.shared.play(.clean)
         pulseBubbles()
-        schedulePoseClear(holdMs: 1000)
+        schedulePoseClear(holdMs: 3200)
         syncActivity()
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            try? await Task.sleep(nanoseconds: 3_400_000_000)
             careBusy = false
         }
     }

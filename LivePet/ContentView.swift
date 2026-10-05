@@ -446,7 +446,12 @@ struct ContentView: View {
         guard !careBusy else { return }
         careBusy = true
         let dropX: CGFloat = brain.x < 0.5 ? 0.68 : 0.32
-        droppedSymbol = item.pixelSpriteName ?? "prop-bounce"
+        // Soft Square must land as prop-soft (never wand / bounce fallback).
+        if item.id == "soft_square" {
+            droppedSymbol = "prop-soft"
+        } else {
+            droppedSymbol = item.pixelSpriteName ?? "prop-bounce"
+        }
         droppedX = dropX
         brain.noticeToy(at: dropX)
         store.play(itemID: item.id)

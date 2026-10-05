@@ -251,7 +251,9 @@ public struct PetBrain: Equatable {
                 playReady = true
                 toyX = nil
                 player.request(.happy, force: true)
-                commandedUntil = clock + 0.8
+                // Same satisfied linger as post-eat before wander resumes.
+                commandedUntil = clock + 1.1
+                idleHold = max(idleHold, 0.9)
             }
             return
         }

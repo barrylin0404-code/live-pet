@@ -230,9 +230,13 @@ struct HitIslandGameView: View {
                         displaySize: 96,
                         growthStage: growthStage
                     )
-                    Text("\(catches) catch\(catches == 1 ? "" : "es")")
+                    Text(resultHeadline)
                         .font(.title3.weight(.heavy))
                         .foregroundStyle(ink)
+                    Text(resultBlurb)
+                        .font(.subheadline)
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(ink.opacity(0.7))
                     Button {
                         PetSound.shared.play(.heartPop)
                         #if canImport(UIKit)
@@ -264,7 +268,25 @@ struct HitIslandGameView: View {
         }
     }
 
+    private var resultHeadline: String {
+        switch catches {
+        case 0: return "No catches"
+        case 1: return "1 catch"
+        default: return "\(catches) catches"
+        }
+    }
+
+    private var resultBlurb: String {
+        switch catches {
+        case 0: return "Try dragging under the fall."
+        case 1...2: return "Nice bounce — keep going!"
+        case 3...5: return "Solid island hopping!"
+        default: return "Island ace!"
+        }
+    }
+
     private func startLoop() {
+
         running = true
         finished = false
         catches = 0
@@ -344,6 +366,7 @@ struct HitIslandGameView: View {
             }
             if orb.y > 1.08 {
                 misses += 1
+                PetSound.shared.play(.uiTick)
                 continue
             }
             if orb.y < -0.12, orb.bounces > 0 {

@@ -251,6 +251,29 @@ final class PetStore: ObservableObject {
         play(itemID: id)
     }
 
+    /// Hit the Island finish — Feeling scales with catches; lastAction names the game for Island blurbs.
+    func playHitIsland(catches: Int) {
+        lastUsedFavorite = false
+        pet.isSleeping = false
+        pet.pose = .play
+        let safe = max(0, catches)
+        // Base play bump + up to +18 for a dense run (6+ catches).
+        let bump = 12 + min(18, safe * 3)
+        pet.moodScore = min(100, max(0, pet.moodScore + bump))
+        pet.energy = min(100, max(0, pet.energy - 8))
+        pet.satiety = min(100, max(0, pet.satiety - 6))
+        switch safe {
+        case 0:
+            pet.lastAction = "Missed every island"
+        case 1:
+            pet.lastAction = "Caught 1 island!"
+        default:
+            pet.lastAction = "Caught \(safe) islands!"
+        }
+        pet.touch()
+        commit()
+    }
+
     func clean() {
         var usedSoap = false
         if let index = items.firstIndex(where: { $0.id == "bubble_soap" && $0.quantity > 0 }) {

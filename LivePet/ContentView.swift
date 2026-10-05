@@ -111,6 +111,7 @@ struct ContentView: View {
                         onFollowWand: { showGames = false; startFollowWand() },
                         onHitIsland: {
                             showGames = false
+                            wakeFromNapIfNeeded()
                             PetSound.shared.play(.islandStart)
                             showHitIsland = true
                         },
@@ -186,6 +187,7 @@ struct ContentView: View {
                     }
                 }, onHitIsland: {
                     showShop = false
+                    wakeFromNapIfNeeded()
                     PetSound.shared.play(.islandStart)
                     showHitIsland = true
                 })
@@ -353,7 +355,7 @@ struct ContentView: View {
                 let now = Date()
                 let dt = now.timeIntervalSince(last)
                 last = now
-                brain.tick(dt: dt, sleeping: store.pet.isSleeping, mood: store.pet.mood, roamPace: store.selectedScene.roamPace)
+                brain.tick(dt: dt, sleeping: store.pet.isSleeping, mood: store.pet.mood, roamPace: store.selectedScene.roamPace, roamIdleHold: store.selectedScene.roamIdleHold)
                 petX = brain.x
                 facingLeft = brain.player.facingLeft
                 if brain.consumeFeedReady(), let id = pendingFoodId {
@@ -394,7 +396,8 @@ struct ContentView: View {
             dockButton("ctrl-play", "Play") { showGames = true }
             dockButton("ctrl-pet", "Pet") { performPetTap() }
             dockButton("ctrl-bath", "Bath") { performClean() }
-            dockButton("ctrl-sleep", "Sleep") { performSleep() }
+            // Island Sleep already toggles Wake — dock a11y matches.
+            dockButton("ctrl-sleep", store.pet.isSleeping ? "Wake" : "Sleep") { performSleep() }
             dockButton("ctrl-more", "More") { showScenes = true }
         }
         .padding(.bottom, 10)
@@ -584,8 +587,8 @@ struct ContentView: View {
 
     private func finishHitIsland(catches: Int) {
         showHitIsland = false
-        // Completing the mini-game always bumps Feeling (play pose for Island sync).
-        store.playDefault()
+        // Catch count drives Feeling + Island blurb — not a generic toy play.
+        store.playHitIsland(catches: catches)
         bouncePet()
         if catches > 0 {
             pulseHeart(crumbs: false)

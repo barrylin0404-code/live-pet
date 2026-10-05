@@ -7,14 +7,8 @@ struct ContentView: View {
     @EnvironmentObject private var store: PetStore
     @EnvironmentObject private var activityManager: PetLiveActivityManager
 
-    @State private var showFloatingHeart = false
-    @State private var showFloatingStar = false
-    @State private var showBubbles = false
-    @State private var showZzz = false
-    @State private var bubbleParticles: [CareParticle] = []
     @State private var roomDim = false
     @State private var playBounce: CGFloat = 0
-    @State private var heartRise: CGFloat = 0
     @State private var poseClearTask: Task<Void, Never>?
 
     // Console sheets
@@ -43,8 +37,6 @@ struct ContentView: View {
     @State private var ballY: CGFloat = 0.70
     @State private var wandVisible = false
     @State private var wandInteractive = false
-    @State private var playParticles: [CareParticle] = []
-    @State private var crumbParticles: [CareParticle] = []
     @State private var wandX: CGFloat = 0.55
     @State private var wandY: CGFloat = 0.38
     @State private var showHitIsland = false
@@ -66,8 +58,6 @@ struct ContentView: View {
                         Spacer(minLength: 0)
                     }
                     .allowsHitTesting(false)
-                    careFeedbackOverlay
-                        .allowsHitTesting(false)
                     VStack(spacing: 0) {
                         Spacer(minLength: 0)
                         if store.isGrowEligible {
@@ -417,56 +407,6 @@ struct ContentView: View {
         .background(Color(red: 1.0, green: 0.97, blue: 0.92).opacity(0.82), in: Capsule())
     }
 
-    private var careFeedbackOverlay: some View {
-        GeometryReader { geo in
-            let petX = geo.size.width * brain.x
-            let petY = geo.size.height * (store.selectedScene == .meadowWalk ? 0.58 : 0.62)
-            ZStack {
-                if showFloatingHeart {
-                    PixelHeartView(filled: true, size: 22)
-                        .offset(x: petX - geo.size.width / 2, y: petY - geo.size.height / 2 + heartRise - 56)
-                }
-                if showFloatingStar {
-                    Image("prop-star")
-                        .resizable()
-                        .interpolation(.none)
-                        .frame(width: 18, height: 18)
-                        .offset(x: petX - geo.size.width / 2 + 18, y: petY - geo.size.height / 2 + heartRise - 62)
-                }
-                if showBubbles {
-                    ForEach(bubbleParticles) { p in
-                        Circle()
-                            .strokeBorder(Color.cyan.opacity(p.opacity), lineWidth: 1.5)
-                            .background(Circle().fill(Color.white.opacity(p.opacity * 0.35)))
-                            .frame(width: p.size, height: p.size)
-                            .offset(x: petX - geo.size.width / 2 + p.x, y: petY - geo.size.height / 2 + p.y - 40)
-                    }
-                }
-                ForEach(playParticles) { p in
-                    Image("prop-star")
-                        .resizable()
-                        .interpolation(.none)
-                        .frame(width: p.size, height: p.size)
-                        .opacity(p.opacity)
-                        .offset(x: petX - geo.size.width / 2 + p.x, y: petY - geo.size.height / 2 + p.y - 48)
-                }
-                ForEach(crumbParticles) { p in
-                    RoundedRectangle(cornerRadius: 1)
-                        .fill(Color(red: 0.72, green: 0.48, blue: 0.28).opacity(p.opacity))
-                        .frame(width: p.size, height: p.size * 0.7)
-                        .offset(x: petX - geo.size.width / 2 + p.x, y: petY - geo.size.height / 2 + p.y - 20)
-                }
-                if showZzz {
-                    Text("Zz")
-                        .font(.system(size: 18, weight: .heavy, design: .rounded))
-                        .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21).opacity(0.55))
-                        .offset(x: petX - geo.size.width / 2 + 28, y: petY - geo.size.height / 2 - 70)
-                }
-            }
-            .frame(width: geo.size.width, height: geo.size.height)
-        }
-    }
-
     private var toyDock: some View {
         HStack(spacing: 8) {
             dockButton("ctrl-feed", "Feed") { showFood = true }
@@ -756,97 +696,26 @@ struct ContentView: View {
     }
 
     private func spawnPlayBurst() {
-        playParticles = (0..<6).map { i in
-            CareParticle(
-                id: UUID(),
-                x: CGFloat([-22, -8, 6, 18, -14, 12][i]),
-                y: CGFloat([4, -6, 8, -2, 12, -10][i]),
-                size: CGFloat([12, 7, 14, 6, 10, 8][i]),
-                opacity: 0.95
-            )
-        }
-        withAnimation(.easeOut(duration: 0.7)) {
-            playParticles = playParticles.map {
-                CareParticle(id: $0.id, x: $0.x * 1.35, y: $0.y - 36, size: $0.size, opacity: 0.05)
-            }
-        }
-        Task {
-            try? await Task.sleep(nanoseconds: 750_000_000)
-            await MainActor.run { playParticles = [] }
-        }
+        // App Lead: floating star burst rejected — playing/happy sheets only.
     }
 
     private func pulseHeart(crumbs: Bool) {
-        heartRise = 0
+        // App Lead: floating heart/star/crumbs rejected — happy sheet + sound only.
         PetSound.shared.play(.heartPop)
-        withAnimation(.easeOut(duration: 0.15)) {
-            showFloatingHeart = true
-            showFloatingStar = store.lastUsedFavorite
-        }
-        withAnimation(.easeOut(duration: 0.6)) {
-            heartRise = -48
-        }
-        if crumbs {
-            spawnCrumbs()
-        }
-        Task {
-            try? await Task.sleep(nanoseconds: 650_000_000)
-            await MainActor.run {
-                withAnimation(.easeOut(duration: 0.2)) {
-                    showFloatingHeart = false
-                    showFloatingStar = false
-                }
-            }
-        }
-    }
-
-    private func spawnCrumbs() {
-        crumbParticles = (0..<5).map { i in
-            CareParticle(
-                id: UUID(),
-                x: CGFloat([-10, 4, 14, -16, 8][i]),
-                y: CGFloat([6, 2, 10, 0, 8][i]),
-                size: CGFloat([5, 4, 6, 3, 5][i]),
-                opacity: 0.95
-            )
-        }
-        withAnimation(.easeOut(duration: 0.55)) {
-            crumbParticles = crumbParticles.map {
-                CareParticle(id: $0.id, x: $0.x * 1.4, y: $0.y + 18, size: $0.size, opacity: 0.05)
-            }
-        }
-        Task {
-            try? await Task.sleep(nanoseconds: 600_000_000)
-            await MainActor.run { crumbParticles = [] }
-        }
+        _ = crumbs
     }
 
     private func pulseBubbles() {
-        spawnBubbles()
-        withAnimation(.easeOut(duration: 0.15)) { showBubbles = true }
-        Task {
-            try? await Task.sleep(nanoseconds: 700_000_000)
-            await MainActor.run {
-                withAnimation(.easeOut(duration: 0.25)) {
-                    showBubbles = false
-                    bubbleParticles = []
-                }
-            }
-        }
+        // App Lead: cyan bubble floaters rejected — bathing sheet only.
     }
 
     private func pulseZzz() {
-        withAnimation(.easeOut(duration: 0.2)) {
-            showZzz = true
-            roomDim = true
-        }
+        // App Lead: floating Zz rejected — sleep sheets only; soft room dim stays.
+        withAnimation(.easeOut(duration: 0.2)) { roomDim = true }
         Task {
             try? await Task.sleep(nanoseconds: 1_500_000_000)
             await MainActor.run {
-                withAnimation(.easeOut(duration: 0.35)) {
-                    showZzz = false
-                    roomDim = false
-                }
+                withAnimation(.easeOut(duration: 0.35)) { roomDim = false }
             }
         }
     }

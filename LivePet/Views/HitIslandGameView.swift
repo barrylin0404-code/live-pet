@@ -36,7 +36,6 @@ struct HitIslandGameView: View {
             VStack(spacing: 0) {
                 header
                 Spacer(minLength: 0)
-                footerHint
             }
             .allowsHitTesting(false)
 
@@ -132,12 +131,6 @@ struct HitIslandGameView: View {
         .ignoresSafeArea()
     }
 
-    private var footerHint: some View {
-        Text("Original Live Pet sports toy · no ads · no paywall")
-            .font(.caption2.weight(.medium))
-            .foregroundStyle(ink.opacity(0.4))
-            .padding(.bottom, 10)
-    }
 
     private var introOverlay: some View {
         ZStack {

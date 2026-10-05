@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-05 (MT)  
 **Repo:** https://github.com/barrylin0404-code/live-pet  
-**`main` tip (pushed):** handoff on `3fb63ce` Island Feed/Pet mid-return settle + happy densify (on `d4ec745` / `a8c2979`)
+**`main` tip (pushed):** `3d8170b` handoff on `3fb63ce` Island Feed/Pet mid-return settle + happy densify (on `d4ec745` / `a8c2979`)
 
 ## Product locks
 
@@ -154,7 +154,7 @@ App Lead compares home + Island to Shimeji reference. Reviewer quality only afte
 
 ## Eng status (2026-10-05 ~08:30 MT)
 
-Tip on `main` (pushed; code ship `3fb63ce`). Island Feed/Pet mid-return settle (no hop) + happy densify + Lock Screen gallery tip. Typecheck OK; missing-return 0; islandlook + carehold + roam + decay ALL OK. **Island schedule / moodFlips / pushType parked** (untouched). SwiftUI/ActivityKit not really compiled here (Linux stubs). Not DONE.
+Tip `3d8170b` on `main` (pushed; code ship `3fb63ce`). Island Feed/Pet mid-return settle (no hop) + happy densify + Lock Screen gallery tip. Typecheck OK; missing-return 0; islandlook + carehold + roam + decay ALL OK. **Island schedule / moodFlips / pushType parked** (untouched). SwiftUI/ActivityKit not really compiled here (Linux stubs). Not DONE.
 
 **Waiting on:** App Lead DONE call after a running build vs Shimeji (Eng does not call DONE; continuous ship — no Mac pause).
 

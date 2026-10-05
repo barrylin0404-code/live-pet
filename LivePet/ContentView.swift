@@ -805,46 +805,17 @@ struct ContentView: View {
         activityManager.update(pet: store.pet)
     }
 
+    /// Plate is the room — no under-room LinearGradients (App Lead).
     private var roomBackground: some View {
-        switch store.selectedScene {
-        case .sunNook:
-            return AnyView(LinearGradient(
-                colors: [Color(red: 0.98, green: 0.94, blue: 0.88), Color(red: 0.90, green: 0.95, blue: 0.92)],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            ))
-        case .moonPorch:
-            return AnyView(LinearGradient(
-                colors: [Color(red: 0x2C / 255.0, green: 0x3A / 255.0, blue: 0x4A / 255.0), Color(red: 0.18, green: 0.22, blue: 0.30)],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            ))
-        case .tideGlass:
-            return AnyView(LinearGradient(
-                colors: [Color(red: 0x7e / 255.0, green: 0xc8 / 255.0, blue: 0xc8 / 255.0).opacity(0.55), Color(red: 0.90, green: 0.95, blue: 0.93)],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            ))
-        case .skylineDusk:
-            return AnyView(LinearGradient(
-                colors: [Color(red: 0xc4 / 255.0, green: 0xa0 / 255.0, blue: 0xc8 / 255.0), Color(red: 0.28, green: 0.20, blue: 0.34)],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            ))
-        case .meadowWalk:
-            return AnyView(LinearGradient(
-                colors: [Color(red: 0xA8 / 255.0, green: 0xD4 / 255.0, blue: 0xF0 / 255.0), Color(red: 0xD6 / 255.0, green: 0xEA / 255.0, blue: 0xF8 / 255.0)],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            ))
-        case .snowPorch:
-            // Matches snow-porch-plate's night sky edge (was the grey blank-room stub).
-            return AnyView(LinearGradient(
-                colors: [Color(red: 37 / 255.0, green: 45 / 255.0, blue: 59 / 255.0), Color(red: 28 / 255.0, green: 34 / 255.0, blue: 46 / 255.0)],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            ))
-        case .coralShelf:
-            // Matches coral-shelf-plate's deep-water edge (was the grey blank-room stub).
-            return AnyView(LinearGradient(
-                colors: [Color(red: 30 / 255.0, green: 80 / 255.0, blue: 98 / 255.0), Color(red: 22 / 255.0, green: 60 / 255.0, blue: 76 / 255.0)],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            ))
+        if let plate = store.selectedScene.plateImageName {
+            return AnyView(
+                Image(plate)
+                    .resizable()
+                    .interpolation(.none)
+                    .scaledToFill()
+            )
         }
+        return AnyView(Color(red: 0.98, green: 0.94, blue: 0.88))
     }
 }
 

@@ -190,9 +190,10 @@ public struct AnimatedPixelPetView: View {
                 }
                 .offset(y: bobY)
                 if effective == .clean {
-                    Image(systemName: "bubble.fill")
-                        .font(.system(size: 14 * scale))
-                        .foregroundStyle(.cyan.opacity(0.85))
+                    Circle()
+                        .fill(Color.cyan.opacity(0.85))
+                        .frame(width: 10 * scale, height: 10 * scale)
+                        .overlay(Circle().fill(Color.white.opacity(0.55)).frame(width: 4 * scale, height: 4 * scale).offset(x: -1.5 * scale, y: -1.5 * scale))
                         .offset(x: 4, y: -2)
                 }
             }

@@ -32,6 +32,9 @@ struct HitIslandGameView: View {
     /// Short reaction sheet on the paddle pet — happy on a catch, sad on a miss (no floaters).
     @State private var reaction: PetAnim = .playing
     @State private var reactionUntil: Double = 0
+    /// Paddle pet runs the way you drag (run sheets) and faces that way when it stops.
+    @State private var paddleFacingLeft = false
+    @State private var paddleMovedAt: Double = -1
 
     var body: some View {
         ZStack {
@@ -110,9 +113,9 @@ struct HitIslandGameView: View {
                 VStack(spacing: 2) {
                     ClipPetView(
                         speciesId: speciesId,
-                        anim: elapsed < reactionUntil ? reaction : .playing,
-                        frame: Int(elapsed * 6),
-                        facingLeft: false,
+                        anim: paddleAnim,
+                        frame: Int(elapsed * (paddleRunning ? 12 : 6)),
+                        facingLeft: paddleFacingLeft,
                         displaySize: 96,
                         growthStage: growthStage
                     )
@@ -130,7 +133,14 @@ struct HitIslandGameView: View {
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
                         guard running, !finished else { return }
-                        paddleX = min(0.88, max(0.12, value.location.x / max(geo.size.width, 1)))
+                        let next = min(0.88, max(0.12, value.location.x / max(geo.size.width, 1)))
+                        let dx = next - paddleX
+                        // Ignore finger jitter; a real move turns and runs the pet.
+                        if abs(dx) > 0.004 {
+                            paddleFacingLeft = dx < 0
+                            paddleMovedAt = elapsed
+                        }
+                        paddleX = next
                     }
             )
             .accessibilityHint("Drag left and right to bounce the islands")
@@ -277,6 +287,18 @@ struct HitIslandGameView: View {
         }
     }
 
+    /// Moved within the last ~0.2s of game time — the pet is running under the islands.
+    private var paddleRunning: Bool {
+        running && elapsed >= reactionUntil && elapsed - paddleMovedAt < 0.2
+    }
+
+    /// Catch / miss beat first, then run while dragging, then the playing loop when still.
+    private var paddleAnim: PetAnim {
+        if elapsed < reactionUntil { return reaction }
+        if paddleRunning { return paddleFacingLeft ? .runLeft : .runRight }
+        return .playing
+    }
+
     private var resultHeadline: String {
         switch catches {
         case 0: return "No catches"
@@ -303,6 +325,7 @@ struct HitIslandGameView: View {
         elapsed = 0
         reaction = .playing
         reactionUntil = 0
+        paddleMovedAt = -1
         orbs = []
         loopTask?.cancel()
         loopTask = Task { @MainActor in

@@ -58,6 +58,8 @@ struct ContentView: View {
                 // Rebuild: the room is the app. No console dashboard.
                 ZStack(alignment: .bottom) {
                     roomViewport
+                    careFeedbackOverlay
+                        .allowsHitTesting(false)
                     VStack(spacing: 0) {
                         Spacer(minLength: 0)
                         if store.isGrowEligible {
@@ -349,6 +351,50 @@ struct ContentView: View {
                     syncActivity()
                 }
             }
+        }
+    }
+
+    private var careFeedbackOverlay: some View {
+        GeometryReader { geo in
+            let petX = geo.size.width * brain.x
+            let petY = geo.size.height * (store.selectedScene == .meadowWalk ? 0.58 : 0.62)
+            ZStack {
+                if showFloatingHeart {
+                    PixelHeartView(filled: true, size: 22)
+                        .offset(x: petX - geo.size.width / 2, y: petY - geo.size.height / 2 + heartRise - 56)
+                }
+                if showFloatingStar {
+                    Image("prop-star")
+                        .resizable()
+                        .interpolation(.none)
+                        .frame(width: 18, height: 18)
+                        .offset(x: petX - geo.size.width / 2 + 18, y: petY - geo.size.height / 2 + heartRise - 62)
+                }
+                if showBubbles {
+                    ForEach(bubbleParticles) { p in
+                        Circle()
+                            .strokeBorder(Color.cyan.opacity(p.opacity), lineWidth: 1.5)
+                            .background(Circle().fill(Color.white.opacity(p.opacity * 0.35)))
+                            .frame(width: p.size, height: p.size)
+                            .offset(x: petX - geo.size.width / 2 + p.x, y: petY - geo.size.height / 2 + p.y - 40)
+                    }
+                }
+                ForEach(playParticles) { p in
+                    Image("prop-star")
+                        .resizable()
+                        .interpolation(.none)
+                        .frame(width: p.size, height: p.size)
+                        .opacity(p.opacity)
+                        .offset(x: petX - geo.size.width / 2 + p.x, y: petY - geo.size.height / 2 + p.y - 48)
+                }
+                if showZzz {
+                    Text("Zz")
+                        .font(.system(size: 18, weight: .heavy, design: .rounded))
+                        .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21).opacity(0.55))
+                        .offset(x: petX - geo.size.width / 2 + 28, y: petY - geo.size.height / 2 - 70)
+                }
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
         }
     }
 

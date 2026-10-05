@@ -20,10 +20,16 @@ struct PetPhotoProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<PetPhotoEntry>) -> Void) {
-        let entry = makeEntry()
-        let next = Calendar.current.date(byAdding: .hour, value: 6, to: .now)
-            ?? .now.addingTimeInterval(21600)
-        completion(Timeline(entries: [entry], policy: .after(next)))
+        let now = Date()
+        let has: Bool = {
+            guard let url = AppGroup.petFrameURL else { return false }
+            return FileManager.default.fileExists(atPath: url.path)
+        }()
+        let entries = PetSnapshot.projectedTimeline(from: now).map {
+            PetPhotoEntry(date: $0.date, snapshot: $0.snapshot, hasPhoto: has)
+        }
+        let next = now.addingTimeInterval(2 * 60 * 60)
+        completion(Timeline(entries: entries, policy: .after(next)))
     }
 
     private func makeEntry() -> PetPhotoEntry {

@@ -17,11 +17,14 @@ struct PetWeatherProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<PetWeatherEntry>) -> Void) {
-        let entry = makeEntry()
-        // ~30–60 min cadence + reload on care.
-        let next = Calendar.current.date(byAdding: .minute, value: 45, to: .now)
-            ?? .now.addingTimeInterval(2700)
-        completion(Timeline(entries: [entry], policy: .after(next)))
+        // Weather cache is static between fetches; mood still projects for hungry/sad sheets.
+        let now = Date()
+        let weather = WeatherCache.load() ?? .empty
+        let entries = PetSnapshot.projectedTimeline(from: now, stepMinutes: 15, throughMinutes: 90).map {
+            PetWeatherEntry(date: $0.date, snapshot: $0.snapshot, weather: weather)
+        }
+        let next = now.addingTimeInterval(90 * 60)
+        completion(Timeline(entries: entries, policy: .after(next)))
     }
 
     private func makeEntry() -> PetWeatherEntry {

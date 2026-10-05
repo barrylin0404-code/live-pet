@@ -22,10 +22,18 @@ struct PetDailyMessageProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<PetDailyMessageEntry>) -> Void) {
-        let entry = makeEntry()
+        let now = Date()
+        let entries = PetSnapshot.projectedTimeline(from: now).map {
+            PetDailyMessageEntry(
+                date: $0.date,
+                snapshot: $0.snapshot,
+                message: DailyMessages.message(petName: $0.snapshot.name)
+            )
+        }
         let cal = Calendar.current
-        let tomorrow = cal.startOfDay(for: cal.date(byAdding: .day, value: 1, to: .now) ?? .now)
-        completion(Timeline(entries: [entry], policy: .after(tomorrow)))
+        let tomorrow = cal.startOfDay(for: cal.date(byAdding: .day, value: 1, to: now) ?? now)
+        let moodHorizon = now.addingTimeInterval(2 * 60 * 60)
+        completion(Timeline(entries: entries, policy: .after(min(tomorrow, moodHorizon))))
     }
 
     private func makeEntry() -> PetDailyMessageEntry {

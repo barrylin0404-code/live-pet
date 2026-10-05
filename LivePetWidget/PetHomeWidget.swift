@@ -17,10 +17,13 @@ struct PetHomeProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<PetHomeEntry>) -> Void) {
-        let snap = PetSnapshot.load() ?? .placeholder
-        let entry = PetHomeEntry(date: .now, snapshot: snap)
-        let next = Calendar.current.date(byAdding: .minute, value: 15, to: .now) ?? .now.addingTimeInterval(900)
-        completion(Timeline(entries: [entry], policy: .after(next)))
+        // Project mood every 15 min for 2h — long absence shifts hungry/sad/happy without opening the app.
+        let now = Date()
+        let entries = PetSnapshot.projectedTimeline(from: now).map {
+            PetHomeEntry(date: $0.date, snapshot: $0.snapshot)
+        }
+        let next = now.addingTimeInterval(2 * 60 * 60)
+        completion(Timeline(entries: entries, policy: .after(next)))
     }
 }
 

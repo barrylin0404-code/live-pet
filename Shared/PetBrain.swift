@@ -438,8 +438,8 @@ public struct PetBrain: Equatable {
             break
         }
 
-        // Tired: walk to the room's rest spot (sofa / rug / door), then ask the app to tuck in.
-        // Food and care holds win.
+        // Tired: walk to the room's rest spot (sofa / rug / door), yawn a beat, then ask the
+        // app to tuck in. Food and care holds win. Meadow's shorter idleScale keeps the linger snappy.
         if moodHint == .sleepy, foodX == nil {
             let sofa = CGFloat(min(0.78, max(0.22, restX)))
             let dx = sofa - x
@@ -452,6 +452,16 @@ public struct PetBrain: Equatable {
             }
             x = sofa
             if !napReady {
+                // Existing yawn / stretch clips only — linger before the tuck signal.
+                if player.anim != .idleYawn && player.anim != .idleStretch {
+                    player.request(Bool.random() ? .idleYawn : .idleStretch, force: true)
+                    idleHold = 0.55 * idleScale
+                    return
+                }
+                if !player.finishedOneShot, idleHold > 0 {
+                    idleHold -= dt
+                    return
+                }
                 napReady = true
                 player.request(.idleYawn, force: true)
             }

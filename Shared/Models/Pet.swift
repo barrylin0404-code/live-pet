@@ -227,7 +227,7 @@ struct Pet: Identifiable, Equatable, Codable {
             line = "\(name) needs care"
         default:
             let sleepLine = lastAction == "\(name) is sleeping" || lastAction == "\(name) tucked in"
-            line = (blurbTicks >= 2 || sleepLine || lastAction.isEmpty) ? hangingOut : lastAction
+            line = (blurbTicks >= 3 || sleepLine || lastAction.isEmpty) ? hangingOut : lastAction
         }
         if line == lastAction {
             blurbTicks += 1

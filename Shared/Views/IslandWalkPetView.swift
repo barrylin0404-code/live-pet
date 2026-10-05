@@ -100,9 +100,17 @@ public struct IslandWalkPetView: View {
     }
 
     /// Eat, play, bath, sleep, hungry, and sad use the same side-view sheets as the room.
-    /// Kit / plus scale lives in ClipPetView (stage sheets are drawn at stage size).
+    /// Kit / plus scale lives in ClipPetView (stage sheets are drawn at stage size) — do not
+    /// scale again here. Compact / Lock Screen slots crop to the walk window so hungry/sad
+    /// (full 64-px canvas) fill the pill like the stroll and keep feet on the floor.
     private func careBody(_ anim: PetAnim) -> some View {
         let height = slotHeight
+        let petWidth = height * 1.35
+        let crop = Self.walkCrop(speciesId: speciesId, facingRight: true)
+        let unit = min(petWidth / crop.w, height / crop.h)
+        let sheetSide = 64 * unit
+        let cropX = (petWidth - crop.w * unit) / 2
+        let cropY = (height - crop.h * unit) / 2
         return TimelineView(.animation(minimumInterval: 1.0 / 6.0, paused: false)) { context in
             let tick = Int(context.date.timeIntervalSinceReferenceDate * 6)
             ClipPetView(
@@ -110,12 +118,17 @@ public struct IslandWalkPetView: View {
                 anim: anim,
                 frame: tick,
                 facingLeft: false,
-                displaySize: height,
+                displaySize: sheetSide,
                 growthStage: growthStage
             )
+            .frame(width: sheetSide, height: sheetSide, alignment: .topLeading)
+            .offset(x: cropX - crop.x * unit, y: cropY - crop.y * unit)
+            .frame(width: petWidth, height: height, alignment: .topLeading)
+            .clipped()
         }
         .frame(height: height)
         .clipped()
+        .accessibilityLabel("\(speciesId) on Island, \(mood.label)")
     }
 
     private var walkBody: some View {

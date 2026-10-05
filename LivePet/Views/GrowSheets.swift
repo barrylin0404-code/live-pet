@@ -113,7 +113,10 @@ struct MeetPipSheet: View {
                 )
                 .padding(.horizontal, 20)
 
-                Button(action: onMeet) {
+                Button(action: {
+                    PetSound.shared.play(.meow)
+                    onMeet()
+                }) {
                     Text("Meet Pip")
                         .font(.headline.weight(.bold))
                         .foregroundStyle(.white)
@@ -124,9 +127,12 @@ struct MeetPipSheet: View {
                 .buttonStyle(PressScaleButtonStyle())
                 .padding(.horizontal, 20)
 
-                Button("Skip for now", action: onSkip)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(ink.opacity(0.55))
+                Button("Skip for now") {
+                    PetSound.shared.play(.uiTick)
+                    onSkip()
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(ink.opacity(0.55))
 
                 Spacer(minLength: 8)
             }

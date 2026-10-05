@@ -16,12 +16,14 @@ struct PetClockProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<PetClockEntry>) -> Void) {
-        // Clock face uses SwiftUI date styles — no per-minute timeline spam.
-        // Reload pet on care via WidgetCenter; refresh snapshot periodically.
-        let entry = PetClockEntry(date: .now, snapshot: PetSnapshot.load() ?? .placeholder)
-        let next = Calendar.current.date(byAdding: .hour, value: 1, to: .now)
-            ?? .now.addingTimeInterval(3600)
-        completion(Timeline(entries: [entry], policy: .after(next)))
+        // Clock face uses SwiftUI date styles — no per-minute spam. Mood still projects so a
+        // long absence can flip hungry/sad/happy on the pet chip without opening the app.
+        let now = Date()
+        let entries = PetSnapshot.projectedTimeline(from: now, stepMinutes: 20, throughMinutes: 120).map {
+            PetClockEntry(date: $0.date, snapshot: $0.snapshot)
+        }
+        let next = now.addingTimeInterval(2 * 60 * 60)
+        completion(Timeline(entries: entries, policy: .after(next)))
     }
 }
 

@@ -22,10 +22,13 @@ struct PetAccessoryProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<PetAccessoryEntry>) -> Void) {
-        let entry = makeEntry()
-        let next = Calendar.current.date(byAdding: .minute, value: 15, to: .now)
-            ?? .now.addingTimeInterval(900)
-        completion(Timeline(entries: [entry], policy: .after(next)))
+        let now = Date()
+        let age = Self.ageDaysFromAppGroup()
+        let entries = PetSnapshot.projectedTimeline(from: now).map {
+            PetAccessoryEntry(date: $0.date, snapshot: $0.snapshot, ageDays: age)
+        }
+        let next = now.addingTimeInterval(2 * 60 * 60)
+        completion(Timeline(entries: entries, policy: .after(next)))
     }
 
     private func makeEntry() -> PetAccessoryEntry {

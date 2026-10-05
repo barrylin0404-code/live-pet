@@ -17,13 +17,16 @@ struct PetCalendarProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<PetCalendarEntry>) -> Void) {
-        let entry = makeEntry()
-        // Midnight-ish refresh for "today" + care reloads.
+        // Mood projects over 2h so absence can flip hungry/sad; day label still refreshes by midnight.
+        let now = Date()
+        let age = WidgetChrome.ageDaysFromAppGroup()
+        let entries = PetSnapshot.projectedTimeline(from: now).map {
+            PetCalendarEntry(date: $0.date, snapshot: $0.snapshot, ageDays: age)
+        }
         let cal = Calendar.current
-        let tomorrow = cal.startOfDay(for: cal.date(byAdding: .day, value: 1, to: .now) ?? .now)
-        let fallback = cal.date(byAdding: .hour, value: 6, to: .now) ?? .now.addingTimeInterval(21600)
-        let next = min(tomorrow, fallback)
-        completion(Timeline(entries: [entry], policy: .after(next)))
+        let tomorrow = cal.startOfDay(for: cal.date(byAdding: .day, value: 1, to: now) ?? now)
+        let moodHorizon = now.addingTimeInterval(2 * 60 * 60)
+        completion(Timeline(entries: entries, policy: .after(min(tomorrow, moodHorizon))))
     }
 
     private func makeEntry() -> PetCalendarEntry {

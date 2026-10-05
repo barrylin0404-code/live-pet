@@ -67,6 +67,28 @@ struct PetSnapshot: Codable, Hashable, Sendable {
         return saved.projected(to: date)
     }
 
+    /// Multi-entry Home Screen timeline: project mood every `stepMinutes` for `throughMinutes`
+    /// so hungry/sad/happy sheets advance while the app is closed (pairs with catalog sheets).
+    static func projectedTimeline(
+        from start: Date = .now,
+        stepMinutes: Int = 15,
+        throughMinutes: Int = 120,
+        defaults: UserDefaults = AppGroup.defaults
+    ) -> [(date: Date, snapshot: PetSnapshot)] {
+        guard let data = defaults.data(forKey: AppGroup.snapshotKey),
+              let saved = try? JSONDecoder().decode(PetSnapshot.self, from: data) else {
+            return [(start, .placeholder)]
+        }
+        var out: [(Date, PetSnapshot)] = []
+        var minute = 0
+        while minute <= throughMinutes {
+            let date = start.addingTimeInterval(TimeInterval(minute * 60))
+            out.append((date, saved.projected(to: date)))
+            minute += max(1, stepMinutes)
+        }
+        return out
+    }
+
     /// Same 90 s units as `Pet.applyOfflineDecay` (meters + mood band only; `lastAction` and
     /// `lastUpdated` stay as written so Island blurbs keep the real last care).
     func projected(to date: Date) -> PetSnapshot {

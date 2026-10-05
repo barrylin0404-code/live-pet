@@ -211,7 +211,8 @@ struct ContentView: View {
                 })
             }
             .sheet(isPresented: $store.showGrowCelebration, onDismiss: {
-                // Done, Back to room, or a swipe: one happy beat in the room.
+                // Done, Back to room, or a swipe: one happy beat in the room + Grow cue.
+                PetSound.shared.play(.meow)
                 if !store.pet.isSleeping {
                     brain.reactGrown()
                 }

@@ -29,10 +29,10 @@ public struct IslandWalkPetView: View {
     private static let frameInterval: TimeInterval = 0.125
     /// One edge-to-edge walk (~1.0s, same speed as the old 2.0s ping-pong).
     private static let walkLeg: TimeInterval = 1.0
-    /// Occasional idle hop only — App Lead bounce: constant hop rejected vs clip.
+    /// Occasional hop only — App Lead bounce: constant hop rejected vs clip. 4 frames at 8 fps.
     private static let hopFrames: Int = 4
-    /// Quiet walk between hops (~2.75s at 8fps). Occasional hop only — denser than sparse, not constant.
-    private static let hopIntervalFrames: Int = 22
+    /// The hop starts this far into a walk leg, so its 0.5 s lands well before the edge park.
+    private static let hopStart: Double = 0.3
 
     public init(
         mood: PetMood,
@@ -143,16 +143,17 @@ public struct IslandWalkPetView: View {
             let frameTick = Int(t / Self.frameInterval)
 
             // Walk an edge, park and idle a beat, turn, walk back — a pet roaming, not a slider.
-            let (xNorm, facingRight, parked) = Self.roam(at: t, walk: Self.walkLeg, pause: pause)
+            let (xNorm, facingRight, parked, legProgress) = Self.roam(at: t, walk: Self.walkLeg, pause: pause)
 
             let frames = Self.walkFrames(speciesId: speciesId, facingRight: facingRight)
             let name = frames[frameTick % max(frames.count, 1)]
             let idleName = "\(speciesId == "pip" ? "pip" : "nubby")-idle-\(Int(t * 6) % 6)"
 
-            // Hops belong to the stroll; a parked pet just breathes and blinks.
-            let (squashX, squashY, hopY) = parked
+            // Hops belong to the stroll, mid-leg on legs the mood allows; a parked pet just
+            // breathes and blinks, and a hop is never cut short by the park.
+            let (squashX, squashY, hopY) = (parked || !Self.hopsOnLeg(facingRight: facingRight, mood: mood))
                 ? (CGFloat(1), CGFloat(1), CGFloat(0))
-                : Self.hopTransform(frameTick: frameTick, side: height)
+                : Self.hopTransform(legProgress: legProgress, side: height)
 
             // Kit / plus walk sheets fall back to Nubby clips — scale matches room bodyScale.
             let stageScale = CGFloat(growthStage.bodyScaleMultiplier)
@@ -188,20 +189,31 @@ public struct IslandWalkPetView: View {
 
     /// Walk L→R, park at the right edge, walk R→L, park at the left edge. xNorm is -1…1;
     /// the pet keeps facing the way it walked while parked and turns when it sets off.
-    static func roam(at t: TimeInterval, walk: TimeInterval, pause: TimeInterval) -> (xNorm: Double, facingRight: Bool, parked: Bool) {
+    /// `legProgress` is 0…1 through the current walk leg (1 while parked).
+    static func roam(at t: TimeInterval, walk: TimeInterval, pause: TimeInterval) -> (xNorm: Double, facingRight: Bool, parked: Bool, legProgress: Double) {
         let cycle = 2 * (walk + pause)
         let phase = t.truncatingRemainder(dividingBy: cycle)
         if phase < walk {
-            return (-1.0 + 2.0 * phase / walk, true, false)
+            return (-1.0 + 2.0 * phase / walk, true, false, phase / walk)
         }
         if phase < walk + pause {
-            return (1.0, true, true)
+            return (1.0, true, true, 1)
         }
         let back = phase - walk - pause
         if back < walk {
-            return (1.0 - 2.0 * back / walk, false, false)
+            return (1.0 - 2.0 * back / walk, false, false, back / walk)
         }
-        return (-1.0, false, true)
+        return (-1.0, false, true, 1)
+    }
+
+    /// One hop on the outbound leg (sleepy pets never hop) — about the old density, but locked
+    /// mid-walk instead of drifting across the park. Playful reads livelier through its shorter
+    /// edge park, not more hops (App Lead rejected constant hopping).
+    static func hopsOnLeg(facingRight: Bool, mood: PetMood) -> Bool {
+        switch mood {
+        case .sleepy, .hungry, .low: return false
+        default: return facingRight
+        }
     }
 
     /// Edge park length by mood: playful pets barely stop, sleepy ones linger (Shimeji density).
@@ -239,10 +251,12 @@ public struct IslandWalkPetView: View {
             .frame(width: petWidth, height: height, alignment: .topLeading)
     }
 
-    /// Squash→stretch→land squash only during a short window every `hopIntervalFrames`.
+    /// Squash→stretch→land squash in a 4-frame window starting `hopStart` into the leg.
     /// Flat walk (identity) the rest of the time — matches clip occasional idle hop.
-    private static func hopTransform(frameTick: Int, side: CGFloat) -> (sx: CGFloat, sy: CGFloat, y: CGFloat) {
-        let phase = frameTick % hopIntervalFrames
+    private static func hopTransform(legProgress: Double, side: CGFloat) -> (sx: CGFloat, sy: CGFloat, y: CGFloat) {
+        let into = (legProgress - hopStart) * walkLeg
+        guard into >= 0 else { return (1, 1, 0) }
+        let phase = Int(into / frameInterval)
         guard phase < hopFrames else {
             return (1, 1, 0)
         }

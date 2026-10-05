@@ -10,12 +10,14 @@ struct PetLiveActivityWidget: Widget {
                 .activityBackgroundTint(.black.opacity(0.35))
                 .activitySystemActionForegroundColor(.white)
         } dynamicIsland: { context in
-            DynamicIsland {
+            // Several statements: this closure is not a builder, so it needs an explicit return.
+            let look = IslandLook(state: context.state, petName: context.attributes.petName)
+            return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     IslandWalkPetView(
-                        mood: context.state.mood,
-                        pose: context.state.petPose,
-                        isSleeping: context.state.isSleeping,
+                        mood: look.mood,
+                        pose: look.pose,
+                        isSleeping: look.isSleeping,
                         speciesId: context.state.speciesId,
                         growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
                         scale: 0.6,
@@ -25,7 +27,7 @@ struct PetLiveActivityWidget: Widget {
                     )
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text(IslandCareCopy.blurb(for: context.state))
+                    Text(IslandCareCopy.blurb(for: look))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
@@ -36,20 +38,20 @@ struct PetLiveActivityWidget: Widget {
                     VStack(spacing: 2) {
                         Text(context.attributes.petName)
                             .font(.headline)
-                        Text(context.state.mood.label)
+                        Text(look.mood.label)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    islandBottom(isSleeping: context.state.isSleeping || context.state.petPose == .sleep)
+                    islandBottom(isSleeping: look.isSleeping)
                 }
             } compactLeading: {
                 // Dense walk + edge flip (TimelineView) — not a static island crop.
                 IslandWalkPetView(
-                    mood: context.state.mood,
-                    pose: context.state.petPose,
-                    isSleeping: context.state.isSleeping,
+                    mood: look.mood,
+                    pose: look.pose,
+                    isSleeping: look.isSleeping,
                     speciesId: context.state.speciesId,
                     growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
                     scale: 0.34,
@@ -60,9 +62,9 @@ struct PetLiveActivityWidget: Widget {
             } compactTrailing: {
                 // Same side-view pet, paced inside this slot. It does not cross the camera.
                 IslandWalkPetView(
-                    mood: context.state.mood,
-                    pose: context.state.petPose,
-                    isSleeping: context.state.isSleeping,
+                    mood: look.mood,
+                    pose: look.pose,
+                    isSleeping: look.isSleeping,
                     speciesId: context.state.speciesId,
                     growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
                     scale: 0.34,
@@ -72,9 +74,9 @@ struct PetLiveActivityWidget: Widget {
                 )
             } minimal: {
                 IslandWalkPetView(
-                    mood: context.state.mood,
-                    pose: context.state.petPose,
-                    isSleeping: context.state.isSleeping,
+                    mood: look.mood,
+                    pose: look.pose,
+                    isSleeping: look.isSleeping,
                     speciesId: context.state.speciesId,
                     growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
                     scale: 0.28,
@@ -135,11 +137,12 @@ private struct LockScreenPetView: View {
     let context: ActivityViewContext<PetActivityAttributes>
 
     var body: some View {
+        let look = IslandLook(state: context.state, petName: context.attributes.petName)
         HStack(spacing: 14) {
             IslandWalkPetView(
-                mood: context.state.mood,
-                pose: context.state.petPose,
-                isSleeping: context.state.isSleeping,
+                mood: look.mood,
+                pose: look.pose,
+                isSleeping: look.isSleeping,
                 speciesId: context.state.speciesId,
                 growthStage: GrowthStage(rawValue: context.state.growthStage ?? "nubby") ?? .nubby,
                 scale: 0.7,
@@ -150,7 +153,7 @@ private struct LockScreenPetView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(context.attributes.petName)
                     .font(.headline)
-                Text(IslandCareCopy.blurb(for: context.state))
+                Text(IslandCareCopy.blurb(for: look))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
@@ -161,30 +164,86 @@ private struct LockScreenPetView: View {
     }
 }
 
+/// What the Island draws right now. `ContentState` is only as fresh as the last
+/// `Activity.update`, and nothing updates it while the app is closed — a pet left all afternoon
+/// kept strolling content, and a nap that ended on its own kept the sleeping sheet until launch.
+/// When the App Group snapshot is this pet, use it projected to now (same `PetDecay` as the
+/// widgets): hungry / sad / wake show up on the Island on their own. Care poses (eat / play /
+/// bath) are always fresh writes, so they pass straight through.
+struct IslandLook {
+    var mood: PetMood
+    var pose: PetPose
+    var isSleeping: Bool
+    var name: String
+    /// Projected snapshot for this pet, if any (blurb source).
+    var snapshot: PetSnapshot?
+    /// A nap that ended since the last write (projection woke a pet saved asleep).
+    var wokeOnItsOwn: Bool
+
+    init(state: PetActivityAttributes.ContentState, petName: String, now: Date = .now) {
+        let sleeping = state.isSleeping || state.petPose == .sleep
+        mood = state.mood
+        pose = state.petPose
+        isSleeping = sleeping
+        name = petName
+        snapshot = nil
+        wokeOnItsOwn = false
+        guard let saved = PetSnapshot.loadSaved(),
+              saved.name == petName,
+              (saved.petGlyph == "pip") == (state.speciesId == "pip") else { return }
+        let projected = saved.projected(to: now)
+        snapshot = projected
+        switch state.petPose {
+        case .eat, .play, .clean:
+            return
+        default:
+            break
+        }
+        // Only trust the snapshot's nap state when it agrees with the Activity's last write.
+        guard (saved.isSleeping == true) == sleeping else { return }
+        if sleeping, projected.isSleeping != true {
+            isSleeping = false
+            pose = .walk
+            wokeOnItsOwn = true
+        }
+        mood = projected.mood
+    }
+}
+
 /// Dense Island / Lock Screen care copy — pose first, then App Group lastAction.
 enum IslandCareCopy {
-    static func blurb(for state: PetActivityAttributes.ContentState) -> String {
-        if state.isSleeping || state.petPose == .sleep {
+    static func blurb(for look: IslandLook) -> String {
+        if look.isSleeping || look.pose == .sleep {
             return "Sleeping"
         }
+        let snap = look.snapshot ?? PetSnapshot.load()
         // Prefer App Group lastAction so Feed/Pet/Lull and in-app care share copy.
-        if let snap = PetSnapshot.load(), !snap.lastAction.isEmpty {
-            switch state.petPose {
+        if let snap, !snap.lastAction.isEmpty {
+            switch look.pose {
             case .eat, .play, .clean:
                 return snap.lastAction
             default:
                 break
             }
         }
-        switch state.petPose {
+        switch look.pose {
         case .eat: return "Eating"
         case .play: return "Playing"
         case .clean: return "Bath time"
         default: break
         }
-        if let snap = PetSnapshot.load(), !snap.lastAction.isEmpty {
+        // Same lines `Pet.tick` writes once the app catches up — the Island says it first.
+        if look.wokeOnItsOwn {
+            return "\(look.name) woke up"
+        }
+        switch look.mood {
+        case .hungry: return "\(look.name) is hungry"
+        case .low: return "\(look.name) needs care"
+        default: break
+        }
+        if let snap, !snap.lastAction.isEmpty {
             return snap.lastAction
         }
-        return state.mood.label
+        return look.mood.label
     }
 }

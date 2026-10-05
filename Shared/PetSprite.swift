@@ -15,7 +15,9 @@ enum PetSprite {
             return compact ? "lock-pip-mono-compact" : "lock-pip-mono"
         }
         if growthStage == .nubbyPlus {
-            return compact ? "lock-nubby-plus-mono-compact" : "lock-nubby-plus-mono"
+            // No plus-compact mono shipped — circular scales the rectangular plus sheet
+            // instead of falling through to adult island-compact-crop.
+            return "lock-nubby-plus-mono"
         }
         return compact ? "lock-nubby-mono-compact" : "lock-nubby-mono"
     }

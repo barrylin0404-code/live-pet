@@ -190,6 +190,8 @@ struct IslandLook {
     var wokeOnItsOwn: Bool
     /// Roam clock for IslandWalkPetView (Activity epoch, or centered after a projected wake).
     var walkEpoch: Double?
+    /// Clock for care-blurb hold (same ~1 min window as `Pet.awakeTickBlurb`).
+    var now: Date
 
     init(state: PetActivityAttributes.ContentState, petName: String, now: Date = .now) {
         let sleeping = state.isSleeping || state.petPose == .sleep
@@ -200,6 +202,7 @@ struct IslandLook {
         snapshot = nil
         wokeOnItsOwn = false
         walkEpoch = state.walkEpoch
+        self.now = now
         guard let saved = PetSnapshot.loadSaved(),
               saved.name == petName,
               (saved.petGlyph == "pip") == (state.speciesId == "pip") else { return }
@@ -256,7 +259,12 @@ struct IslandLook {
 }
 
 /// Dense Island / Lock Screen care copy — pose first, then App Group lastAction.
+/// After care, the line holds ~1 min then becomes hungry / needs care / hanging out — same
+/// vocabulary as `Pet.awakeTickBlurb`. Mood word on the banner stays `look.mood.label`.
 enum IslandCareCopy {
+    /// Matches ~3×20s `blurbTicks` before a care line yields to hanging out.
+    static let careHoldSeconds: TimeInterval = 60
+
     static func blurb(for look: IslandLook) -> String {
         if look.isSleeping || look.pose == .sleep {
             return "Sleeping"
@@ -286,9 +294,21 @@ enum IslandCareCopy {
         case .low: return "\(look.name) needs care"
         default: break
         }
-        if let snap, !snap.lastAction.isEmpty {
+        let hangingOut = "\(look.name) is hanging out"
+        guard let snap, !snap.lastAction.isEmpty else {
+            return hangingOut
+        }
+        // Leftover sleep copy while awake (Activity already woke) — same as Pet.tick.
+        let sleepLine = snap.lastAction == "\(look.name) is sleeping"
+            || snap.lastAction == "\(look.name) tucked in"
+        if sleepLine {
+            return hangingOut
+        }
+        // Care line holds ~1 min after the App Group write, then hanging out.
+        let age = look.now.timeIntervalSince(snap.lastUpdated)
+        if age < careHoldSeconds {
             return snap.lastAction
         }
-        return look.mood.label
+        return hangingOut
     }
 }

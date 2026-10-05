@@ -21,7 +21,6 @@ struct ContentView: View {
     @State private var showShop = false
     @State private var showInventory = false
     @State private var showInfo = false
-    @State private var comingSoonText: String?
 
     // Continuous walk (≥40pt across room)
     @State private var petX: CGFloat = 0.52
@@ -102,15 +101,6 @@ struct ContentView: View {
                     .zIndex(20)
                 }
 
-                if let soon = comingSoonText {
-                    VStack {
-                        Spacer()
-                        ComingSoonBanner(title: soon)
-                            .padding(.bottom, 120)
-                    }
-                    .transition(.opacity)
-                    .allowsHitTesting(false)
-                }
             }
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(isPresented: $showSettings) {
@@ -176,12 +166,10 @@ struct ContentView: View {
                 }, onToy: { item in
                     showInventory = false
                     store.play(itemID: item.id)
-                    switch item.id {
-                    case "twinkle_ball":
+                    // Bounce Block / Soft Square stay nil until prop art — only ball is inventoriable.
+                    if item.id == "twinkle_ball" {
                         startPlayBall()
-                    case "soft_square":
-                        startFollowWand()
-                    default:
+                    } else {
                         PetSound.shared.play(.islandStart)
                         showHitIsland = true
                     }
@@ -591,13 +579,6 @@ struct ContentView: View {
         syncActivity()
     }
 
-    private func showComingSoon(_ text: String) {
-        withAnimation { comingSoonText = text }
-        Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 1_600_000_000)
-            withAnimation { comingSoonText = nil }
-        }
-    }
 
     // MARK: - Feedback helpers
 

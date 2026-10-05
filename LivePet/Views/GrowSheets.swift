@@ -6,43 +6,58 @@ struct GrowCelebrationSheet: View {
     var onDone: () -> Void
     @State private var scale: CGFloat = 1.0
 
+    private let cream = Color(red: 1.0, green: 0.98, blue: 0.94)
+    private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
+
     var body: some View {
-        ZStack {
-            Color(red: 1.0, green: 0.98, blue: 0.94).ignoresSafeArea()
-            VStack(spacing: 22) {
-                Spacer()
-                TimelineView(.animation(minimumInterval: 1.0 / 8.0)) { context in
-                    let frame = Int(context.date.timeIntervalSinceReferenceDate * 8)
-                    ClipPetView(
-                        speciesId: pet.petGlyph,
-                        anim: .happy,
-                        frame: frame,
-                        facingLeft: false,
-                        displaySize: 140
-                    )
-                    .scaleEffect(scale)
-                }
-                .frame(height: 190)
+        VStack(spacing: 0) {
+            HStack {
                 Text("All grown!")
-                    .font(.largeTitle.bold())
-                    .foregroundStyle(Color(red: 0.29, green: 0.25, blue: 0.21))
-                Text(pet.speciesDisplayName)
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
-                Spacer()
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(ink)
+                Spacer(minLength: 0)
                 Button(action: onDone) {
-                    Text("Back to room")
-                        .font(.headline.weight(.bold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color(red: 0.98, green: 0.52, blue: 0.42), in: Capsule())
+                    Text("Done")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(ink)
                 }
-                .buttonStyle(PressScaleButtonStyle())
-                .padding(.bottom, 28)
+                .buttonStyle(.plain)
             }
-            .padding()
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
+
+            Spacer(minLength: 8)
+            TimelineView(.animation(minimumInterval: 1.0 / 8.0)) { context in
+                let frame = Int(context.date.timeIntervalSinceReferenceDate * 8)
+                ClipPetView(
+                    speciesId: pet.petGlyph,
+                    anim: .happy,
+                    frame: frame,
+                    facingLeft: false,
+                    displaySize: 140
+                )
+                .scaleEffect(scale)
+            }
+            .frame(height: 190)
+            Text(pet.speciesDisplayName)
+                .font(.title3)
+                .foregroundStyle(.secondary)
+                .padding(.top, 8)
+            Spacer(minLength: 8)
+            Button(action: onDone) {
+                Text("Back to room")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color(red: 0.98, green: 0.52, blue: 0.42), in: Capsule())
+            }
+            .buttonStyle(PressScaleButtonStyle())
+            .padding(.horizontal, 20)
+            .padding(.bottom, 28)
         }
+        .background(cream.ignoresSafeArea())
         .onAppear {
             withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
                 scale = 1.15

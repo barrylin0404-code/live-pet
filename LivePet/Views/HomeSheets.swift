@@ -764,7 +764,25 @@ struct InfoHowToSheet: View {
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            HStack {
+                Text("How to play")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(ink)
+                Spacer(minLength: 0)
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Done")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(ink)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
+
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     Text("Live Pet is free forever — no Upgrade, Unlock, or IAP.")
@@ -778,17 +796,11 @@ struct InfoHowToSheet: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
-                .padding(20)
-            }
-            .background(cream.ignoresSafeArea())
-            .navigationTitle("How to play")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 20)
             }
         }
+        .background(cream.ignoresSafeArea())
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(20)

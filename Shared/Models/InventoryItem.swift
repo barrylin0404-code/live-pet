@@ -32,8 +32,8 @@ struct InventoryItem: Identifiable, Codable, Equatable, Hashable {
         case "cupcake": return "prop-cupcake"
         case "biscuit": return "prop-biscuit"
         case "twinkle_ball": return "prop-ball"
-        // App Lead: hide until Designer ships prop-soft / prop-bounce (no wand/island borrow).
-        case "soft_square", "bounce_block": return nil
+        case "soft_square": return "prop-soft"
+        case "bounce_block": return "prop-bounce"
         default: return nil
         }
     }

@@ -165,13 +165,17 @@ struct ContentView: View {
                     dropFoodAndEat(item)
                 }, onToy: { item in
                     showInventory = false
-                    store.play(itemID: item.id)
-                    // Bounce Block / Soft Square stay nil until prop art — only ball is inventoriable.
-                    if item.id == "twinkle_ball" {
+                    switch item.id {
+                    case "twinkle_ball":
+                        store.play(itemID: item.id)
                         startPlayBall()
-                    } else {
-                        PetSound.shared.play(.islandStart)
-                        showHitIsland = true
+                    case "soft_square":
+                        store.play(itemID: item.id)
+                        startFollowWand()
+                    case "bounce_block":
+                        dropToyAndPlay(item)
+                    default:
+                        dropToyAndPlay(item)
                     }
                 })
             }
@@ -326,6 +330,7 @@ struct ContentView: View {
                 }
                 if brain.consumePlayReady() {
                     ballVisible = false
+                    droppedSymbol = nil
                     store.playDefault()
                     pulseHeart(crumbs: false)
                     spawnPlayBurst()
@@ -418,6 +423,29 @@ struct ContentView: View {
             spawnPlayBurst()
 
             try? await Task.sleep(nanoseconds: 1_300_000_000)
+            careBusy = false
+        }
+    }
+
+    /// Drop a pixel toy in the room; pet walks over and plays (same path as food).
+    private func dropToyAndPlay(_ item: InventoryItem) {
+        guard !careBusy else { return }
+        careBusy = true
+        let dropX: CGFloat = brain.x < 0.5 ? 0.68 : 0.32
+        droppedSymbol = item.pixelSpriteName ?? "prop-bounce"
+        droppedX = dropX
+        brain.noticeToy(at: dropX)
+        store.play(itemID: item.id)
+        PetSound.shared.play(.play)
+        #if canImport(UIKit)
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        #endif
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 5_500_000_000)
+            if droppedSymbol != nil {
+                droppedSymbol = nil
+                syncActivity()
+            }
             careBusy = false
         }
     }

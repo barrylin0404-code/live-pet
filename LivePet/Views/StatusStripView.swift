@@ -3,10 +3,9 @@ import SwiftUI
 struct StatusStripView: View {
     let pet: Pet
 
-    // Cream card chrome — same family as Scenes / Shop / Inventory sheets (not mint LCD).
-    private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
-    private let creamBorder = Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0)
+    // Cream sheet chrome — clear fill + ink stroke (App Lead: no white card fills).
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
+    private let stroke = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
     private let ageInk = Color(red: 0.55, green: 0.45, blue: 0.33)
 
     var body: some View {
@@ -55,7 +54,7 @@ struct StatusStripView: View {
         .background(Color.clear, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(creamBorder, lineWidth: 2)
+                .strokeBorder(stroke, lineWidth: 2)
         )
     }
 

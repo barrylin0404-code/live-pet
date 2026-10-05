@@ -65,6 +65,7 @@ struct HitIslandGameView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(cream, in: Capsule())
+                .overlay(Capsule().strokeBorder(stroke, lineWidth: 1.5))
         }
         .padding(.horizontal, 16)
         .padding(.top, 12)

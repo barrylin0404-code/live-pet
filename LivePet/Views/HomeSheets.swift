@@ -382,6 +382,7 @@ struct ScenesSheet: View {
 
     private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
+    private let stroke = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
     private let coral = Color(red: 0xFA / 255.0, green: 0x85 / 255.0, blue: 0x6B / 255.0)
     /// Three columns — Sun/Moon/Meadow, Tide/Skyline/Snow, Coral (+ next empty).
     private let columns = [
@@ -440,7 +441,7 @@ struct ScenesSheet: View {
                             .background(Color.clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .strokeBorder(store.selectedScene == scene ? coral : Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0),
+                                    .strokeBorder(store.selectedScene == scene ? coral : stroke,
                                                   lineWidth: store.selectedScene == scene ? 3 : 2)
                             )
                         }
@@ -486,7 +487,7 @@ struct ScenesSheet: View {
                     .background(Color.clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .strokeBorder(Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0), lineWidth: 2)
+                            .strokeBorder(stroke, lineWidth: 2)
                     )
 
                     if let onSettings {
@@ -527,7 +528,7 @@ struct ScenesSheet: View {
             .background(Color.clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0), lineWidth: 2)
+                    .strokeBorder(stroke, lineWidth: 2)
             )
         }
         .buttonStyle(PressScaleButtonStyle())

@@ -100,7 +100,7 @@ struct SelectFoodSheet: View {
                     .foregroundStyle(.secondary)
             }
             .frame(width: 96, height: 110)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(Color.clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .strokeBorder(isFavorite ? favoriteGold : cellBorder, lineWidth: isFavorite ? 2.5 : 2)
@@ -194,7 +194,7 @@ struct SelectGameSheet: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(Color.clear, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .strokeBorder(border, lineWidth: 2)
@@ -313,7 +313,7 @@ struct PetsSheet: View {
             }
             .frame(maxWidth: .infinity)
             .padding(12)
-            .background(selected ? Color(red: 1.0, green: 0.96, blue: 0.88) : Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(Color.clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .strokeBorder(selected ? selectedBorder : Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0), lineWidth: selected ? 3 : 2)
@@ -338,7 +338,7 @@ struct PetsSheet: View {
         }
         .frame(maxWidth: .infinity)
         .padding(12)
-        .background(Color.white.opacity(0.7), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Color.clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .strokeBorder(Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0), lineWidth: 2)
@@ -416,7 +416,7 @@ struct ScenesSheet: View {
                                     .minimumScaleFactor(0.85)
                             }
                             .padding(8)
-                            .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .background(Color.clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                                     .strokeBorder(store.selectedScene == scene ? coral : Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0),
@@ -462,7 +462,7 @@ struct ScenesSheet: View {
                     .disabled(!activityManager.areActivitiesEnabled && !activityManager.isActivityActive)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 12)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .background(Color.clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .strokeBorder(Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0), lineWidth: 2)
@@ -503,7 +503,7 @@ struct ScenesSheet: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(Color.clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .strokeBorder(Color(red: 0xE8 / 255.0, green: 0xD4 / 255.0, blue: 0xC4 / 255.0), lineWidth: 2)
@@ -614,7 +614,7 @@ struct InventorySheet: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .background(Color.clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .strokeBorder(isFavorite ? favoriteGold : border, lineWidth: isFavorite ? 2.5 : 2)
@@ -718,7 +718,7 @@ struct ShopSheet: View {
                     .foregroundStyle(ink.opacity(0.55))
             }
             .padding(12)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(Color.clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .strokeBorder(border, lineWidth: 2)
@@ -804,7 +804,7 @@ struct WidgetsGallerySheet: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(12)
-                        .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .background(Color.clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
                                 .strokeBorder(border, lineWidth: 2)

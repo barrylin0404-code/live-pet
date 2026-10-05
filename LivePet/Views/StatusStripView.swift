@@ -52,12 +52,11 @@ struct StatusStripView: View {
             .accessibilityLabel("Satiety, \(pet.satiety) percent, \(filledSatiety) of 3")
         }
         .padding(14)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(Color.clear, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .strokeBorder(creamBorder, lineWidth: 2)
         )
-        .shadow(color: cream.opacity(0.9), radius: 6, y: 2)
     }
 
     private var avatar: some View {

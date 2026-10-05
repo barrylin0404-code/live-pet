@@ -18,6 +18,9 @@ public struct PetBrain: Equatable {
     private var wasSleeping: Bool
     private var sleepPhase: Double
     private var toyPlayLeft: Double
+    /// Taps inside a short window — 3+ → annoyed (sad sheet).
+    private var petBurstCount: Int
+    private var petBurstUntil: Double
 
     public init(x: CGFloat = 0.48) {
         self.x = x
@@ -35,6 +38,8 @@ public struct PetBrain: Equatable {
         self.wasSleeping = false
         self.sleepPhase = 0
         self.toyPlayLeft = 0
+        self.petBurstCount = 0
+        self.petBurstUntil = 0
     }
 
     /// Drag: pickup, then held while the stroke continues, then drop.
@@ -88,9 +93,22 @@ public struct PetBrain: Equatable {
     }
 
     public mutating func reactPet() {
-        player.request(.petHappy, force: true)
-        commandedUntil = clock + 1.1
+        if clock > petBurstUntil {
+            petBurstCount = 0
+        }
+        petBurstCount += 1
+        petBurstUntil = clock + 1.35
         wanderTarget = nil
+        if petBurstCount >= 3 {
+            // nubby/pip have sad sheets — annoyedReaction maps there in the catalog.
+            player.request(.annoyedReaction, force: true)
+            commandedUntil = clock + 1.2
+            petBurstCount = 0
+            petBurstUntil = clock + 0.8
+        } else {
+            player.request(.petHappy, force: true)
+            commandedUntil = clock + 1.1
+        }
     }
 
     public mutating func reactPlay() {
@@ -308,6 +326,22 @@ public struct PetBrain: Equatable {
             }
             x = min(0.80, max(0.20, x))
             return
+        }
+
+        // Low satiety / low mood: show hungry or sad without needing a tap.
+        if foodX == nil, toyX == nil, clock >= commandedUntil {
+            if moodHint == .hungry, player.anim != .hungry {
+                player.request(.hungry, force: true)
+                idleHold = 0.55
+                wanderTarget = nil
+                return
+            }
+            if moodHint == .low, player.anim != .sad {
+                player.request(.sad, force: true)
+                idleHold = 0.55
+                wanderTarget = nil
+                return
+            }
         }
 
         if player.anim == .idle || player.finishedOneShot {

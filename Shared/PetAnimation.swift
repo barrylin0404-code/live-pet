@@ -115,8 +115,12 @@ public enum PetAnimCatalog {
             return .playing
         case .morningStretch:
             return .idleStretch
-        case .happy, .petHappy, .excited, .veryHappy, .loveReaction, .playExcited, .petReaction:
+        case .happy, .petHappy, .excited, .veryHappy, .loveReaction, .playExcited, .petReaction,
+             .doubleTapReaction:
             return .happy
+        case .annoyedReaction, .repeatedTapReaction, .angry:
+            // No annoyed sheet — sad is the quality bar (nubby/pip both have it).
+            return .sad
         case .idleRare1, .idleRare2, .idleRare3:
             return .idle
         case .idleEarMovement, .idleTailMovement, .idleScratch,

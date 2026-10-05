@@ -401,33 +401,6 @@ struct ContentView: View {
         .accessibilityLabel(label)
     }
 
-    private func startIdleWalk() {
-        walkTask?.cancel()
-        walkTask = Task { @MainActor in
-            while !Task.isCancelled {
-                if careBusy || store.pet.isSleeping {
-                    try? await Task.sleep(nanoseconds: 400_000_000)
-                    continue
-                }
-                // Pace L/R across ~0.22...0.78 — denser never-static walk
-                let target: CGFloat = facingLeft ? 0.22 : 0.78
-                let start = petX
-                let distance = abs(target - start)
-                let steps = max(10, Int(distance * 36))
-                for i in 1...steps {
-                    if Task.isCancelled || careBusy || store.pet.isSleeping { break }
-                    let t = CGFloat(i) / CGFloat(steps)
-                    petX = start + (target - start) * t
-                    try? await Task.sleep(nanoseconds: 42_000_000)
-                }
-                if careBusy || store.pet.isSleeping { continue }
-                facingLeft.toggle()
-                // Short edge pause — keep motion dense
-                try? await Task.sleep(nanoseconds: 160_000_000)
-            }
-        }
-    }
-
     // MARK: - Drop-to-room food
 
     private func dropFoodAndEat(_ item: InventoryItem) {

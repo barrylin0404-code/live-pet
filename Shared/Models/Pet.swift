@@ -239,27 +239,30 @@ struct Pet: Identifiable, Equatable, Codable {
     mutating func applyOfflineDecay(from date: Date) {
         let elapsed = date.timeIntervalSince(lastUpdated)
         guard elapsed > 0 else { return }
-        let units = Int(elapsed / 90)
+        let units = Int(elapsed / PetDecay.unitSeconds)
         guard units > 0 else {
             lastUpdated = date
             return
         }
-        if isSleeping {
-            energy = Self.clamp(energy + units)
-            if energy >= 95 {
-                isSleeping = false
-                pose = .idle
-            }
-        } else {
-            satiety = Self.clamp(satiety - units * 2)
-            moodScore = Self.clamp(moodScore - units)
-            energy = Self.clamp(energy - units)
-            cleanliness = Self.clamp(cleanliness - units)
+        let wasSleeping = isSleeping
+        let after = PetDecay.apply(units: units, to: PetDecay.Meters(
+            satiety: satiety, moodScore: moodScore, energy: energy,
+            cleanliness: cleanliness, isSleeping: isSleeping
+        ))
+        satiety = after.satiety
+        moodScore = after.moodScore
+        energy = after.energy
+        cleanliness = after.cleanliness
+        isSleeping = after.isSleeping
+        if wasSleeping && !isSleeping {
+            pose = .idle
         }
         // Short hops (Control Center, a quick Island tap) keep the last care blurb;
         // only a real absence (~30 min+) reads as waiting.
         if units >= 20 {
             lastAction = isSleeping ? "\(name) is sleeping" : "\(name) waited for you"
+        } else if wasSleeping && !isSleeping {
+            lastAction = "\(name) woke up"
         }
         lastUpdated = date
     }
@@ -344,4 +347,45 @@ struct Pet: Identifiable, Equatable, Codable {
         try c.encodeIfPresent(favoriteFoodId, forKey: .favoriteFoodId)
         try c.encodeIfPresent(favoriteToyId, forKey: .favoriteToyId)
     }
+}
+
+/// Time-away decay in 90 s units, shared by `Pet.applyOfflineDecay` (app / Island intents) and
+/// `PetSnapshot.projected` (widgets, Island mood) so they never disagree.
+/// A pet asleep for part of the absence gains energy until it wakes at 95 — same as `Pet.tick` —
+/// then decays awake for the rest. It used to count the whole absence as sleep, so a nap froze
+/// Satiety / Feeling and a pet tucked in at noon still read fed and content at dinner.
+enum PetDecay {
+    static let unitSeconds: TimeInterval = 90
+    static let wakeEnergy = 95
+
+    struct Meters: Equatable {
+        var satiety: Int
+        var moodScore: Int
+        var energy: Int
+        var cleanliness: Int
+        var isSleeping: Bool
+    }
+
+    static func apply(units: Int, to meters: Meters) -> Meters {
+        guard units > 0 else { return meters }
+        var out = meters
+        var awakeUnits = units
+        if out.isSleeping {
+            let toWake = max(0, wakeEnergy - out.energy)
+            if units < toWake {
+                out.energy = clamp(out.energy + units)
+                return out
+            }
+            out.energy = clamp(out.energy + toWake)
+            out.isSleeping = false
+            awakeUnits = units - toWake
+        }
+        out.satiety = clamp(out.satiety - awakeUnits * 2)
+        out.moodScore = clamp(out.moodScore - awakeUnits)
+        out.energy = clamp(out.energy - awakeUnits)
+        out.cleanliness = clamp(out.cleanliness - awakeUnits)
+        return out
+    }
+
+    private static func clamp(_ value: Int) -> Int { max(0, min(100, value)) }
 }

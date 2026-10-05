@@ -39,7 +39,6 @@ struct PetHomeWidgetView: View {
 
     var body: some View {
         let snap = entry.snapshot
-        let sleeping = snap.isSleeping == true || snap.mood == .sleepy
         GeometryReader { geo in
             let plateSide = min(geo.size.width, geo.size.height)
             let plateTop = (geo.size.height - plateSide) / 2
@@ -53,20 +52,12 @@ struct PetHomeWidgetView: View {
                     .position(x: geo.size.width / 2, y: geo.size.height / 2)
                 TimelineView(.animation(minimumInterval: 1.0 / 6.0, paused: false)) { context in
                     let tick = Int(context.date.timeIntervalSinceReferenceDate * 6)
-                    // Projected mood (hungry/sad/happy) — same bands as WidgetPetForeground.
-                    let anim: PetAnim = {
-                        if sleeping { return .sleeping }
-                        switch snap.mood {
-                        case .hungry: return .hungry
-                        case .low: return .sad
-                        case .playful, .happy: return .happy
-                        default: return .idle
-                        }
-                    }()
+                    // Projected mood (hungry/sad/happy beat) — same clip pick as WidgetPetForeground.
+                    let shown = WidgetMoodClip.clip(for: snap, tick: tick)
                     ClipPetView(
                         speciesId: snap.petGlyph == "pip" ? "pip" : "nubby",
-                        anim: anim,
-                        frame: tick,
+                        anim: shown.anim,
+                        frame: shown.frame,
                         facingLeft: false,
                         displaySize: petSide,
                         growthStage: snap.resolvedGrowthStage

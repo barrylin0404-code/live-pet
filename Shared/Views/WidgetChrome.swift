@@ -103,29 +103,47 @@ extension View {
     }
 }
 
-/// Side-view idle or sleep sheet. Missing frames fall back to that species' idle.
+/// Which sheet + frame a widget pet shows for a (projected) snapshot at a 6 fps tick.
+/// Hungry / sad hold their sheets and sleep breathes. Happy / playful play one happy beat, then
+/// idle (blinks) a couple of seconds: the happy sheet is a one-shot, and looped nonstop it read
+/// as a pet bouncing in place on the Home Screen.
+enum WidgetMoodClip {
+    /// 6 fps ticks per happy cycle (~3 s): 4 happy frames, then the 6-frame idle twice.
+    static let happyCycle = 16
+
+    static func clip(for snapshot: PetSnapshot, tick: Int) -> (anim: PetAnim, frame: Int) {
+        if snapshot.isSleeping == true || snapshot.mood == .sleepy {
+            return (.sleeping, tick)
+        }
+        switch snapshot.mood {
+        case .hungry:
+            return (.hungry, tick)
+        case .low:
+            return (.sad, tick)
+        case .playful, .happy:
+            let phase = ((tick % happyCycle) + happyCycle) % happyCycle
+            let happyFrames = PetAnimCatalog.clip(for: .happy).frameCount
+            return phase < happyFrames ? (.happy, phase) : (.idle, phase - happyFrames)
+        default:
+            return (.idle, tick)
+        }
+    }
+}
+
+/// Side-view sheet for the projected mood (`WidgetMoodClip`). Missing frames fall back to that species' idle.
 struct WidgetPetForeground: View {
     let snapshot: PetSnapshot
     var size: CGFloat = 48
 
     var body: some View {
-        let sleeping = snapshot.isSleeping == true || snapshot.mood == .sleepy
         let stage = snapshot.resolvedGrowthStage
-        let anim: PetAnim = {
-            if sleeping { return .sleeping }
-            switch snapshot.mood {
-            case .hungry: return .hungry
-            case .low: return .sad
-            case .playful, .happy: return .happy
-            default: return .idle
-            }
-        }()
         TimelineView(.animation(minimumInterval: 1.0 / 6.0, paused: false)) { context in
             let tick = Int(context.date.timeIntervalSinceReferenceDate * 6)
+            let shown = WidgetMoodClip.clip(for: snapshot, tick: tick)
             ClipPetView(
                 speciesId: snapshot.petGlyph == "pip" ? "pip" : "nubby",
-                anim: anim,
-                frame: tick,
+                anim: shown.anim,
+                frame: shown.frame,
                 facingLeft: false,
                 displaySize: size,
                 growthStage: stage

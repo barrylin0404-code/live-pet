@@ -27,8 +27,8 @@ public struct IslandWalkPetView: View {
 
     /// ~8 fps pixel feel (6-frame side-view walk).
     private static let frameInterval: TimeInterval = 0.125
-    /// Full L→R→L glide cycle (~2.0s). Facing sheet swaps at each edge.
-    private static let travelPeriod: TimeInterval = 2.0
+    /// One edge-to-edge walk (~1.0s, same speed as the old 2.0s ping-pong).
+    private static let walkLeg: TimeInterval = 1.0
     /// Occasional idle hop only — App Lead bounce: constant hop rejected vs clip.
     private static let hopFrames: Int = 4
     /// Quiet walk between hops (~2.75s at 8fps). Occasional hop only — denser than sparse, not constant.
@@ -123,23 +123,30 @@ public struct IslandWalkPetView: View {
         // Side-view sheets are wider than tall. A wider frame lets height fill the pill.
         let petWidth = height * 1.35
         let amp = travelAmplitude
+        let pause = Self.edgePause(for: mood)
         // Several statements: a getter (not a ViewBuilder) needs an explicit return.
         return TimelineView(.animation(minimumInterval: Self.frameInterval, paused: false)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let frameTick = Int(t / Self.frameInterval)
 
-            // Strict 1D triangle glide; facing swaps sheets at each edge (no mirror).
-            let (xNorm, facingRight) = Self.glide(at: t, period: Self.travelPeriod)
+            // Walk an edge, park and idle a beat, turn, walk back — a pet roaming, not a slider.
+            let (xNorm, facingRight, parked) = Self.roam(at: t, walk: Self.walkLeg, pause: pause)
 
             let frames = Self.walkFrames(speciesId: speciesId, facingRight: facingRight)
             let name = frames[frameTick % max(frames.count, 1)]
+            let idleName = "\(speciesId == "pip" ? "pip" : "nubby")-idle-\(Int(t * 6) % 6)"
 
-            let (squashX, squashY, hopY) = Self.hopTransform(frameTick: frameTick, side: height)
+            // Hops belong to the stroll; a parked pet just breathes and blinks.
+            let (squashX, squashY, hopY) = parked
+                ? (CGFloat(1), CGFloat(1), CGFloat(0))
+                : Self.hopTransform(frameTick: frameTick, side: height)
 
             // Kit / plus walk sheets fall back to Nubby clips — scale matches room bodyScale.
             let stageScale = CGFloat(growthStage.bodyScaleMultiplier)
             Group {
-                if Self.assetExists(name) {
+                if parked, Self.assetExists(idleName) {
+                    parkedIdle(idleName, facingRight: facingRight, petWidth: petWidth, height: height)
+                } else if Self.assetExists(name) {
                     Image(name)
                         .interpolation(.none)
                         .resizable()
@@ -162,22 +169,61 @@ public struct IslandWalkPetView: View {
             .offset(x: CGFloat(xNorm) * amp, y: hopY)
             .frame(width: petWidth + amp * 2, height: height)
             .clipped()
-            .accessibilityLabel("\(speciesId) walking on Island, \(mood.label)")
+            .accessibilityLabel("\(speciesId) \(parked ? "resting" : "walking") on Island, \(mood.label)")
         }
     }
 
-    /// Triangle wave -1…1 across the capsule; `facingRight` true while moving L→R.
-    /// Mirror swaps the instant we hit an edge — zero interpolated turn frames.
-    private static func glide(at t: TimeInterval, period: TimeInterval) -> (xNorm: Double, facingRight: Bool) {
-        let phase = t.truncatingRemainder(dividingBy: period)
-        let half = period * 0.5
-        if phase < half {
-            let u = phase / half // 0…1
-            return (-1.0 + 2.0 * u, true)
-        } else {
-            let u = (phase - half) / half // 0…1
-            return (1.0 - 2.0 * u, false)
+    /// Walk L→R, park at the right edge, walk R→L, park at the left edge. xNorm is -1…1;
+    /// the pet keeps facing the way it walked while parked and turns when it sets off.
+    static func roam(at t: TimeInterval, walk: TimeInterval, pause: TimeInterval) -> (xNorm: Double, facingRight: Bool, parked: Bool) {
+        let cycle = 2 * (walk + pause)
+        let phase = t.truncatingRemainder(dividingBy: cycle)
+        if phase < walk {
+            return (-1.0 + 2.0 * phase / walk, true, false)
         }
+        if phase < walk + pause {
+            return (1.0, true, true)
+        }
+        let back = phase - walk - pause
+        if back < walk {
+            return (1.0 - 2.0 * back / walk, false, false)
+        }
+        return (-1.0, false, true)
+    }
+
+    /// Edge park length by mood: playful pets barely stop, sleepy ones linger (Shimeji density).
+    static func edgePause(for mood: PetMood) -> TimeInterval {
+        switch mood {
+        case .playful: return 0.45
+        case .sleepy: return 1.4
+        default: return 0.9
+        }
+    }
+
+    /// Widget walk sheets are tight crops of the 64-px room sheets; the idle sheet is not.
+    /// Crop origin + size per species and facing, so the parked idle lines up with the walk.
+    private static func walkCrop(speciesId: String, facingRight: Bool) -> (x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat) {
+        if speciesId == "pip" {
+            return (facingRight ? 16 : 4, 20, 44, 36)
+        }
+        return (facingRight ? 8 : 2, 14, 54, 42)
+    }
+
+    /// Room idle sheet (6 frames, blink on 3–4) placed so its pixels sit exactly where the walk
+    /// crop would draw — same size, same feet. Mirrored when parked at the left edge.
+    private func parkedIdle(_ name: String, facingRight: Bool, petWidth: CGFloat, height: CGFloat) -> some View {
+        let crop = Self.walkCrop(speciesId: speciesId, facingRight: facingRight)
+        let unit = min(petWidth / crop.w, height / crop.h)
+        let side = 64 * unit
+        let cropX = (petWidth - crop.w * unit) / 2
+        let cropY = (height - crop.h * unit) / 2
+        return Image(name)
+            .interpolation(.none)
+            .resizable()
+            .frame(width: side, height: side)
+            .scaleEffect(x: facingRight ? 1 : -1, y: 1)
+            .offset(x: cropX - crop.x * unit, y: cropY - crop.y * unit)
+            .frame(width: petWidth, height: height, alignment: .topLeading)
     }
 
     /// Squash→stretch→land squash only during a short window every `hopIntervalFrames`.

@@ -141,6 +141,15 @@ public struct PetBrain: Equatable {
         toyX = nil
     }
 
+    /// After the Grow celebration closes: one happy beat, then the usual idle linger.
+    public mutating func reactGrown() {
+        guard !wasSleeping, foodX == nil, toyX == nil else { return }
+        wanderTarget = nil
+        player.request(.happy, force: true)
+        commandedUntil = max(commandedUntil, clock + 1.25)
+        idleHold = max(idleHold, 1.0)
+    }
+
     public mutating func reactFavoriteFood() {
         // Burst on the happy sheet — not another eat cycle after the meal.
         player.request(.favoriteFoodReaction, force: true)

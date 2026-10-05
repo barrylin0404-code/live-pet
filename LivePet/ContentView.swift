@@ -195,7 +195,12 @@ struct ContentView: View {
                     }
                 })
             }
-            .sheet(isPresented: $store.showGrowCelebration) {
+            .sheet(isPresented: $store.showGrowCelebration, onDismiss: {
+                // Done, Back to room, or a swipe: one happy beat in the room.
+                if !store.pet.isSleeping {
+                    brain.reactGrown()
+                }
+            }) {
                 GrowCelebrationSheet(pet: store.pet) {
                     store.dismissGrowCelebration()
                 }

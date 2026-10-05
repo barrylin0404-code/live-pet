@@ -231,6 +231,8 @@ struct ContentView: View {
             #if canImport(UIKit)
             .background(ShakeDetector().frame(width: 0, height: 0))
             .onReceive(NotificationCenter.default.publisher(for: .livePetDidShake)) { _ in
+                // Shake only tucks in when awake — never wakes a nap (Sleep dock toggles wake).
+                guard !store.pet.isSleeping else { return }
                 performSleep()
             }
             #endif

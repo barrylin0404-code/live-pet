@@ -8,6 +8,7 @@ import UIKit
 /// Frame loop driven by `TimelineView` so we never
 /// spam `Activity.update` for sprite animation.
 /// Care oneshots (eat / play / sleep) still come from ContentState via `update(pet:)`.
+/// Hungry / low mood bands hold the hungry / sad sheet instead of the stroll.
 public struct IslandWalkPetView: View {
     public var mood: PetMood
     public var pose: PetPose
@@ -67,7 +68,10 @@ public struct IslandWalkPetView: View {
         let display = effectivePose
         Group {
             if display != .walk {
-                careBody(display)
+                careBody(Self.careAnim(for: display))
+            } else if let moodAnim = Self.moodAnim(for: mood) {
+                // Hungry / low pets stop strolling — same sheets as the room and home widget.
+                careBody(moodAnim)
             } else {
                 walkBody
             }
@@ -75,16 +79,31 @@ public struct IslandWalkPetView: View {
         .frame(height: slotHeight)
     }
 
-    /// Eat, play, bath, and sleep use the same side-view sheets as the room.
-    private func careBody(_ pose: PetPose) -> some View {
-        let height = slotHeight
-        let anim: PetAnim = switch pose {
-        case .sleep: .sleeping
-        case .eat: .eating
-        case .play: .playing
-        case .clean: .bathing
-        case .idle, .walk: .idle
+    /// Care pose → room clip. Sleep keeps the sleeping alias (no invented sleepStart sheet).
+    static func careAnim(for pose: PetPose) -> PetAnim {
+        switch pose {
+        case .sleep: return .sleeping
+        case .eat: return .eating
+        case .play: return .playing
+        case .clean: return .bathing
+        case .idle, .walk: return .idle
         }
+    }
+
+    /// Awake mood that should read on the Island instead of the stroll. Nil = keep walking.
+    static func moodAnim(for mood: PetMood) -> PetAnim? {
+        switch mood {
+        case .hungry: return .hungry
+        case .low: return .sad
+        default: return nil
+        }
+    }
+
+    /// Eat, play, bath, sleep, hungry, and sad use the same side-view sheets as the room.
+    /// Kit / plus scale matches the room `bodyScaleMultiplier` (walk already does).
+    private func careBody(_ anim: PetAnim) -> some View {
+        let height = slotHeight
+        let stageScale = CGFloat(growthStage.bodyScaleMultiplier)
         return TimelineView(.animation(minimumInterval: 1.0 / 6.0, paused: false)) { context in
             let tick = Int(context.date.timeIntervalSinceReferenceDate * 6)
             ClipPetView(
@@ -95,8 +114,10 @@ public struct IslandWalkPetView: View {
                 displaySize: height,
                 growthStage: growthStage
             )
+            .scaleEffect(stageScale)
         }
         .frame(height: height)
+        .clipped()
     }
 
     private var walkBody: some View {

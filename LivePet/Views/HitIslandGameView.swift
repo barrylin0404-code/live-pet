@@ -15,6 +15,7 @@ struct HitIslandGameView: View {
     private let gameDuration: Double = 15
     private let cream = Color(red: 1.0, green: 0.97, blue: 0.93)
     private let ink = Color(red: 0.29, green: 0.25, blue: 0.21)
+    private let stroke = Color(red: 0x4A / 255.0, green: 0x3F / 255.0, blue: 0x35 / 255.0)
     private let coral = Color(red: 0xFA / 255.0, green: 0x85 / 255.0, blue: 0x6B / 255.0)
 
     @State private var paddleX: CGFloat = 0.5
@@ -135,34 +136,59 @@ struct HitIslandGameView: View {
     private var introOverlay: some View {
         ZStack {
             Color.black.opacity(0.35).ignoresSafeArea()
-            VStack(spacing: 14) {
-                Text("Hit the Island")
-                    .font(.title2.weight(.heavy))
-                    .foregroundStyle(ink)
-                Text("Drag \(petName) under the falling islands.\nBounce them skyward — 15 seconds!")
-                    .font(.subheadline)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(ink.opacity(0.75))
-                Button {
-                    PetSound.shared.play(.islandStart)
-                    #if canImport(UIKit)
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    #endif
-                    withAnimation { showIntro = false }
-                    startLoop()
-                } label: {
-                    Text("Play")
-                        .font(.headline.weight(.bold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(coral, in: Capsule())
+            VStack(spacing: 0) {
+                HStack {
+                    Text("Hit the Island")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(ink)
+                    Spacer(minLength: 0)
+                    Button {
+                        PetSound.shared.play(.uiTick)
+                        onFinished(0)
+                        dismiss()
+                    } label: {
+                        Text("Done")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(ink)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(PressScaleButtonStyle())
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 16)
+                .padding(.top, 14)
+                .padding(.bottom, 10)
+
+                VStack(spacing: 14) {
+                    Text("Drag \(petName) under the falling islands.\nBounce them skyward — 15 seconds!")
+                        .font(.subheadline)
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(ink.opacity(0.75))
+                    Button {
+                        PetSound.shared.play(.islandStart)
+                        #if canImport(UIKit)
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        #endif
+                        withAnimation { showIntro = false }
+                        startLoop()
+                    } label: {
+                        Text("Play")
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(coral, in: Capsule())
+                    }
+                    .buttonStyle(PressScaleButtonStyle())
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 18)
             }
-            .padding(24)
-            .background(cream, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .frame(maxWidth: 340)
+            .background(cream, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .strokeBorder(stroke, lineWidth: 2.5)
+            )
+            .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
             .padding(.horizontal, 32)
         }
     }
@@ -170,38 +196,68 @@ struct HitIslandGameView: View {
     private var resultOverlay: some View {
         ZStack {
             Color.black.opacity(0.4).ignoresSafeArea()
-            VStack(spacing: 12) {
-                ClipPetView(
-                    speciesId: speciesId,
-                    anim: .playing,
-                    frame: 0,
-                    facingLeft: false,
-                    displaySize: 96
-                )
-                Text("\(catches) catch\(catches == 1 ? "" : "es")")
-                    .font(.title3.weight(.heavy))
-                    .foregroundStyle(ink)
-                Button {
-                    PetSound.shared.play(.heartPop)
-                    #if canImport(UIKit)
-                    UINotificationFeedbackGenerator().notificationOccurred(.success)
-                    #endif
-                    onFinished(catches)
-                    dismiss()
-                } label: {
-                    Text("Done")
-                        .font(.headline.weight(.bold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(ink, in: Capsule())
+            VStack(spacing: 0) {
+                HStack {
+                    Text("Hit the Island")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(ink)
+                    Spacer(minLength: 0)
+                    Button {
+                        PetSound.shared.play(.heartPop)
+                        #if canImport(UIKit)
+                        UINotificationFeedbackGenerator().notificationOccurred(.success)
+                        #endif
+                        onFinished(catches)
+                        dismiss()
+                    } label: {
+                        Text("Done")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(ink)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(PressScaleButtonStyle())
-                .padding(.horizontal, 8)
-                .padding(.top, 4)
+                .padding(.horizontal, 16)
+                .padding(.top, 14)
+                .padding(.bottom, 10)
+
+                VStack(spacing: 12) {
+                    ClipPetView(
+                        speciesId: speciesId,
+                        anim: .playing,
+                        frame: 0,
+                        facingLeft: false,
+                        displaySize: 96
+                    )
+                    Text("\(catches) catch\(catches == 1 ? "" : "es")")
+                        .font(.title3.weight(.heavy))
+                        .foregroundStyle(ink)
+                    Button {
+                        PetSound.shared.play(.heartPop)
+                        #if canImport(UIKit)
+                        UINotificationFeedbackGenerator().notificationOccurred(.success)
+                        #endif
+                        onFinished(catches)
+                        dismiss()
+                    } label: {
+                        Text("Back to room")
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(coral, in: Capsule())
+                    }
+                    .buttonStyle(PressScaleButtonStyle())
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 18)
             }
-            .padding(24)
-            .background(cream, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .frame(maxWidth: 340)
+            .background(cream, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .strokeBorder(stroke, lineWidth: 2.5)
+            )
+            .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
             .padding(.horizontal, 32)
         }
     }

@@ -89,6 +89,7 @@ public struct PetActivityAttributes: ActivityAttributes {
                     && !prev.isSleeping
                     && prev.petPose != .eat
                     && prev.petPose != .play
+                    && prev.petPose != .clean
                     && prev.petPose != .sleep
             } ?? false
             if fromCare || (fromMoodHold && !next.mood.holdsIslandStroll) {

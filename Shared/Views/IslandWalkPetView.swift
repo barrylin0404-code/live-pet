@@ -257,13 +257,14 @@ public struct IslandWalkPetView: View {
     }
 
     /// Care / mood-hold sheets (hungry, sad, eat, play, bath, sleep) — same family as walkCrop
-    /// but taller/wider so nubby sad feet (y≈59) and hungry ear (x≈63) are not clipped, and
-    /// pip bath/sleep feet (y≈61) stay in the pill. Stroll / parked idle keep `walkCrop`.
+    /// but taller/wider so play hop tops (nubby y≈8 / pip y≈16), bath/sleep crowns, nubby sad
+    /// feet (y≈59) + hungry ear (x≈63), and pip bath/sleep feet (y≈61) stay in the pill.
+    /// Stroll / parked idle keep `walkCrop`.
     private static func careCrop(speciesId: String) -> (x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat) {
         if speciesId == "pip" {
-            return (16, 20, 44, 42)
+            return (16, 16, 44, 48)
         }
-        return (8, 14, 56, 48)
+        return (8, 8, 56, 56)
     }
 
     /// Room idle sheet (6 frames, blink on 3–4) placed so its pixels sit exactly where the walk

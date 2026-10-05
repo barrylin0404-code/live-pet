@@ -11,7 +11,11 @@ struct Pet: Identifiable, Equatable, Codable {
     var moodScore: Int
     var satiety: Int
     var energy: Int
-    var lastAction: String
+    var lastAction: String {
+        didSet { blurbTicks = 0 }
+    }
+    /// Ticks (20s each) since `lastAction` was written. Not saved — a fresh launch starts at 0.
+    private(set) var blurbTicks: Int = 0
     var lastUpdated: Date
     var pose: PetPose
     var isSleeping: Bool
@@ -205,9 +209,31 @@ struct Pet: Identifiable, Equatable, Codable {
             } else if pose == .walk {
                 pose = .idle
             }
-            lastAction = "\(name) is hanging out"
+            awakeTickBlurb()
         }
         touch()
+    }
+
+    /// Island / Lock Screen line between care beats. A care line ("Caught 3 islands!",
+    /// "Loved Fish!") holds ~1 min instead of being stomped by the next 20s tick; a hungry or
+    /// low pet says so; a stale line or a leftover sleep line falls back to hanging out.
+    private mutating func awakeTickBlurb() {
+        let hangingOut = "\(name) is hanging out"
+        let line: String
+        switch mood {
+        case .hungry:
+            line = "\(name) is hungry"
+        case .low:
+            line = "\(name) needs care"
+        default:
+            let sleepLine = lastAction == "\(name) is sleeping" || lastAction == "\(name) tucked in"
+            line = (blurbTicks >= 2 || sleepLine || lastAction.isEmpty) ? hangingOut : lastAction
+        }
+        if line == lastAction {
+            blurbTicks += 1
+        } else {
+            lastAction = line
+        }
     }
 
     mutating func applyOfflineDecay(from date: Date) {

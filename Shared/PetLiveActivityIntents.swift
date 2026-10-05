@@ -7,27 +7,19 @@ import WidgetKit
 /// Reads/writes App Group pet + inventory, then `Activity.update` with the right pose.
 @available(iOS 17.0, iOSApplicationExtension 17.0, *)
 enum PetIntentMutator {
+    /// Island Feed serves the active pet's favorite (Nubby fish, Pip berry) — same free
+    /// auto-refill as the app ribbon, so the Island never shows a "restocked" chore.
     static func feed() async {
         var pet = loadPet() ?? Pet()
         var items = loadItems()
-        if let index = items.firstIndex(where: { $0.isFood && $0.quantity > 0 }) {
+        let favoriteIndex = items.firstIndex(where: { $0.isFood && $0.id == pet.favoriteFoodId })
+        if let index = favoriteIndex ?? items.firstIndex(where: { $0.isFood && $0.pixelSpriteName != nil }) {
             let item = items[index]
-            items[index].quantity -= 1
+            items[index].quantity = max(98, items[index].quantity)
             pet.feed(with: item)
-            if items[index].quantity == 0 {
-                items[index].quantity = 1
-                pet.lastAction = "Ate \(item.name) · crumb restocked"
-                pet.touch()
-            }
-        } else if let fallback = InventoryItem.catalog.first(where: \.isFood) {
+        } else if let fallback = InventoryItem.catalog.first(where: { $0.id == pet.favoriteFoodId })
+                    ?? InventoryItem.catalog.first(where: \.isFood) {
             pet.feed(with: fallback)
-        } else {
-            pet.isSleeping = false
-            pet.pose = .eat
-            pet.satiety = min(100, pet.satiety + 20)
-            pet.moodScore = min(100, pet.moodScore + 4)
-            pet.lastAction = "Ate a snack"
-            pet.touch()
         }
         persist(pet: pet, items: items)
         await pushActivity(pet: pet)
@@ -49,9 +41,13 @@ enum PetIntentMutator {
         await pushActivity(pet: model)
     }
 
+    /// Catch up time away first — an Island tap must not stamp `lastUpdated` and erase the
+    /// decay the app would have applied on return.
     private static func loadPet() -> Pet? {
-        guard let data = AppGroup.defaults.data(forKey: AppGroup.petKey) else { return nil }
-        return try? JSONDecoder().decode(Pet.self, from: data)
+        guard let data = AppGroup.defaults.data(forKey: AppGroup.petKey),
+              var pet = try? JSONDecoder().decode(Pet.self, from: data) else { return nil }
+        pet.applyOfflineDecay()
+        return pet
     }
 
     private static func loadItems() -> [InventoryItem] {
@@ -65,6 +61,15 @@ enum PetIntentMutator {
     private static func persist(pet: Pet, items: [InventoryItem]?) {
         if let data = try? JSONEncoder().encode(pet) {
             AppGroup.defaults.set(data, forKey: AppGroup.petKey)
+        }
+        // Mirror into the roster too — cold launch picks the active pet out of `petsKey`.
+        if let data = AppGroup.defaults.data(forKey: AppGroup.petsKey),
+           var roster = try? JSONDecoder().decode([Pet].self, from: data),
+           let idx = roster.firstIndex(where: { $0.id == pet.id }) {
+            roster[idx] = pet
+            if let out = try? JSONEncoder().encode(roster) {
+                AppGroup.defaults.set(out, forKey: AppGroup.petsKey)
+            }
         }
         if let items, let data = try? JSONEncoder().encode(items) {
             AppGroup.defaults.set(data, forKey: AppGroup.inventoryKey)
